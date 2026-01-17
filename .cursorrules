@@ -1,0 +1,117 @@
+# ============================================================
+# Cursor Rules for RT SwimCoach AI (Next.js Web版)
+# ============================================================
+# このプロジェクトの最上位規範は docs/RT_PROTOCOL.md（正本）である。
+# 以後の設計・実装・文章・UI文言はすべてこの思想に従属する。
+# 矛盾した場合は RT_PROTOCOL.md を最優先する。
+# ============================================================
+
+
+# ------------------------------------------------------------
+# 0) Non-negotiables（絶対遵守）
+# ------------------------------------------------------------
+- MUST read and follow: docs/RT_PROTOCOL.md
+- docs/RT_PROTOCOL.md is the highest authority. If any instruction conflicts, RT_PROTOCOL wins.
+- NEVER generate training logic, UI copy, or architecture that contradicts RT_PROTOCOL.
+- When uncertain, ask or propose options **without** breaking RT_PROTOCOL.
+
+
+# ------------------------------------------------------------
+# 1) Output Style（出力スタイル）
+# ------------------------------------------------------------
+- UI文言は基本日本語（UI strings and explanations in Japanese by default）
+- Be concise, practical, and implementation-first.
+- Avoid excessive re-architecture. Prefer **incremental edits** (段階的ブラッシュアップ).
+- Never reset the whole structure unless explicitly asked.
+
+
+# ------------------------------------------------------------
+# 2) Project Behavior（このアプリの"人格"）
+# ------------------------------------------------------------
+- This is NOT a "追い込みAI" or "根性AI".
+- The goal is: 再現性 / 自己理解 / 納得感 / 継続性.
+- Any generated plan must include:
+  - 目的（Why）
+  - 狙い（What）
+  - 実施意図（How）
+  - 注意点（Risk/Focus）
+- Prohibit:
+  - fear, comparison, shaming,煽り
+  - command-only tone
+  - 強度優先でフォーム崩壊前提の設計
+
+
+# ------------------------------------------------------------
+# 3) Training Generation Rules（メニュー生成の核心ルール）
+# ------------------------------------------------------------
+- 生成は決定論的（deterministic）：同じ入力 → 同じ出力
+- Always structure sessions in blocks:
+  【目的】→ W-up / Drill / Kick / Pull / Pre-Main / Main / Down → Total
+- 出力構造（必須）:
+  - 【目的】（今日の狙い）
+  - W-up / Drill / Kick / Pull / Pre-Main / Main / Down
+  - Total：合計距離
+  - 練習意図 / 指導ポイント / 注意点 / 期待される効果
+- Main Set priority = 再現性（フォーム維持）
+- If form breaks → intensity must be reduced or simplified
+- Intensity must be decided with:
+  age / sex / frequency / recovery / fatigue / skill maturity
+- Masters/general users: prioritize safety & consistency over PB obsession
+- Junior: prioritize skill acquisition and long-term development
+
+
+# ------------------------------------------------------------
+# 4) UX / UI Rules（見え方の原則）
+# ------------------------------------------------------------
+- "アプリ感"＝整った情報設計 + 余白 + 一貫したトーン
+- Avoid heavy text walls in UI（テキスト詰め込み禁止）
+- Show summary first, then drill down into detail
+- Use cards/sections with clear hierarchy:
+  - 今日の前提
+  - 今日の狙い
+  - 今日のコーチメモ
+  - トレーニング内容（ブロック別）
+- Avoid clutter: one screen = one job
+- Use calm, trustworthy, non-flashy medical-grade feel (RT aesthetic)
+- No aggressive colors. Single accent color architecture is preferred.
+
+
+# ------------------------------------------------------------
+# 5) Engineering Rules（実装ルール - Next.js/React/TypeScript）
+# ------------------------------------------------------------
+- Prefer Next.js/React best practices:
+  - Component decomposition for readability
+  - State management with React hooks (useState, useReducer)
+  - Avoid massive single components
+  - TypeScript strict mode
+- Do not introduce unnecessary dependencies.
+- Prefer deterministic generation (same input → same output) unless randomness is explicitly required.
+- Keep code navigable: clear sections and comments.
+- Use Server Components where appropriate, Client Components for interactivity.
+
+
+# ------------------------------------------------------------
+# 6) Documentation Rules（ドキュメント運用）
+# ------------------------------------------------------------
+- Never edit docs/RT_PROTOCOL.md unless explicitly requested.
+- When adding new specs, create docs/RT_LOGIC.md or docs/RT_MENU_RULES.md
+  but MUST reference RT_PROTOCOL as parent rule.
+
+
+# ------------------------------------------------------------
+# 7) When asked to implement "Mainセット自動生成ロジック"
+# ------------------------------------------------------------
+- MUST implement as a clear rule table:
+  S/M/D × 目的 × 年齢 → 本数 / 距離 / レスト / 強度意図
+- Ensure:
+  - progressive load without breaking form
+  - explanation field included for each block
+- Provide: deterministic output + reasoning message (coach note)
+
+
+# ------------------------------------------------------------
+# 8) Safety / Health（安全）
+# ------------------------------------------------------------
+- Always avoid injury-risk prescriptions.
+- Include recovery guidance when fatigue signals exist.
+- For uncertain cases, default to conservative load.
