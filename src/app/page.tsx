@@ -5,12 +5,14 @@ import { generateTrainingMenu, type TrainingInput, type TrainingResult } from '@
 import { useViewMode } from './viewMode';
 
 type MenuRow = {
-  style: string;
-  distance: string;
-  cycle: string;
-  interval: string;
-  description: string;
-  power: string;
+  type: string;        // タイプ（W-up, ドリル, キックなど）
+  distance: string;    // 距離（m）
+  sets: string;        // 本数
+  setCount: string;    // セット数
+  cycle: string;       // サイクル（間隔）
+  content: string;     // 内容
+  power: string;       // 強度
+  total: string;       // Total（合計距離）
 };
 
 function normalizeDash(v?: string | null) {
@@ -21,65 +23,133 @@ function normalizeDash(v?: string | null) {
 function parseToRow(label: string, raw: string): MenuRow {
   const text = (raw ?? '').trim();
 
-  let style = '-';
+  let type = label;
   let distance = '-';
+  let sets = '-';
+  let setCount = '-';
   let cycle = '-';
-  let interval = '-';
   let power = '-';
+  let total = '-';
 
-  const powerMatch = text.match(/\((A1|EN1|EN2|EN3|AN1|AN2|AN3|AN)\)/i);
+  // 強度を抽出
+  const powerMatch = text.match(/\((A1|A2|EN1|EN2|EN3|EN4|AN1|AN2|AN3|AN)\)/i);
   if (powerMatch?.[1]) power = powerMatch[1].toUpperCase();
 
-  const styleMatch = text.match(/\b(FR|Ba|Br|Fly|IM|S|K|P)\b/);
-  if (styleMatch?.[1]) style = styleMatch[1];
+  // スタイル（FR/Ba/Br/Fly/IM/S/K/P）を抽出
+  const styleMatch = text.match(/\b(FR|Fr|Ba|Br|Fly|IM|S|K|P)\b/);
+  const style = styleMatch?.[1] || '-';
 
+  // 距離を抽出（例: 200m, 50m）
   const distMatch = text.match(/(\d+)\s*m/);
   if (distMatch?.[1]) distance = distMatch[1];
 
-  const cycleMatch = text.match(/(\d+)\s*[×x]\s*\d+/);
-  if (cycleMatch?.[1]) cycle = cycleMatch[1];
+  // 本数×距離のパターンを抽出（例: 4×50m → sets=4, distance=50）
+  const setsDistMatch = text.match(/(\d+)\s*[×x]\s*(\d+)\s*m/);
+  if (setsDistMatch) {
+    sets = setsDistMatch[1];
+    if (!distMatch) distance = setsDistMatch[2]; // 距離がまだ設定されていない場合
+    setCount = setsDistMatch[1];
+  }
 
+  // セット数のみ（例: 8×100m → setCount=8）
+  const setOnlyMatch = text.match(/(\d+)\s*[×x]/);
+  if (setOnlyMatch && !setsDistMatch) {
+    setCount = setOnlyMatch[1];
+  }
+
+  // サイクル（間隔）を抽出
   const timeMatch = text.match(/\b(\d{2}:\d{2})\b/);
-  if (timeMatch?.[1]) interval = timeMatch[1];
+  if (timeMatch?.[1]) {
+    cycle = timeMatch[1];
+  } else {
+    const atMatch = text.match(/@(\d+)\s*秒/);
+    if (atMatch?.[1]) cycle = `${atMatch[1]}秒`;
+  }
 
-  const atMatch = text.match(/@(\d+)\s*秒/);
-  if (atMatch?.[1]) interval = `${atMatch[1]}秒`;
+  // Total計算（距離 × セット数）
+  if (distance !== '-' && setCount !== '-') {
+    const dist = parseInt(distance, 10);
+    const count = parseInt(setCount, 10);
+    if (!isNaN(dist) && !isNaN(count)) {
+      total = `${(dist * count).toLocaleString()}m`;
+    } else if (distance !== '-') {
+      total = distance + 'm';
+    }
+  } else if (distance !== '-') {
+    total = distance + 'm';
+  }
 
-  const description = `${label} : ${text}`;
+  // 内容（元のテキストを保持、ただし簡潔に）
+  let content = text;
+  // 強度表記とサイクル表記は残すが、見やすく整理
+  content = content.trim();
 
   return {
-    style: normalizeDash(style),
+    type: normalizeDash(type),
     distance: normalizeDash(distance),
+    sets: normalizeDash(sets),
+    setCount: normalizeDash(setCount),
     cycle: normalizeDash(cycle),
-    interval: normalizeDash(interval),
-    description: normalizeDash(description),
+    content: normalizeDash(content),
     power: normalizeDash(power),
+    total: normalizeDash(total),
   };
 }
 
 /** ✅ カード表示（スマホ向け） */
 function MenuCard({ row }: { row: MenuRow }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const contentTruncated = row.content.length > 40 && !isExpanded;
+
   return (
-    <div className="app-card p-4">
-      <div className="flex items-center justify-between gap-3 mb-2">
-        <div className="font-semibold text-gray-900 text-base">
-          {row.style !== '-' ? `${row.style} / ` : ''}
-          {row.distance !== '-' ? `${row.distance}m` : ''}
-          {row.cycle !== '-' ? ` × ${row.cycle}` : ''}
-        </div>
-        {row.interval !== '-' && (
-          <div className="text-sm text-gray-600 font-medium">{row.interval}</div>
+    <div
+      className="app-card p-4 cursor-pointer hover:shadow-md transition-shadow"
+      onClick={() => setIsExpanded(!isExpanded)}
+    >
+      {/* (1) タイプ */}
+      <div className="font-semibold text-gray-900 text-sm mb-2">{row.type}</div>
+
+      {/* (2) 距離・本数・セット数・サイクル（横並び） */}
+      <div className="flex items-center flex-wrap gap-2 mb-2 text-xs text-gray-600">
+        {row.distance !== '-' && (
+          <span className="tabular-nums">距離: {row.distance}m</span>
+        )}
+        {row.sets !== '-' && (
+          <span className="tabular-nums">本数: {row.sets}</span>
+        )}
+        {row.setCount !== '-' && (
+          <span className="tabular-nums">セット: {row.setCount}</span>
+        )}
+        {row.cycle !== '-' && (
+          <span>サイクル: {row.cycle}</span>
         )}
       </div>
 
-      <div className="mt-2 text-gray-700 text-sm leading-relaxed">{row.description}</div>
+      {/* (3) 内容（メイン） */}
+      <div className="mt-2 text-gray-700 text-sm leading-relaxed">
+        {contentTruncated ? (
+          <>
+            {row.content.substring(0, 40)}...
+            <span className="text-blue-600 text-xs ml-1">タップで全文表示</span>
+          </>
+        ) : (
+          row.content
+        )}
+      </div>
 
-      {row.power !== '-' && (
-        <div className="mt-3 pt-3 border-t border-gray-100">
-          <span className="text-xs text-gray-500">強度: </span>
-          <span className="text-xs font-semibold text-gray-700">{row.power}</span>
-        </div>
-      )}
+      {/* (4) 強度 と Total（最下段に横並び） */}
+      <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+        {row.power !== '-' && (
+          <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700">
+            {row.power}
+          </span>
+        )}
+        {row.total !== '-' && (
+          <span className="text-xs text-gray-600 font-semibold tabular-nums">
+            Total: {row.total}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -474,28 +544,44 @@ export default function Home() {
                 {/* ✅ 表示モードで切替 */}
                 {viewMode === 'table' ? (
                   <div className="overflow-x-auto">
-                    <table className="min-w-full text-left border-collapse">
+                    <table className="min-w-full text-left border-collapse text-[11px]">
                       <thead>
-                        <tr className="text-gray-600 border-b">
-                          <th className="py-3 pr-4 font-semibold">スタイル</th>
-                          <th className="py-3 pr-4 font-semibold">距離</th>
-                          <th className="py-3 pr-4 font-semibold">×</th>
-                          <th className="py-3 pr-4 font-semibold">サイクル</th>
-                          <th className="py-3 pr-4 font-semibold">間隔</th>
-                          <th className="py-3 pr-4 font-semibold">説明</th>
-                          <th className="py-3 font-semibold">力</th>
+                        <tr className="text-gray-600 border-b bg-gray-50">
+                          <th className="py-2 px-2 font-semibold text-left whitespace-nowrap">タイプ</th>
+                          <th className="py-2 px-2 font-semibold text-right whitespace-nowrap tabular-nums w-16">距離</th>
+                          <th className="py-2 px-2 font-semibold text-right whitespace-nowrap tabular-nums w-12">本数</th>
+                          <th className="py-2 px-2 font-semibold text-right whitespace-nowrap tabular-nums w-16">セット数</th>
+                          <th className="py-2 px-2 font-semibold text-center whitespace-nowrap w-20">サイクル</th>
+                          <th className="py-2 px-2 font-semibold text-left min-w-[200px]">内容</th>
+                          <th className="py-2 px-2 font-semibold text-center whitespace-nowrap w-16">強度</th>
+                          <th className="py-2 px-2 font-semibold text-right whitespace-nowrap tabular-nums w-20">Total</th>
                         </tr>
                       </thead>
                       <tbody>
                         {tableRows.map((r, idx) => (
-                          <tr key={idx} className="border-b last:border-b-0">
-                            <td className="py-4 pr-4 font-semibold text-gray-900">{r.style}</td>
-                            <td className="py-4 pr-4 text-gray-700">{r.distance}</td>
-                            <td className="py-4 pr-4 text-gray-400">×</td>
-                            <td className="py-4 pr-4 text-gray-700">{r.cycle}</td>
-                            <td className="py-4 pr-4 text-gray-700">{r.interval}</td>
-                            <td className="py-4 pr-4 text-gray-700">{r.description}</td>
-                            <td className="py-4 text-gray-900">{r.power}</td>
+                          <tr key={idx} className="border-b last:border-b-0 hover:bg-gray-50">
+                            <td className="py-2 px-2 font-semibold text-gray-900 whitespace-nowrap">{r.type}</td>
+                            <td className="py-2 px-2 text-gray-700 text-right tabular-nums whitespace-nowrap">
+                              {r.distance !== '-' ? `${r.distance}m` : '-'}
+                            </td>
+                            <td className="py-2 px-2 text-gray-700 text-right tabular-nums whitespace-nowrap">{r.sets}</td>
+                            <td className="py-2 px-2 text-gray-700 text-right tabular-nums whitespace-nowrap">{r.setCount}</td>
+                            <td className="py-2 px-2 text-gray-700 text-center whitespace-nowrap">{r.cycle}</td>
+                            <td className="py-2 px-2 text-gray-700">
+                              <div className="truncate max-w-[200px]" title={r.content}>
+                                {r.content}
+                              </div>
+                            </td>
+                            <td className="py-2 px-2 text-gray-900 text-center whitespace-nowrap">
+                              {r.power !== '-' && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100">
+                                  {r.power}
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-2 px-2 text-gray-700 text-right tabular-nums whitespace-nowrap font-semibold">
+                              {r.total}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
