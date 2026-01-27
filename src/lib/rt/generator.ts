@@ -501,10 +501,10 @@ function calculateTotal(
 // ============================================================
 
 function generatePurposeText(
-  period: string,
+  _period: string,
   purposeType: PurposeType,
-  distanceType: DistanceType,
-  stroke: string
+  _distanceType: DistanceType,
+  _stroke: string
 ): string {
   const purposeTexts: Record<PurposeType, string> = {
     対乳酸: 'フォーム維持を最優先にした対乳酸トレーニング',
