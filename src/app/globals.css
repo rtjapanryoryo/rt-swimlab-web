@@ -19,3 +19,75 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+@media print {
+  /* 印刷時に消す */
+  .no-print {
+    display: none !important;
+  }
+
+  /* 印刷時に見せる */
+  .print-only {
+    display: block !important;
+  }
+
+  /* ページ余白 */
+  @page {
+    margin: 14mm;
+  }
+
+  /* 画面背景を消す */
+  body {
+    background: #fff !important;
+  }
+
+  /* 影とかを消して紙っぽく */
+  .print-card {
+    box-shadow: none !important;
+    border: 1px solid #e5e7eb !important;
+  }
+
+  /* テーブルの見た目安定 */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+  th, td {
+    border-bottom: 1px solid #e5e7eb !important;
+  }
+
+  /* 練習メニュー表の印刷用スタイル */
+  .menu-sheet {
+    padding: 20px !important;
+    background: white !important;
+  }
+
+  .menu-sheet table {
+    font-size: 10px !important;
+  }
+
+  .menu-sheet th,
+  .menu-sheet td {
+    padding: 6px 4px !important;
+    border: 1px solid #e5e7eb !important;
+  }
+
+  .menu-sheet .print-only {
+    display: block !important;
+  }
+}
+html, body {
+  height: 100%;
+  background: #f5f6f8;
+}
+
+body {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ちょいアプリ感（全体のカード） */
+.app-card {
+  border-radius: 16px;
+  background: white;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  border: 1px solid rgba(0,0,0,0.06);
+}

@@ -17,7 +17,7 @@ export interface TrainingInput {
   purpose: string; // 目的（対乳酸、心肺、技術、スピードなど）
   condition: string; // 通常、疲労、調整
   practiceTime: string; // 60, 90, 120
-  circleMethod: string; // 1, 2, 3
+  volumeUp: string; // ドリル、キック、プル、プレメイン、メイン
 }
 
 export interface TrainingResult {
@@ -357,7 +357,22 @@ function generateKick(
   if (purposeType === '対乳酸') intensity = 'EN2';
   if (purposeType === '心肺') intensity = 'EN1';
 
-  return `キック ${sets}×${distance}m（10秒心拍${intensity === 'EN1' ? '26-27' : '28前後'}）`;
+  // ボードの有無を決定（小学生・中学生はボード、高校生以上は交互またはノーボード）
+  // 目的が技術・フォームの場合はボード、対乳酸・スピードの場合はノーボード
+  let boardInfo = '（ボード）';
+  if (purposeType === '対乳酸' || purposeType === 'スピード') {
+    boardInfo = '（ノーボード）';
+  } else if (ageGroup === '高校生' || ageGroup === '大学生以上') {
+    // 高校生以上は交互に（偶数セットはボード、奇数セットはノーボード）
+    // ここでは簡易的に、セット数が4以上の場合は交互を想定
+    if (sets >= 6) {
+      boardInfo = '（ボード・ノーボード交互）';
+    } else {
+      boardInfo = '（ボード）';
+    }
+  }
+
+  return `キック ${sets}×${distance}m${boardInfo}（10秒心拍${intensity === 'EN1' ? '26-27' : '28前後'}）`;
 }
 
 function generatePull(
@@ -598,7 +613,8 @@ export function generateTrainingMenu(input: TrainingInput): TrainingResult {
   const pull = generatePull(input.stroke, ageGroup, input.practiceTime);
   const preMain = generatePreMain(distanceType, purposeType, ageGroup);
   const rest = generateRest(input.condition, purposeType);
-  const main = generateMain(distanceType, purposeType, ageGroup, input.circleMethod, mainRule);
+  // volumeUpは将来的に使用予定（現在は互換性のため空文字列を使用）
+  const main = generateMain(distanceType, purposeType, ageGroup, '', mainRule);
   const down = generateDown(input.practiceTime);
 
   // 合計距離計算

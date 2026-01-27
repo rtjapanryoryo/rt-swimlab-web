@@ -1,30 +1,30 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export type ViewMode = 'table' | 'card';
 
 const STORAGE_KEY = 'rt-view-mode';
 
-export function useViewMode() {
-  const [viewMode, setViewModeState] = useState<ViewMode>('table');
+function getInitialViewMode(): ViewMode {
+  // SSR対策（念のため）
+  if (typeof window === 'undefined') return 'table';
 
-  useEffect(() => {
-    // 初回：スマホはcard、PCはtable
-    const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches;
-    const stored = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
-    
-    if (stored === 'table' || stored === 'card') {
-      setViewModeState(stored);
-    } else {
-      setViewModeState(isMobile ? 'card' : 'table');
-    }
-  }, []);
+  // localStorage 優先
+  const stored = window.localStorage.getItem(STORAGE_KEY);
+  if (stored === 'table' || stored === 'card') return stored as ViewMode;
+
+  // 初回：デフォルトはtable（練習メニュー表）
+  return 'table';
+}
+
+export function useViewMode() {
+  const [viewMode, setViewModeState] = useState<ViewMode>(getInitialViewMode);
 
   const setViewMode = (mode: ViewMode) => {
     setViewModeState(mode);
     if (typeof window !== 'undefined') {
-      localStorage.setItem(STORAGE_KEY, mode);
+      window.localStorage.setItem(STORAGE_KEY, mode);
     }
   };
 
