@@ -2,42 +2,13 @@
 
 import { useEffect, useState } from 'react';
 
-export function SplashScreen({
-  visible,
-  durationMs = 3200, // ←全体の長さ
-}: {
-  visible: boolean;
-  durationMs?: number;
-}) {
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [imageError, setImageError] = useState(false);
+const FADE_IN_MS = 600;
+const FADE_OUT_MS = 800;
 
-  useEffect(() => {
-    if (!visible) {
-      setImageLoaded(false);
-      setImageError(false);
-      return;
-    }
-
-    // 画像の読み込みを確認
-    const img = new Image();
-    img.src = '/RT-japan_Logo.svg';
-    img.onload = () => {
-      setImageLoaded(true);
-      setImageError(false);
-    };
-    img.onerror = () => {
-      setImageLoaded(false);
-      setImageError(true);
-    };
-  }, [visible]);
-
-  if (!visible) return null;
-
-  // アニメ時間（軽量：opacity + transform だけ）
-  const fadeInMs = 600;
-  const fadeOutMs = 800;
-  const holdMs = Math.max(durationMs - fadeInMs - fadeOutMs, 0);
+function SplashContent({ durationMs }: { durationMs: number }) {
+  const [imageLoaded, setImageLoaded] = useState(() => false);
+  const [imageError, setImageError] = useState(() => false);
+  const holdMs = Math.max(durationMs - FADE_IN_MS - FADE_OUT_MS, 0);
 
   return (
     <div
@@ -45,12 +16,11 @@ export function SplashScreen({
       style={{
         willChange: 'opacity, transform',
         animation: `
-          splashFadeIn ${fadeInMs}ms cubic-bezier(.2,.8,.2,1) 0ms forwards,
-          splashFadeOut ${fadeOutMs}ms cubic-bezier(.2,.8,.2,1) ${fadeInMs + holdMs}ms forwards
+          splashFadeIn ${FADE_IN_MS}ms cubic-bezier(.2,.8,.2,1) 0ms forwards,
+          splashFadeOut ${FADE_OUT_MS}ms cubic-bezier(.2,.8,.2,1) ${FADE_IN_MS + holdMs}ms forwards
         `,
       }}
     >
-      {/* ロゴ画像 */}
       {!imageError && (
         <img
           src="/RT-japan_Logo.svg"
@@ -65,60 +35,54 @@ export function SplashScreen({
             transition: 'opacity 200ms ease',
             animation: imageLoaded
               ? `
-                logoIn ${fadeInMs}ms cubic-bezier(.2,.8,.2,1) 0ms forwards,
-                logoOut ${fadeOutMs}ms cubic-bezier(.2,.8,.2,1) ${fadeInMs + holdMs}ms forwards
+                logoIn ${FADE_IN_MS}ms cubic-bezier(.2,.8,.2,1) 0ms forwards,
+                logoOut ${FADE_OUT_MS}ms cubic-bezier(.2,.8,.2,1) ${FADE_IN_MS + holdMs}ms forwards
               `
               : 'none',
           }}
-          onLoad={() => setImageLoaded(true)}
+          onLoad={() => {
+            setImageLoaded(true);
+            setImageError(false);
+          }}
           onError={() => {
             setImageError(true);
             setImageLoaded(false);
           }}
         />
       )}
-
-      {/* フォールバック（画像読み込みエラー時） */}
       {imageError && (
         <div className="text-2xl font-bold text-gray-900">RT-japan</div>
       )}
 
       <style jsx>{`
         @keyframes splashFadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
-
         @keyframes splashFadeOut {
-          to {
-            opacity: 0;
-          }
+          to { opacity: 0; }
         }
-
         @keyframes logoIn {
-          from {
-            opacity: 0;
-            transform: translateY(8px) scale(0.98);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0px) scale(1);
-          }
+          from { opacity: 0; transform: translateY(8px) scale(0.98); }
+          to { opacity: 1; transform: translateY(0px) scale(1); }
         }
-
         @keyframes logoOut {
-          to {
-            opacity: 0;
-            transform: translateY(-6px) scale(0.99);
-          }
+          to { opacity: 0; transform: translateY(-6px) scale(0.99); }
         }
       `}</style>
     </div>
   );
+}
+
+export function SplashScreen({
+  visible,
+  durationMs = 3200,
+}: {
+  visible: boolean;
+  durationMs?: number;
+}) {
+  if (!visible) return null;
+  return <SplashContent durationMs={durationMs} />;
 }
 
 export function SplashScreenProvider({
@@ -130,17 +94,19 @@ export function SplashScreenProvider({
   storageKey?: string;
   durationMs?: number;
 }) {
-  const [show, setShow] = useState(true);
+  const [show, setShow] = useState(() => true);
 
   useEffect(() => {
     try {
       const already = window.sessionStorage.getItem(storageKey);
       if (already === '1') {
-        setShow(false);
-        return;
+        const id = window.setTimeout(() => setShow(false), 0);
+        return () => window.clearTimeout(id);
       }
       window.sessionStorage.setItem(storageKey, '1');
-    } catch {}
+    } catch {
+      /* ignore */
+    }
 
     const t = window.setTimeout(() => setShow(false), durationMs);
     return () => window.clearTimeout(t);

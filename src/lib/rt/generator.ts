@@ -506,10 +506,6 @@ function generatePurposeText(
   distanceType: DistanceType,
   stroke: string
 ): string {
-  const periodName = PERIOD_NAMES[period] || '練習';
-  const strokeName = STROKE_NAMES[stroke] || stroke;
-  const distanceName = distanceType === 'S' ? 'スプリント' : distanceType === 'M' ? 'ミドル' : 'ディスタンス';
-
   const purposeTexts: Record<PurposeType, string> = {
     対乳酸: 'フォーム維持を最優先にした対乳酸トレーニング',
     心肺: '心肺機能向上と持久力強化',
@@ -525,7 +521,7 @@ function generatePurposeText(
 
 function generateIntention(
   purposeType: PurposeType,
-  mainRule: MainSetRule
+  _mainRule: MainSetRule
 ): string {
   const intentions: Record<PurposeType, string> = {
     対乳酸: 'フォームを崩さずに乳酸耐性を向上させる',
@@ -573,7 +569,7 @@ function generateCaution(
 
 function generateExpectedEffect(
   purposeType: PurposeType,
-  distanceType: DistanceType
+  _distanceType: DistanceType
 ): string {
   const effects: Record<PurposeType, string> = {
     対乳酸: 'レースペースでの持続力向上',

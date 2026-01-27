@@ -4,14 +4,15 @@ import { useMemo } from 'react';
 import type { TrainingInput, TrainingResult } from '@/lib/rt/generator';
 
 type MenuSheetRow = {
-  section: string; // セクション（W-up/ドリル/キック/プル/プレメイン/休憩/メイン/Down）
-  distance: string; // 距離(m)
-  count: string; // 本数
-  sets: string; // セット
-  intensity: string; // 強度（数値＋感覚）
-  style: string; // 種目/スタイル（FR/Ba/Br/Fly/IM など）
-  content: string; // 内容（短く、器具情報を含む）
-  total: string; // Total（距離×本数）
+  section: string;
+  distance: string;
+  count: string;
+  sets: string;
+  intensity: string;
+  style: string;
+  content: string;
+  total: string;
+  cycle: string;
 };
 
 function normalizeDash(v?: string | null) {
@@ -31,6 +32,7 @@ export function parseToSheetRow(section: string, raw: string): MenuSheetRow {
       style: '-',
       content: '-',
       total: '-',
+      cycle: '-',
     };
   }
 
@@ -42,7 +44,6 @@ export function parseToSheetRow(section: string, raw: string): MenuSheetRow {
   let style = '-';
   let equipment = '-';
   let content = text;
-  let note = '-';
   let total = '-';
 
   // 強度を抽出（A1, EN1, EN2, EN3, AN1, AN2など）→ 凡例番号（①〜⑦）にマッピング
@@ -200,6 +201,7 @@ export function parseToSheetRow(section: string, raw: string): MenuSheetRow {
     style: normalizeDash(style),
     content: normalizeDash(content),
     total: normalizeDash(total),
+    cycle: normalizeDash(cycle),
   };
 }
 

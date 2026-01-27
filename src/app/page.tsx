@@ -1,9 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { generateTrainingMenu, type TrainingInput, type TrainingResult } from '@/lib/rt/generator';
 import { useViewMode } from './viewMode';
-import { MenuSheet, parseToSheetRow } from '@/components/MenuSheet';
+import { MenuSheet } from '@/components/MenuSheet';
 
 export default function Home() {
   const { viewMode, setViewMode } = useViewMode();
@@ -40,20 +40,6 @@ export default function Home() {
     setResult(r);
     setIsGenerating(false);
   };
-
-  const tableRows = useMemo(() => {
-    if (!result) return [];
-    const rows = [];
-    rows.push(parseToSheetRow('W-up', result.warmUp));
-    rows.push(parseToSheetRow('ドリル', result.drill));
-    rows.push(parseToSheetRow('キック', result.kick));
-    rows.push(parseToSheetRow('プル', result.pull));
-    rows.push(parseToSheetRow('プレメイン', result.preMain));
-    if (result.rest) rows.push(parseToSheetRow('休憩', result.rest));
-    rows.push(parseToSheetRow('メイン', result.main));
-    rows.push(parseToSheetRow('Down', result.down));
-    return rows;
-  }, [result]);
 
   // ✅ PDF生成：対象エリアだけキャプチャしてPDF化
   const exportPDFBlob = async (): Promise<Blob> => {
@@ -124,7 +110,11 @@ export default function Home() {
         type: 'application/pdf',
       });
 
-      const nav = navigator as any;
+      type NavWithShare = {
+        share?: (data: ShareData) => Promise<void>;
+        canShare?: (data?: ShareData) => boolean;
+      };
+      const nav = navigator as unknown as NavWithShare;
       if (nav.share && nav.canShare?.({ files: [file] })) {
         await nav.share({
           title: 'RT swim lab 練習メニュー',
