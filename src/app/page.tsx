@@ -213,20 +213,21 @@ export default function Home() {
               </select>
             </div>
 
-            {/* 4. 年齢 */}
+            {/* 4. 年齢（スクロール選択で入力エラーを防止） */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">4. 年齢</label>
-              <input
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
+              <select
                 value={input.age}
-                onChange={(e) =>
-                  handleInputChange('age', e.target.value.replace(/[^0-9]/g, ''))
-                }
-                placeholder="例: 20"
+                onChange={(e) => handleInputChange('age', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              >
+                <option value="">選択してください</option>
+                {Array.from({ length: 94 }, (_, i) => 6 + i).map((n) => (
+                  <option key={n} value={String(n)}>
+                    {n}歳
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* 5. 距離タイプ */}
