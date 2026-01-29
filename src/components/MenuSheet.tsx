@@ -274,7 +274,9 @@ export function MenuSheet({ input, result, isCardView = false }: MenuSheetProps)
           <div className="space-y-2">
             <div className="flex">
               <span className="font-semibold text-gray-700 w-24">日付:</span>
-              <span className="text-gray-900">{dateStr}（{dayOfWeek}）</span>
+              <span className="text-gray-900" suppressHydrationWarning>
+                {dateStr}（{dayOfWeek}）
+              </span>
             </div>
             <div className="flex">
               <span className="font-semibold text-gray-700 w-24">コーチ:</span>

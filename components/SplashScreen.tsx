@@ -94,33 +94,40 @@ export function SplashScreenProvider({
   storageKey?: string;
   durationMs?: number;
 }) {
-  // 初期状態を計算: sessionStorageをチェックして既に表示済みならfalse
-  const [show, setShow] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    try {
-      return window.sessionStorage.getItem(storageKey) !== '1';
-    } catch {
-      return true;
-    }
-  });
+  // サーバー・クライアントで同じ初期値にし、ハイドレーション不一致を防ぐ
+  const [show, setShow] = useState(true);
 
   useEffect(() => {
-    // 既に表示済みの場合は何もしない（初期状態でfalseになっている）
-    if (!show) return;
+    let cancelled = false;
+    try {
+      const alreadyShown = window.sessionStorage.getItem(storageKey) === '1';
+      if (alreadyShown) {
+        const t = window.setTimeout(() => {
+          if (!cancelled) setShow(false);
+        }, 0);
+        return () => {
+          cancelled = true;
+          window.clearTimeout(t);
+        };
+      }
+    } catch {
+      /* ignore */
+    }
 
-    // sessionStorageに記録
     try {
       window.sessionStorage.setItem(storageKey, '1');
     } catch {
       /* ignore */
     }
 
-    // タイマーで非表示にする（コールバック内でのsetStateは問題なし）
     const t = window.setTimeout(() => {
-      setShow(false);
+      if (!cancelled) setShow(false);
     }, durationMs);
-    return () => window.clearTimeout(t);
-  }, [show, storageKey, durationMs]);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t);
+    };
+  }, [storageKey, durationMs]);
 
   return (
     <>

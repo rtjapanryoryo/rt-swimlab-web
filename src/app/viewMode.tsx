@@ -1,30 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export type ViewMode = 'table' | 'card';
 
 const STORAGE_KEY = 'rt-view-mode';
 
-function getInitialViewMode(): ViewMode {
-  // SSR対策（念のため）
-  if (typeof window === 'undefined') return 'table';
-
-  // localStorage 優先
-  const stored = window.localStorage.getItem(STORAGE_KEY);
-  if (stored === 'table' || stored === 'card') return stored as ViewMode;
-
-  // 初回：デフォルトはtable（練習メニュー表）
-  return 'table';
-}
-
 export function useViewMode() {
-  const [viewMode, setViewModeState] = useState<ViewMode>(getInitialViewMode);
+  // サーバー・クライアントで同じ初期値にし、ハイドレーション不一致を防ぐ
+  const [viewMode, setViewModeState] = useState<ViewMode>('table');
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(STORAGE_KEY);
+      if (stored === 'table' || stored === 'card') {
+        setViewModeState(stored as ViewMode);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   const setViewMode = (mode: ViewMode) => {
     setViewModeState(mode);
-    if (typeof window !== 'undefined') {
+    try {
       window.localStorage.setItem(STORAGE_KEY, mode);
+    } catch {
+      /* ignore */
     }
   };
 
