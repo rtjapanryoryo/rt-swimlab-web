@@ -41,49 +41,51 @@ export default function Home() {
     setIsGenerating(false);
   };
 
-  // ✅ PDF生成：対象エリアだけキャプチャしてPDF化
+  // PDF生成：menu-capture をキャプチャして PDF 化
   const exportPDFBlob = async (): Promise<Blob> => {
     const el = document.getElementById('menu-capture');
     if (!el) throw new Error('PDF化する要素が見つかりません');
 
     setIsExporting(true);
+    try {
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf'),
+      ]);
 
-    const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
-      import('html2canvas'),
-      import('jspdf'),
-    ]);
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: el.scrollWidth,
+        windowHeight: el.scrollHeight,
+      });
 
-    const canvas = await html2canvas(el, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: '#ffffff',
-    });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pageWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-    const imgData = canvas.toDataURL('image/png');
-
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-
-    const imgWidth = pageWidth;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-    let y = 0;
-    let remaining = imgHeight;
-
-    pdf.addImage(imgData, 'PNG', 0, y, imgWidth, imgHeight);
-    remaining -= pageHeight;
-
-    while (remaining > 0) {
-      pdf.addPage();
-      y = -(imgHeight - remaining);
-      pdf.addImage(imgData, 'PNG', 0, y, imgWidth, imgHeight);
+      let remaining = imgHeight;
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
       remaining -= pageHeight;
-    }
 
-    const blob = pdf.output('blob') as Blob;
-    setIsExporting(false);
-    return blob;
+      while (remaining > 0) {
+        pdf.addPage();
+        const y = -(imgHeight - remaining);
+        pdf.addImage(imgData, 'PNG', 0, y, imgWidth, imgHeight);
+        remaining -= pageHeight;
+      }
+
+      return pdf.output('blob') as Blob;
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleDownloadPDF = async () => {
@@ -93,19 +95,20 @@ export default function Home() {
       const a = document.createElement('a');
       a.href = url;
       a.download = `RT-menu_${new Date().toISOString().slice(0, 10)}.pdf`;
+      a.style.display = 'none';
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      if (a.parentNode) a.parentNode.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 100);
     } catch (e) {
       console.error(e);
       alert('PDF出力に失敗しました（コンソールを確認してください）');
-      setIsExporting(false);
     }
   };
 
   const handleSharePDF = async () => {
     try {
       const blob = await exportPDFBlob();
-
       const file = new File([blob], `RT-menu_${new Date().toISOString().slice(0, 10)}.pdf`, {
         type: 'application/pdf',
       });
@@ -125,9 +128,13 @@ export default function Home() {
         await handleDownloadPDF();
       }
     } catch (e) {
+      if ((e as Error)?.name === 'AbortError') return; // ユーザーが共有をキャンセル
       console.error(e);
-      alert('共有に失敗しました（コンソールを確認してください）');
-      setIsExporting(false);
+      try {
+        await handleDownloadPDF();
+      } catch {
+        alert('共有・PDF出力に失敗しました（コンソールを確認してください）');
+      }
     }
   };
 

@@ -290,26 +290,12 @@ function formatCircle(circleMethod: string, rest: string): string {
 // 各ブロック生成ロジック
 // ============================================================
 
-function generateWarmUp(
-  stroke: string,
-  ageGroup: AgeGroup,
-  practiceTime: string
-): string {
+function generateWarmUp(ageGroup: AgeGroup, practiceTime: string): string {
   const time = parseInt(practiceTime, 10);
   let distance = 200;
-
   if (time >= 120) distance = 300;
   else if (time >= 90) distance = 250;
-
-  if (stroke === 'Br') {
-    return `${STROKE_NAMES[stroke] || stroke} ${distance}m（A1）`;
-  }
-
-  if (ageGroup === '小学生') {
-    return `FR ${distance}m + IM 50m（A1）`;
-  }
-
-  return `FR ${distance}m + IM 100m（A1）`;
+  return `${distance}m（A1）`;
 }
 
 function generateDrill(
@@ -372,7 +358,7 @@ function generateKick(
     }
   }
 
-  return `キック ${sets}×${distance}m${boardInfo}（10秒心拍${intensity === 'EN1' ? '26-27' : '28前後'}）`;
+  return `キック ${sets}×${distance}m${boardInfo}（${intensity}）`;
 }
 
 function generatePull(
@@ -603,7 +589,7 @@ export function generateTrainingMenu(input: TrainingInput): TrainingResult {
   };
 
   // 各ブロック生成
-  const warmUp = generateWarmUp(input.stroke, ageGroup, input.practiceTime);
+  const warmUp = generateWarmUp(ageGroup, input.practiceTime);
   const drill = generateDrill(input.stroke, ageGroup);
   const kick = generateKick(ageGroup, input.practiceTime, purposeType);
   const pull = generatePull(input.stroke, ageGroup, input.practiceTime);

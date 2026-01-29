@@ -20,8 +20,19 @@ function normalizeDash(v?: string | null) {
   return s.length ? s : '-';
 }
 
-export function parseToSheetRow(section: string, raw: string): MenuSheetRow {
+const STROKE_ALLOWED = new Set(['Cho', 'IM', 'Fr', 'Br', 'Ba', 'Fly']);
+
+function styleFromSection(section: string, stroke?: string): string {
+  if (section === 'Rest') return '-';
+  if (section === 'W-up' || section === 'Down') return 'Cho';
+  if (section === 'Pre-Main') return '-';
+  if ((section === 'Drill' || section === 'Kick' || section === 'Pull' || section === 'Main') && stroke && STROKE_ALLOWED.has(stroke)) return stroke;
+  return '-';
+}
+
+export function parseToSheetRow(section: string, raw: string, stroke?: string): MenuSheetRow {
   const text = (raw ?? '').trim();
+  const defaultStyle = styleFromSection(section, stroke);
   if (!text) {
     return {
       section,
@@ -29,7 +40,7 @@ export function parseToSheetRow(section: string, raw: string): MenuSheetRow {
       count: '-',
       sets: '1',
       intensity: '-',
-      style: '-',
+      style: defaultStyle,
       content: '-',
       total: '-',
       cycle: '-',
@@ -41,70 +52,43 @@ export function parseToSheetRow(section: string, raw: string): MenuSheetRow {
   let sets = '1';
   let cycle = '-';
   let intensity = '-';
-  let style = '-';
+  let style = defaultStyle;
   let equipment = '-';
   let content = text;
   let total = '-';
 
-  // 強度を抽出（A1, EN1, EN2, EN3, AN1, AN2など）→ 凡例番号（①〜⑦）にマッピング
-  // 強度コードのパターンを明示的に指定（大文字小文字を区別しない）
-  const intensityPatterns = [
-    /\(AN1\)/i,
-    /\(AN2\)/i,
-    /\(AN3\)/i,
-    /\(AN\)/i,
-    /\(EN1\)/i,
-    /\(EN2\)/i,
-    /\(EN3\)/i,
-    /\(EN4\)/i,
-    /\(A1\)/i,
-    /\(A2\)/i,
-  ];
-  
-  // 強度コードから凡例番号へのマッピング
+  // 強度を抽出（A1, EN1, EN2…）→ 凡例番号（①〜⑦）にマッピング
+  // 半角・全角どちらの括弧にも対応
+  const intensityCodes = ['AN1', 'AN2', 'AN3', 'AN', 'EN1', 'EN2', 'EN3', 'EN4', 'A1', 'A2'];
   const intensityToLegendMap: Record<string, string> = {
-    A1: '①', // HR~120 (Easy, Relax formなど)
-    A2: '①', // HR~120 (Easy, Relax formなど)
-    EN1: '②', // HR120~140 (EN1)
-    EN2: '③', // HR140~160 (EN2)
-    EN3: '④', // HR160~180 (EN3)
-    EN4: '④', // HR160~180 (EN3相当)
-    AN1: '⑤', // HR Max (AN1 耐乳酸)
-    AN2: '⑥', // HR Max (AN2 乳酸生成)
-    AN3: '⑦', // パワーやスピードなど
-    AN: '⑦', // パワーやスピードなど
+    A1: '①',
+    A2: '①',
+    EN1: '②',
+    EN2: '③',
+    EN3: '④',
+    EN4: '④',
+    AN1: '⑤',
+    AN2: '⑥',
+    AN3: '⑦',
+    AN: '⑦',
   };
-  
-  // 各パターンを順にチェック
-  for (const pattern of intensityPatterns) {
+  for (const code of intensityCodes) {
+    const pattern = new RegExp(`[(\（]${code}[)\）]`, 'i');
     const match = text.match(pattern);
     if (match) {
-      // 括弧を除いた強度コードを抽出
-      const code = match[0].replace(/[()]/g, '').toUpperCase();
-      if (intensityToLegendMap[code]) {
-        intensity = intensityToLegendMap[code];
+      const c = match[0].replace(/[()（）]/g, '').toUpperCase();
+      if (intensityToLegendMap[c]) {
+        intensity = intensityToLegendMap[c];
         break;
       }
     }
   }
-
-  // 種目/スタイルを抽出
-  const styleMatch = text.match(/\b(FR|Fr|Ba|Br|Fly|IM|S|K|P)\b/);
-  if (styleMatch?.[1]) {
-    const styleCode = styleMatch[1].toUpperCase();
-    const styleMap: Record<string, string> = {
-      FR: 'FR',
-      Fr: 'FR',
-      Ba: 'Ba',
-      Br: 'Br',
-      Fly: 'Fly',
-      IM: 'IM',
-      S: 'Swim',
-      K: 'Kick',
-      P: 'Pull',
-    };
-    style = styleMap[styleCode] || styleCode;
+  // Rest 以外は強度を必ず ①〜⑦ に。未抽出時は ① をデフォルト
+  if (section !== 'Rest' && intensity === '-') {
+    intensity = '①';
   }
+
+  // 種目: Cho, IM, Fr, Br, Ba, Fly のいずれか。Rest は - のまま。
 
   // 距離を抽出（例: 200m, 50m）
   const distMatch = text.match(/(\d+)\s*m/);
@@ -121,6 +105,11 @@ export function parseToSheetRow(section: string, raw: string): MenuSheetRow {
   const setOnlyMatch = text.match(/(\d+)\s*[×x]/);
   if (setOnlyMatch && !countDistMatch) {
     sets = setOnlyMatch[1];
+  }
+
+  // W-up と Down で本数が - のときだけ 1 に（- を避ける）
+  if ((section === 'W-up' || section === 'Down') && count === '-') {
+    count = '1';
   }
 
   // サイクル（間隔）を抽出
@@ -149,27 +138,35 @@ export function parseToSheetRow(section: string, raw: string): MenuSheetRow {
     }
   }
 
-  // 内容を簡潔に（強度表記のみを削除、他の括弧内テキストは残す、器具情報を含める）
-  // 強度表記のみを削除（A1, A2, EN1, EN2, EN3, EN4, AN1, AN2, AN3, AN）
+  // 内容を簡潔に。強度コード削除＋セクション・距離・本数と重複する表記は除く
   const intensityCodesToRemove = ['AN1', 'AN2', 'AN3', 'AN', 'EN1', 'EN2', 'EN3', 'EN4', 'A1', 'A2'];
   content = text;
-  
-  // 各強度コードを削除（大文字小文字を区別しない）
   for (const code of intensityCodesToRemove) {
-    const pattern = new RegExp(`\\(${code}\\)`, 'gi');
+    const pattern = new RegExp(`[(\（]${code}[)\）]`, 'gi');
     content = content.replace(pattern, '');
   }
-  
-  // その他のクリーンアップ
+  // 本数×距離（例: 6×50m, 8×100m）
+  content = content.replace(/\d+\s*[×x]\s*\d+\s*m/gi, '');
+  // 単体の距離（例: 200m, 100m）
+  content = content.replace(/\b\d+\s*m\b/g, '');
+  // レスト・サイクル表記（秒）→ サイクル列に出るため重複削除
+  content = content.replace(/\s*\d+\s*秒\s*(レスト)?/g, '');
+  // セクションと重複するブロック名・ドリル名
+  content = content.replace(/^(キック|プル（専門）|プル|Pre-Main|Main|Easy Swim)\s*/i, '');
+  content = content.replace(/^(片手ドリル|キャッチアップ|フィストスイム|片手＋キック|キックのみ|プル＋キック|各泳法のドリル|IMドリル|ドリル)\s*/i, '');
   content = content
-    .replace(/\s*@\d+\s*秒\s*/g, '') // サイクル表記を削除
-    .replace(/\s*\d{2}:\d{2}\s*/g, '') // 時間表記を削除
-    .replace(/\s+/g, ' ') // 連続する空白を1つに
+    .replace(/\s*@\d+\s*秒\s*/g, '')
+    .replace(/\s*\d{2}:\d{2}\s*/g, '')
+    .replace(/\s+/g, ' ')
     .trim();
-  
-  // 器具情報を内容に追加
+  // 器具の括弧表記は後で追加するため、既存の重複を削除
+  content = content
+    .replace(/[(\（](ボード|ノーボード|ボード・ノーボード交互|No\s*board|ボードなし)[)\）]/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
   if (equipment !== '-') {
-    content = `${content}（${equipment}）`;
+    content = content ? `${content}（${equipment}）` : `（${equipment}）`;
   }
   
   if (content.length > 60) {
@@ -214,16 +211,17 @@ type MenuSheetProps = {
 export function MenuSheet({ input, result, isCardView = false }: MenuSheetProps) {
   const rows: MenuSheetRow[] = useMemo(() => {
     const sheetRows: MenuSheetRow[] = [];
-    sheetRows.push(parseToSheetRow('W-up', result.warmUp));
-    sheetRows.push(parseToSheetRow('ドリル', result.drill));
-    sheetRows.push(parseToSheetRow('キック', result.kick));
-    sheetRows.push(parseToSheetRow('プル', result.pull));
-    sheetRows.push(parseToSheetRow('プレメイン', result.preMain));
-    if (result.rest) sheetRows.push(parseToSheetRow('休憩', result.rest));
-    sheetRows.push(parseToSheetRow('メイン', result.main));
-    sheetRows.push(parseToSheetRow('Down', result.down));
+    const s = input.stroke && STROKE_ALLOWED.has(input.stroke) ? input.stroke : undefined;
+    sheetRows.push(parseToSheetRow('W-up', result.warmUp, s));
+    sheetRows.push(parseToSheetRow('Drill', result.drill, s));
+    sheetRows.push(parseToSheetRow('Kick', result.kick, s));
+    sheetRows.push(parseToSheetRow('Pull', result.pull, s));
+    sheetRows.push(parseToSheetRow('Pre-Main', result.preMain, s));
+    if (result.rest) sheetRows.push(parseToSheetRow('Rest', result.rest, s));
+    sheetRows.push(parseToSheetRow('Main', result.main, s));
+    sheetRows.push(parseToSheetRow('Down', result.down, s));
     return sheetRows;
-  }, [result]);
+  }, [result, input.stroke]);
 
   // 日付を取得
   const today = new Date();
@@ -362,12 +360,6 @@ export function MenuSheet({ input, result, isCardView = false }: MenuSheetProps)
                     <span className="text-gray-900 font-medium">{row.sets}</span>
                   </div>
                 )}
-                {row.intensity !== '-' && (
-                  <div>
-                    <span className="text-gray-500">強度: </span>
-                    <span className="text-gray-900 font-medium">{row.intensity}</span>
-                  </div>
-                )}
                 {row.style !== '-' && (
                   <div>
                     <span className="text-gray-500">種目: </span>
@@ -378,35 +370,41 @@ export function MenuSheet({ input, result, isCardView = false }: MenuSheetProps)
               {row.content !== '-' && (
                 <div className="mt-2 text-gray-700 text-sm leading-relaxed">{row.content}</div>
               )}
+              {row.intensity !== '-' && (
+                <div className="mt-1">
+                  <span className="text-gray-500">強度: </span>
+                  <span className="text-gray-900 font-medium">{row.intensity}</span>
+                </div>
+              )}
             </div>
           ))}
         </div>
       ) : (
         <div className="mb-6 overflow-x-auto">
-          <table className="min-w-full text-left border-collapse text-xs print:text-sm">
+          <table className="min-w-full border-collapse text-xs print:text-sm">
             <thead>
               <tr className="bg-gray-50 border-b-2 border-gray-300">
-                <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300">セクション</th>
-                <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300 text-right">距離(m)</th>
-                <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300 text-right">本数</th>
-                <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300 text-right">セット</th>
+                <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300 text-center">セクション</th>
+                <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300 text-center">距離(m)</th>
+                <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300 text-center">本数</th>
+                <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300 text-center">セット</th>
+                <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300 text-center">種目</th>
+                <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300 text-left">内容</th>
                 <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300 text-center">強度</th>
-                <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300 text-center">種目/スタイル</th>
-                <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300">内容</th>
-                <th className="py-2 px-2 font-semibold text-gray-900 text-right">Total</th>
+                <th className="py-2 px-2 font-semibold text-gray-900 text-center">Total</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((row, idx) => (
                 <tr key={idx} className="border-b border-gray-200 hover:bg-gray-50">
-                  <td className="py-2 px-2 font-medium text-gray-900 border-r border-gray-200">{row.section}</td>
-                  <td className="py-2 px-2 text-gray-700 text-right tabular-nums border-r border-gray-200">{row.distance !== '-' ? `${row.distance}m` : '-'}</td>
-                  <td className="py-2 px-2 text-gray-700 text-right tabular-nums border-r border-gray-200">{row.count}</td>
-                  <td className="py-2 px-2 text-gray-700 text-right tabular-nums border-r border-gray-200">{row.sets}</td>
-                  <td className="py-2 px-2 text-gray-700 text-center border-r border-gray-200">{row.intensity}</td>
+                  <td className="py-2 px-2 font-medium text-gray-900 text-center border-r border-gray-200">{row.section}</td>
+                  <td className="py-2 px-2 text-gray-700 text-center tabular-nums border-r border-gray-200">{row.distance !== '-' ? `${row.distance}m` : '-'}</td>
+                  <td className="py-2 px-2 text-gray-700 text-center tabular-nums border-r border-gray-200">{row.count}</td>
+                  <td className="py-2 px-2 text-gray-700 text-center tabular-nums border-r border-gray-200">{row.sets}</td>
                   <td className="py-2 px-2 text-gray-700 text-center border-r border-gray-200">{row.style}</td>
-                  <td className="py-2 px-2 text-gray-700 border-r border-gray-200">{row.content}</td>
-                  <td className="py-2 px-2 text-gray-700 text-right tabular-nums font-semibold">{row.total}</td>
+                  <td className="py-2 px-2 text-gray-700 text-left border-r border-gray-200">{row.content}</td>
+                  <td className="py-2 px-2 text-gray-700 text-center border-r border-gray-200">{row.intensity}</td>
+                  <td className="py-2 px-2 text-gray-700 text-center tabular-nums font-semibold">{row.total}</td>
                 </tr>
               ))}
             </tbody>
