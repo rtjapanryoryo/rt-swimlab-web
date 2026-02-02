@@ -13,9 +13,9 @@ export interface TrainingInput {
   gender: string; // 男, 女
   age: string; // 年齢（数値）
   distanceType: string; // S, M, D
-  level: string; // A, B, C, D, M1, M2, M3, M4
+  level: string; // 全国大会入賞〜代表クラス, 上級, 中級, 初級, マスターズ各
   purpose: string; // 目的（対乳酸、心肺、技術、スピードなど）
-  condition: string; // 通常、疲労、調整
+  condition: string; // 良好、軽疲労、筋疲労、疲労残り、月経期
   practiceTime: string; // 60, 90, 120
   volumeUp: string; // ドリル、キック、プル、プレメイン、メイン
 }
@@ -27,6 +27,7 @@ export interface TrainingResult {
   kick: string;
   pull: string;
   preMain: string;
+  dive: string;
   rest: string;
   main: string;
   down: string;
@@ -393,7 +394,8 @@ function generatePreMain(
 }
 
 function generateRest(condition: string, purposeType: PurposeType): string {
-  if (condition === '疲労') {
+  // 疲労系（軽疲労・筋疲労・疲労残り）は休憩を長めに
+  if (condition.includes('疲労')) {
     return '立ち休憩 5分';
   }
   if (purposeType === '対乳酸' || purposeType === 'スピード') {
@@ -419,6 +421,11 @@ function generateDown(practiceTime: string): string {
   return `Easy Swim ${distance}m（A1）`;
 }
 
+function generateDive(ageGroup: AgeGroup): string {
+  const sets = ageGroup === '小学生' ? 4 : ageGroup === '中学生' ? 6 : 8;
+  return `Dive ${sets}×15m（スタート練習）（A1）`;
+}
+
 // ============================================================
 // 合計距離計算
 // ============================================================
@@ -429,6 +436,7 @@ function calculateTotal(
   kick: string,
   pull: string,
   preMain: string,
+  dive: string,
   main: string,
   down: string
 ): number {
@@ -469,6 +477,11 @@ function calculateTotal(
   const preMainDistance = extractDistance(preMain);
   const preMainSets = extractSets(preMain);
   total += preMainDistance * preMainSets;
+
+  // Dive
+  const diveDistance = extractDistance(dive);
+  const diveSets = extractSets(dive);
+  total += diveDistance * diveSets;
 
   // Main
   const mainDistance = extractDistance(main);
@@ -541,7 +554,7 @@ function generateCaution(
   ageGroup: AgeGroup,
   purposeType: PurposeType
 ): string {
-  if (condition === '疲労') {
+  if (condition.includes('疲労')) {
     return '疲労が溜まっている場合は本数を減らすか、強度を下げる。';
   }
   if (ageGroup === '成人・マスターズ') {
@@ -594,13 +607,14 @@ export function generateTrainingMenu(input: TrainingInput): TrainingResult {
   const kick = generateKick(ageGroup, input.practiceTime, purposeType);
   const pull = generatePull(input.stroke, ageGroup, input.practiceTime);
   const preMain = generatePreMain(distanceType, purposeType, ageGroup);
+  const dive = generateDive(ageGroup);
   const rest = generateRest(input.condition, purposeType);
   // volumeUpは将来的に使用予定（現在は互換性のため空文字列を使用）
   const main = generateMain(distanceType, purposeType, ageGroup, '', mainRule);
   const down = generateDown(input.practiceTime);
 
   // 合計距離計算
-  const totalDistance = calculateTotal(warmUp, drill, kick, pull, preMain, main, down);
+  const totalDistance = calculateTotal(warmUp, drill, kick, pull, preMain, dive, main, down);
 
   // 目的・意図・ポイント生成
   const purpose = generatePurposeText(input.period, purposeType, distanceType, input.stroke);
@@ -616,6 +630,7 @@ export function generateTrainingMenu(input: TrainingInput): TrainingResult {
     kick,
     pull,
     preMain,
+    dive,
     rest,
     main,
     down,

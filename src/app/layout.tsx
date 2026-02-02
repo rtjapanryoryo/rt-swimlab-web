@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SplashScreenProvider } from "../../components/SplashScreen";
+import { SessionProvider } from "@/components/SessionProvider";
+import { UserNav } from "@/components/UserNav";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,7 +30,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <SplashScreenProvider>{children}</SplashScreenProvider>
+        <SessionProvider>
+          <div className="fixed top-0 right-0 z-50 p-4">
+            <UserNav />
+          </div>
+          <SplashScreenProvider>{children}</SplashScreenProvider>
+        </SessionProvider>
       </body>
     </html>
   );

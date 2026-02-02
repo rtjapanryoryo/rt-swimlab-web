@@ -22,23 +22,48 @@ export default function Home() {
   });
 
   const [result, setResult] = useState<TrainingResult | null>(null);
+  const [apiMenuText, setApiMenuText] = useState<string | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
   const handleInputChange = (field: keyof TrainingInput, value: string) => {
     setInput((prev) => ({ ...prev, [field]: value }));
+    setApiError(null);
   };
 
   const isFormValid = () => {
     return Object.values(input).every((v) => (v ?? '') !== '');
   };
 
-  const generateMenu = async () => {
+  const generateMenuWithAI = async () => {
     setIsGenerating(true);
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    setApiError(null);
+    setApiMenuText(null);
+    setResult(null);
+    try {
+      const res = await fetch('/api/generate-menu', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'メニュー生成に失敗しました');
+      }
+      setApiMenuText(data.menu ?? '');
+    } catch (e) {
+      setApiError(e instanceof Error ? e.message : 'メニュー生成に失敗しました');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const generateMenuLocal = () => {
+    setApiMenuText(null);
+    setApiError(null);
     const r = generateTrainingMenu(input);
     setResult(r);
-    setIsGenerating(false);
   };
 
   const exportPDFBlob = async (): Promise<Blob> => {
@@ -254,14 +279,14 @@ export default function Home() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">選択してください</option>
-                <option value="A">A</option>
-                <option value="B">B</option>
-                <option value="C">C</option>
-                <option value="D">D</option>
-                <option value="M1">M1（記録狙い）</option>
-                <option value="M2">M2（大会出場）</option>
-                <option value="M3">M3（泳力向上）</option>
-                <option value="M4">M4（健康志向）</option>
+                <option value="全国大会入賞〜代表クラス">全国大会入賞〜代表クラス</option>
+                <option value="上級（選手クラス〜全国大会）">上級（選手クラス〜全国大会）</option>
+                <option value="中級（育成クラス〜県大会）">中級（育成クラス〜県大会）</option>
+                <option value="初級（4泳法完泳）">初級（4泳法完泳）</option>
+                <option value="マスターズ（記録狙い）">マスターズ（記録狙い）</option>
+                <option value="マスターズ（大会出場）">マスターズ（大会出場）</option>
+                <option value="マスターズ（泳力向上）">マスターズ（泳力向上）</option>
+                <option value="マスターズ（健康志向）">マスターズ（健康志向）</option>
               </select>
             </div>
 
@@ -292,9 +317,11 @@ export default function Home() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">選択してください</option>
-                <option value="通常">通常</option>
-                <option value="疲労">疲労</option>
-                <option value="調整">調整</option>
+                <option value="良好">良好</option>
+                <option value="軽疲労">軽疲労</option>
+                <option value="筋疲労（筋トレ後）">筋疲労（筋トレ後）</option>
+                <option value="疲労残り（メイン翌日）">疲労残り（メイン翌日）</option>
+                <option value="月経期">月経期</option>
               </select>
             </div>
 
@@ -333,46 +360,60 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="mt-6">
+          <div className="mt-6 flex flex-wrap gap-3">
             <button
-              onClick={generateMenu}
+              onClick={generateMenuWithAI}
               disabled={!isFormValid() || isGenerating}
               className="w-full md:w-auto px-6 py-3 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              {isGenerating ? '生成中...' : 'メニュー生成'}
+              {isGenerating ? '生成中...' : 'AIでメニュー生成'}
+            </button>
+            <button
+              onClick={generateMenuLocal}
+              disabled={!isFormValid()}
+              className="w-full md:w-auto px-6 py-3 border border-gray-300 bg-white text-gray-700 font-semibold rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              ローカルで生成
             </button>
           </div>
         </div>
 
         {/* 出力 */}
-        {result && (
+        {apiError && (
+          <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 mb-4">
+            {apiError}
+          </div>
+        )}
+        {(apiMenuText || result) && (
           <div className="space-y-4">
-            {/* ✅ 表示切替 + PDF/共有 */}
+            {/* ツールバー: 表示切替（ローカル時のみ） + PDF/共有 */}
             <div className="bg-white rounded-lg shadow-md p-4 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm text-gray-600">表示:</span>
-
-                <button
-                  onClick={() => setViewMode('table')}
-                  className={`px-3 py-1 rounded-md border text-sm ${
-                    viewMode === 'table'
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-700 border-gray-300'
-                  }`}
-                >
-                  テーブル
-                </button>
-
-                <button
-                  onClick={() => setViewMode('card')}
-                  className={`px-3 py-1 rounded-md border text-sm ${
-                    viewMode === 'card'
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-700 border-gray-300'
-                  }`}
-                >
-                  カード
-                </button>
+                {result && (
+                  <>
+                    <span className="text-sm text-gray-600">表示:</span>
+                    <button
+                      onClick={() => setViewMode('table')}
+                      className={`px-3 py-1 rounded-md border text-sm ${
+                        viewMode === 'table'
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-gray-700 border-gray-300'
+                      }`}
+                    >
+                      テーブル
+                    </button>
+                    <button
+                      onClick={() => setViewMode('card')}
+                      className={`px-3 py-1 rounded-md border text-sm ${
+                        viewMode === 'card'
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-gray-700 border-gray-300'
+                      }`}
+                    >
+                      カード
+                    </button>
+                  </>
+                )}
               </div>
 
               <div className="flex gap-2">
@@ -393,19 +434,25 @@ export default function Home() {
               </div>
             </div>
 
-            {/* ✅ PDFキャプチャ対象（ここだけPDFになる） */}
+            {/* PDFキャプチャ対象 */}
             <div id="menu-capture" className="space-y-4">
-              {/* テーブル表示 */}
-              {viewMode === 'table' ? (
-                <div className="p-6">
-                  <MenuSheet input={input} result={result} />
+              {apiMenuText ? (
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <pre className="whitespace-pre-wrap font-sans text-sm text-gray-800 leading-relaxed">
+                    {apiMenuText}
+                  </pre>
                 </div>
-              ) : (
-                /* カード表示（同じ内容をカード形式で） */
-                <div className="p-6">
-                  <MenuSheet input={input} result={result} isCardView />
-                </div>
-              )}
+              ) : result ? (
+                viewMode === 'table' ? (
+                  <div className="p-6">
+                    <MenuSheet input={input} result={result} />
+                  </div>
+                ) : (
+                  <div className="p-6">
+                    <MenuSheet input={input} result={result} isCardView />
+                  </div>
+                )
+              ) : null}
             </div>
           </div>
         )}

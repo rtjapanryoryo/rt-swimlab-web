@@ -25,7 +25,7 @@ const STROKE_ALLOWED = new Set(['Cho', 'IM', 'Fr', 'Br', 'Ba', 'Fly']);
 function styleFromSection(section: string, stroke?: string): string {
   if (section === 'Rest') return '-';
   if (section === 'W-up' || section === 'Down') return 'Cho';
-  if (section === 'Pre-Main') return '-';
+  if (section === 'Pre-Main' || section === 'Dive') return '-';
   if ((section === 'Drill' || section === 'Kick' || section === 'Pull' || section === 'Main') && stroke && STROKE_ALLOWED.has(stroke)) return stroke;
   return '-';
 }
@@ -152,7 +152,7 @@ export function parseToSheetRow(section: string, raw: string, stroke?: string): 
   // レスト・サイクル表記（秒）→ サイクル列に出るため重複削除
   content = content.replace(/\s*\d+\s*秒\s*(レスト)?/g, '');
   // セクションと重複するブロック名・ドリル名
-  content = content.replace(/^(キック|プル（専門）|プル|Pre-Main|Main|Easy Swim)\s*/i, '');
+  content = content.replace(/^(キック|プル（専門）|プル|Pre-Main|Main|Easy Swim|Dive)\s*/i, '');
   content = content.replace(/^(片手ドリル|キャッチアップ|フィストスイム|片手＋キック|キックのみ|プル＋キック|各泳法のドリル|IMドリル|ドリル)\s*/i, '');
   content = content
     .replace(/\s*@\d+\s*秒\s*/g, '')
@@ -217,6 +217,7 @@ export function MenuSheet({ input, result, isCardView = false }: MenuSheetProps)
     sheetRows.push(parseToSheetRow('Kick', result.kick, s));
     sheetRows.push(parseToSheetRow('Pull', result.pull, s));
     sheetRows.push(parseToSheetRow('Pre-Main', result.preMain, s));
+    if (result.dive) sheetRows.push(parseToSheetRow('Dive', result.dive, s));
     if (result.rest) sheetRows.push(parseToSheetRow('Rest', result.rest, s));
     sheetRows.push(parseToSheetRow('Main', result.main, s));
     sheetRows.push(parseToSheetRow('Down', result.down, s));
