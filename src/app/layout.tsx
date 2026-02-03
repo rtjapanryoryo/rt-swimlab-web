@@ -34,7 +34,9 @@ export default function RootLayout({
           <div className="fixed top-0 right-0 z-50 p-4">
             <UserNav />
           </div>
-          <SplashScreenProvider>{children}</SplashScreenProvider>
+          <div className="pr-40 pt-2">
+            <SplashScreenProvider>{children}</SplashScreenProvider>
+          </div>
         </SessionProvider>
       </body>
     </html>

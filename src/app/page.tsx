@@ -1,7 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { generateTrainingMenu, type TrainingInput, type TrainingResult } from '@/lib/rt/generator';
+import { useState, useEffect } from 'react';
+import {
+  generateTrainingMenu,
+  type TrainingInput,
+  type TrainingResult,
+} from '@/lib/rt/generator';
 import { useViewMode } from './viewMode';
 import { MenuSheet } from '@/components/MenuSheet';
 
@@ -26,6 +30,14 @@ export default function Home() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [openaiConfigured, setOpenaiConfigured] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetch('/api/generate-menu')
+      .then((r) => r.json())
+      .then((data) => setOpenaiConfigured(data.openaiConfigured === true))
+      .catch(() => setOpenaiConfigured(false));
+  }, []);
 
   const handleInputChange = (field: keyof TrainingInput, value: string) => {
     setInput((prev) => ({ ...prev, [field]: value }));
@@ -51,7 +63,13 @@ export default function Home() {
       if (!res.ok) {
         throw new Error(data.error || 'メニュー生成に失敗しました');
       }
-      setApiMenuText(data.menu ?? '');
+      if (data.result && typeof data.result === 'object') {
+        setResult(data.result as TrainingResult);
+        setApiMenuText(null);
+      } else {
+        setResult(null);
+        setApiMenuText(data.menu ?? '');
+      }
     } catch (e) {
       setApiError(e instanceof Error ? e.message : 'メニュー生成に失敗しました');
     } finally {
@@ -59,10 +77,22 @@ export default function Home() {
     }
   };
 
-  const generateMenuLocal = () => {
+  const generateMenuLocal = async () => {
     setApiMenuText(null);
     setApiError(null);
-    const r = generateTrainingMenu(input);
+    let common = '';
+    let local = '';
+    try {
+      const res = await fetch('/api/content');
+      if (res.ok) {
+        const data = await res.json();
+        common = data.common ?? '';
+        local = data.local ?? '';
+      }
+    } catch {
+      /* コンテンツ取得失敗時は空のままローカル生成 */
+    }
+    const r = generateTrainingMenu(input, { commonContent: common, localContent: local });
     setResult(r);
   };
 
@@ -360,6 +390,17 @@ export default function Home() {
             </div>
           </div>
 
+          {/* API状態: 利用可能かどうか表示 */}
+          {openaiConfigured !== null && (
+            <p className="mt-2 text-sm text-gray-600">
+              {openaiConfigured ? (
+                <span className="text-green-700">OpenAI API: 利用可能（AIでメニュー生成が使えます）</span>
+              ) : (
+                <span className="text-amber-700">OpenAI API: 未設定（.env.local の OPENAI_API_KEY を設定し、サーバーを再起動してください）</span>
+              )}
+            </p>
+          )}
+
           <div className="mt-6 flex flex-wrap gap-3">
             <button
               onClick={generateMenuWithAI}
@@ -386,7 +427,7 @@ export default function Home() {
         )}
         {(apiMenuText || result) && (
           <div className="space-y-4">
-            {/* ツールバー: 表示切替（ローカル時のみ） + PDF/共有 */}
+            {/* ツールバー: 表示切替（構造化データ時） + PDF/共有 */}
             <div className="bg-white rounded-lg shadow-md p-4 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
               <div className="flex items-center gap-2 flex-wrap">
                 {result && (

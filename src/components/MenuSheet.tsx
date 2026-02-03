@@ -433,7 +433,7 @@ export function MenuSheet({ input, result, isCardView = false }: MenuSheetProps)
       <div className="border-t border-gray-300 pt-4 space-y-3 text-sm">
         <div className="flex items-start">
           <span className="font-semibold text-gray-700 w-24">総距離:</span>
-          <span className="text-gray-900">{result.total.replace('合計距離：', '')}</span>
+          <span className="text-gray-900">{(result.total ?? '').replace('合計距離：', '')}</span>
         </div>
         <div className="flex items-start">
           <span className="font-semibold text-gray-700 w-24">今日の狙い:</span>

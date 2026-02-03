@@ -587,7 +587,18 @@ function generateExpectedEffect(
 // メイン生成関数
 // ============================================================
 
-export function generateTrainingMenu(input: TrainingInput): TrainingResult {
+/** 共通・ローカル専用コンテンツ（content/common と content/local から取得） */
+export interface GeneratorContentOptions {
+  commonContent?: string;
+  localContent?: string;
+}
+
+export function generateTrainingMenu(
+  input: TrainingInput,
+  options?: GeneratorContentOptions
+): TrainingResult {
+  // options.commonContent / options.localContent は将来のルール・テンプレート拡張用に接続済み。現時点では参照のみ。
+  void options;
   const ageGroup = getAgeGroup(input.age);
   const purposeType = getPurposeType(input.purpose);
   const distanceType = input.distanceType as DistanceType;
