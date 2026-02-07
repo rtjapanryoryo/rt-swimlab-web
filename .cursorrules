@@ -1,19 +1,16 @@
 # ============================================================
 # Cursor Rules for RT SwimCoach AI (Next.js Web版)
 # ============================================================
-# このプロジェクトの最上位規範は docs/RT_PROTOCOL.md（正本）である。
-# 以後の設計・実装・文章・UI文言はすべてこの思想に従属する。
-# 矛盾した場合は RT_PROTOCOL.md を最優先する。
+# メニュー生成の正本は docs/RT_MENU_GENERATION_RULES_JA.md のみ。
+# プロトコル＝ジェネレート（思想・定義と生成手順を同一ドキュメントで定義）。今後はここを更新する。
 # ============================================================
 
 
 # ------------------------------------------------------------
 # 0) Non-negotiables（絶対遵守）
 # ------------------------------------------------------------
-- MUST read and follow: docs/RT_PROTOCOL.md
-- docs/RT_PROTOCOL.md is the highest authority. If any instruction conflicts, RT_PROTOCOL wins.
-- NEVER generate training logic, UI copy, or architecture that contradicts RT_PROTOCOL.
-- When uncertain, ask or propose options **without** breaking RT_PROTOCOL.
+- MUST follow: docs/RT_MENU_GENERATION_RULES_JA.md（プロトコル＝ジェネレート）.
+- When updating generation behavior, edit this file (and/or code).
 
 
 # ------------------------------------------------------------
@@ -44,20 +41,16 @@
 # ------------------------------------------------------------
 # 3) Training Generation Rules（メニュー生成の核心ルール）
 # ------------------------------------------------------------
-- 生成は決定論的（deterministic）：同じ入力 → 同じ出力
-- Always structure sessions in blocks:
-  【目的】→ W-up / Drill / Kick / Pull / Pre-Main / Main / Down → Total
-- 出力構造（必須）:
-  - 【目的】（今日の狙い）
-  - W-up / Drill / Kick / Pull / Pre-Main / Main / Down
-  - Total：合計距離
-  - 練習意図 / 指導ポイント / 注意点 / 期待される効果
-- Main Set priority = 再現性（フォーム維持）
-- If form breaks → intensity must be reduced or simplified
-- Intensity must be decided with:
-  age / sex / frequency / recovery / fatigue / skill maturity
-- Masters/general users: prioritize safety & consistency over PB obsession
-- Junior: prioritize skill acquisition and long-term development
+- MUST follow docs/RT_MENU_GENERATION_RULES_JA.md（プロトコル＝ジェネレート）
+- 参照は3つのみ：共通プロトコル / 共通メニュー辞書 / クイック距離アルゴリズム。推測での捏造禁止（サークル等）。
+- 入力不足時は生成せず、不足項目を列挙して停止。
+- 出力構造（順序固定・省略禁止）:
+  【目的】→ W-up / Drill / Kick / Pull / Pre-Main /（休憩 or Easy）/ Main（カテゴリ明記）/ Down → Total → 練習意図（2〜4行）/ 指導ポイント（3つ）/ 注意点（3つ）/ 期待効果（2〜3行）
+- Mainカテゴリ：ベースメイン／ベストアベレージ／ダイハード／対乳酸MAX／Standard Main。期に反するカテゴリ禁止。距離タイプ整合 S=50–100 / M=100–400 / D=400+。
+- 多様性：各ブロックで辞書から最低3候補から1つ選ぶ。毎回同じ並びのコピペ禁止。
+- Main Set priority = 再現性（フォーム維持）。If form breaks → intensity must be reduced or simplified.
+- Masters/general users: prioritize safety & consistency over PB obsession.
+- Junior: prioritize skill acquisition and long-term development.
 
 
 # ------------------------------------------------------------
@@ -93,9 +86,7 @@
 # ------------------------------------------------------------
 # 6) Documentation Rules（ドキュメント運用）
 # ------------------------------------------------------------
-- Never edit docs/RT_PROTOCOL.md unless explicitly requested.
-- When adding new specs, create docs/RT_LOGIC.md or docs/RT_MENU_RULES.md
-  but MUST reference RT_PROTOCOL as parent rule.
+- When adding new generation specs, update docs/RT_MENU_GENERATION_RULES_JA.md.
 
 
 # ------------------------------------------------------------

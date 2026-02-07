@@ -4,8 +4,8 @@ import { getToken } from 'next-auth/jwt';
 import { getAllContent } from '@/lib/rt/content';
 
 /**
- * GET: 共通コンテンツ（AI・ローカル両方）とローカル専用コンテンツを返す。
- * ログイン済みユーザーのみ。ローカル生成時にクライアントから利用。
+ * GET: 共通コンテンツ・ローカル専用コンテンツ・クイック専用アルゴリズムを返す。
+ * ログイン済みユーザーのみ。クイック作成時にクライアントから利用。
  */
 export async function GET(request: NextRequest) {
   const token = await getToken({
@@ -17,8 +17,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const { common, local } = await getAllContent();
-    return NextResponse.json({ common, local });
+    const { common, local, quickAlgorithm } = await getAllContent();
+    return NextResponse.json({ common, local, quickAlgorithm });
   } catch (e) {
     const message = e instanceof Error ? e.message : 'コンテンツの取得に失敗しました';
     return NextResponse.json({ error: message }, { status: 500 });

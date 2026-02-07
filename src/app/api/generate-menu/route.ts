@@ -2,11 +2,13 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import OpenAI from 'openai';
-import { getCommonContent } from '@/lib/rt/content';
+import { getCommonContent, getPromptContent } from '@/lib/rt/content';
 
-function isOpenAIConfigured(): boolean {
+function getOpenAIStatus(): { configured: boolean; reason?: 'missing' | 'placeholder' } {
   const key = (process.env.OPENAI_API_KEY || '').trim();
-  return key.length > 0 && key !== 'YOUR_API_KEY_HERE';
+  if (key.length === 0) return { configured: false, reason: 'missing' };
+  if (key === 'YOUR_API_KEY_HERE') return { configured: false, reason: 'placeholder' };
+  return { configured: true };
 }
 
 /** GET: ログイン済みユーザー向けに OpenAI API が利用可能か返す */
@@ -18,10 +20,15 @@ export async function GET(request: NextRequest) {
   if (!token) {
     return NextResponse.json({ openaiConfigured: false }, { status: 200 });
   }
-  return NextResponse.json({ openaiConfigured: isOpenAIConfigured() });
+  const status = getOpenAIStatus();
+  return NextResponse.json({
+    openaiConfigured: status.configured,
+    openaiReason: status.reason,
+  });
 }
 
 const SYSTEM_PROMPT = `あなたはRT-japanの競泳専門AIコーチです。立石諒と渡部コーチ監修の指導哲学に基づき、渡部コーチが現場で判断するのと同じ基準でメニューを生成してください。
+参照：1) プロトコル＝ジェネレート（RT_MENU_GENERATION_RULES_JA.md） 2) 共通メニュー辞書（共有参照資料） 3) 入力10条件。推測での捏造は禁止。
 
 【絶対原則】
 - 目的 → 強度 → 理由の順で考える。量より質。フォームを崩して強くしない。
@@ -29,9 +36,54 @@ const SYSTEM_PROMPT = `あなたはRT-japanの競泳専門AIコーチです。�
 - 構造: W-up → Drill → Kick → Pull → Pre-Main → Dive（必要時）→ Rest（必要時）→ Main → Down。構造を崩さない。
 - 追加練習で追い込まない。判断に迷ったら強度を下げる。
 
+【Main選択の絶対ルール】
+- Mainは必ず次のいずれかでカテゴリを明記する：ベースメイン／ベストアベレージ／ダイハード／対乳酸MAX／Standard Main。期の目安に反するカテゴリは禁止。
+- 距離タイプ整合：S=50–100m / M=100–400m / D=400m+。年齢補正最優先（マスターズは安全側）。
+
 【強度目安】A1:22-24 / A2:24-26 / EN1:26-27 / EN2:28前後 / EN3:29-30
 【年齢補正】小学生+2-3 / 中学生+1-2 / 高校・大学基準 / 成人-2-3
-【Kick比率目安】小学生40-60% / 中学生30-40% / 高校25-30% / 大学以上20-25% / マスターズ約20%`;
+【Kick比率目安】小学生40-60% / 中学生30-40% / 高校25-30% / 大学以上20-25% / マスターズ約20%
+
+【多様性ルール（内容が毎回同じにならないよう必須）】
+- 各ブロック（W-up/Drill/Kick/Pull/Pre-Main/Main/Down）は、辞書の該当カテゴリから最低3候補を想定しその中から1つを選んで採用する。毎回同じ並びのコピペは禁止。
+- 目的が同じでも刺激の入れ方をローテする（Pre-Mainで入れる／Mainで入れる／Drillで入れる等）。
+
+【「内容」列の必須ルール】
+各セクションの文字列には、表の「内容」列にそのまま出るような具体的な指示を必ず含めること。共有参照資料のパターン（SKPS, IM Order, Des, Variable, DPS, Ac/CA, Board/No Board, Negative split 等）を積極的に使い、同じ表現の繰り返しを避ける。
+- W-up: 種目は Cho 固定。本文に Fr/Fly 等の種目名を書かない。Choice/Mixed, SKPS, IM Order などから条件に合うものを選ぶ。
+- Drill: 左右交互に加え Scull+Drill, IM Order, 片手ずつ, キャッチアップ 等。
+- Kick: （ボード）（ノーボード）に加え Des, Variable, Setup, S1 等。
+- Pull: （肩甲骨意識）に加え DPS, Ac/CA, Des, Scull/Drill Mix 等。
+- Main: カテゴリ名を明記し、Des/Negative split/ALT/Race Pace/Best Average 等の形式で具体的に書く。サークルは資料・条件に基づく値のみ使用（捏造禁止）。
+- Dive: （スタート練習）（ターン練習）または資料のDive/SDのニュアンス。
+- Rest: 「Rest / Free time（5~10min）」または「Easy Swim 〇〇m（A1）」。不要時は空文字。
+- Down: 種目は Cho 固定。本文に種目名を書かない。Easy Swim 距離m（A1）。必要なら 100 Kick / 200 Swim 等。
+**W-up と Down では種目列は必ず Cho。warmUp と down の文字列に Fr/Fly/Ba/Br/IM を一切含めない。**
+**内容列は「（左右交互）（ボード）（肩甲骨意識）」だけに固定しないこと。** 共有参照資料の Des, Variable, IM Order, Scull, DPS, Ac/CA, スタート/ターン 等の多様な表現から選ぶこと。Rest 以外は強度を ①〜⑦ に対応（A1/EN1/EN2 等）で書く。`;
+
+/** 必須10項目のラベル（不足時レスポンス用） */
+const REQUIRED_KEYS: { key: string; label: string }[] = [
+  { key: 'period', label: '期' },
+  { key: 'stroke', label: '種目' },
+  { key: 'gender', label: '性別' },
+  { key: 'age', label: '年齢' },
+  { key: 'distanceType', label: '距離タイプ(S/M/D)' },
+  { key: 'level', label: 'レベル' },
+  { key: 'purpose', label: '目的' },
+  { key: 'condition', label: '状況' },
+  { key: 'practiceTime', label: '練習時間(60/90/120)' },
+  { key: 'volumeUp', label: 'ボリュームを上げたい項目' },
+];
+
+/** 入力不足チェック。不足があれば不足項目のラベル配列を返す（なければ null） */
+function getMissingInputLabels(body: Record<string, unknown>): string[] | null {
+  const missing = REQUIRED_KEYS.filter(({ key }) => {
+    const v = body[key];
+    return v === undefined || v === null || String(v).trim() === '';
+  });
+  if (missing.length === 0) return null;
+  return missing.map(({ label }) => label);
+}
 
 /** 10条件に応じたカスタマイズ指示を組み立てる */
 function buildConditionInstructions(
@@ -142,7 +194,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
+    const body = (await request.json()) as Record<string, unknown>;
+    const missingLabels = getMissingInputLabels(body);
+    if (missingLabels) {
+      return NextResponse.json(
+        {
+          error: '入力が不足しています。以下の項目を入力してください。',
+          missingItems: missingLabels,
+        },
+        { status: 400 }
+      );
+    }
+
     const {
       period,
       stroke,
@@ -186,32 +249,51 @@ export async function POST(request: NextRequest) {
 【反映ルール】
 ${conditionInstructions}
 
-【出力形式】以下のキーをすべて含むJSONオブジェクト1つのみ。各値は文字列で、内容は具体的に（例: mainには「6×50m @30秒（EN1）」のように距離・本数・サークル・強度を書く）。
+【出力形式】以下のキーをすべて含むJSONオブジェクト1つのみ。各値は文字列。順序・省略禁止。
+- main には必ずMainカテゴリを明記すること（ベースメイン／ベストアベレージ／ダイハード／対乳酸MAX／Standard Main のいずれか）。
+- intention は2〜4行、coachingPoint は箇条書き3つ（改行または・で区切って1つに）、caution は箇条書き3つ、expectedEffect は2〜3行。
 {
-  "purpose": "今日の狙い（1文、目的・期・状況を反映）",
-  "warmUp": "距離・強度を記載（例: 200m Cho（A1））",
-  "drill": "種目に合ったドリル・本数・内容（例: 片手ドリル 6×50m（左右交互））",
-  "kick": "本数・距離・用具・強度（例: キック 4×50m（ボード）（EN1））",
-  "pull": "本数・距離・意識ポイント（例: プル 4×50m（肩甲骨意識））",
-  "preMain": "本数・距離・強度（例: Pre-Main 3×50m（EN2））",
-  "dive": "本数・距離・内容（例: Dive 8×15m（スタート練習）（A1））または空文字",
-  "rest": "立ち休憩 〜分 または Easy Swim 〜m（A1）、不要なら空文字",
-  "main": "本数×距離・サークル・強度を必ず書く（例: Main 6×50m @30秒（EN1））",
-  "down": "距離・強度（例: Easy Swim 100m（A1））",
+  "purpose": "【目的】1行で明確に（目的・期・状況を反映）",
+  "warmUp": "距離のみ。種目名を書かず Cho 固定（例: 250m（A1））",
+  "drill": "ドリル名 本数×距離m（内容）。内容は括弧で（例: 片手ドリル 6×50m（左右交互））",
+  "kick": "キック 本数×距離m（用具・方法）（強度）（例: キック 4×50m（ボード）（EN1））",
+  "pull": "プル 本数×距離m（意識ポイント）（強度）（例: プル 4×50m（肩甲骨意識）（EN1））",
+  "preMain": "Pre-Main 本数×距離m（強度）（例: Pre-Main 3×50m（EN2））",
+  "dive": "Dive 本数×距離m（スタート練習）（A1）。不要時は空文字",
+  "rest": "Rest / Free time（5~10min）。不要時は空文字",
+  "main": "Main（カテゴリ名）本数×距離m @〇〇秒（強度）。例: Main（ベストアベレージ）8×25m @30秒（EN3）。サークルは資料・条件に基づく値のみ（捏造禁止）",
+  "down": "種目名を書かず Cho 固定。Easy Swim 距離m（A1）（例: Easy Swim 100m（A1））",
   "total": "合計距離：〇〇〇〇m",
-  "intention": "実施意図（1文、目的と期に沿う）",
-  "coachingPoint": "指導ポイント（1文、種目・レベルに合わせる）",
-  "caution": "注意点（1文、状況・年齢・疲労を反映）",
-  "expectedEffect": "期待される効果（1文）"
+  "intention": "練習意図（2〜4行、目的と期に沿う）",
+  "coachingPoint": "指導ポイント（箇条書き3つ。改行または・で区切り1つの文字列に）",
+  "caution": "注意点（箇条書き3つ。改行または・で区切り1つの文字列に。状況・年齢・疲労を反映）",
+  "expectedEffect": "期待効果（2〜3行）"
 }`;
 
-    const commonContent = await getCommonContent();
-    const systemContent =
-      (commonContent
-        ? '【共有参照資料（この思想・情報に従うこと）】\n' + commonContent + '\n\n'
-        : '') +
+    const [promptContent, commonContent] = await Promise.all([
+      getPromptContent(),
+      getCommonContent(),
+    ]);
+
+    let systemContent = '';
+    if (promptContent) {
+      systemContent +=
+        '【プロンプト（以下の指示に従うこと。PDF等で読み込んだプロンプトです）】\n' +
+        promptContent +
+        '\n\n---\n\n';
+    }
+    if (commonContent) {
+      systemContent +=
+        '【共有参照資料（共通メニュー内容＋例。最優先で参照すること）】\n' +
+        '以下のテキストは、W-up / Drill / Kick / Pull / Main / Dive / W-down の「内容」パターン・実施例・用語がまとまった資料です。' +
+        'メニュー生成時はこの資料の表現・パターン（SKPS, IM Order, Des, Variable, DPS, Ac/CA, Negative split, Board/No Board など）を積極的に取り入れ、' +
+        '内容のレパートリーを豊かにしてください。同じ文言の繰り返しを避け、条件に合うバリエーションを選んでください。\n\n' +
+        commonContent +
+        '\n\n---\n\n';
+    }
+    systemContent +=
       SYSTEM_PROMPT +
-      '\n\n出力は必ず上記のキーを持つJSONオブジェクト1つのみにすること。';
+      '\n\n出力は必ず指定のキーを持つJSONオブジェクト1つのみにすること。各セクションには共有参照資料のパターン・用語を反映した「内容」を欠かさず含めること。';
 
     const openai = new OpenAI({ apiKey });
     const completion = await openai.chat.completions.create({
@@ -220,7 +302,7 @@ ${conditionInstructions}
         { role: 'system', content: systemContent },
         { role: 'user', content: userPrompt },
       ],
-      temperature: 0.5,
+      temperature: 0.6,
       response_format: { type: 'json_object' },
     });
 
@@ -262,7 +344,7 @@ ${conditionInstructions}
       errorText = 'APIキーが無効です。.env.local の OPENAI_API_KEY を確認してください。';
     } else if (isQuotaError) {
       errorText =
-        'OpenAIの利用枠を超えました。Billingで支払い方法を追加するか、「ローカルで生成」ボタンをご利用ください。';
+        'OpenAIの利用枠を超えました。Billingで支払い方法を追加するか、「クイック作成」ボタンをご利用ください。';
     } else {
       errorText = `メニュー生成エラー: ${message}`;
     }

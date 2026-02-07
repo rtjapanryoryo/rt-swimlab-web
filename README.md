@@ -6,15 +6,22 @@ First, run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+### ターミナルを閉じても動かし続けたい場合（常時起動）
+
+pm2 でバックグラウンド起動すると、ターミナルを閉じてもアプリが動き続けます。
+
+```bash
+npm install          # 初回のみ（pm2 が入る）
+npm run dev:daemon   # 常時起動で開始
+```
+
+- 停止: `npm run dev:daemon:stop`
+- ログ: `npm run dev:daemon:logs`
+- PC 再起動後も自動で起動させたい場合は、初回だけ `pm2 startup` と `pm2 save` を実行してください。
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 

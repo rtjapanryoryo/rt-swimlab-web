@@ -25,7 +25,7 @@ const STROKE_ALLOWED = new Set(['Cho', 'IM', 'Fr', 'Br', 'Ba', 'Fly']);
 function styleFromSection(section: string, stroke?: string): string {
   if (section === 'Rest') return '-';
   if (section === 'W-up' || section === 'Down') return 'Cho';
-  if (section === 'Pre-Main' || section === 'Dive') return '-';
+  if (section === 'Pre-Main' || section === 'Dive') return ''; // 種目列は「-」にしない
   if ((section === 'Drill' || section === 'Kick' || section === 'Pull' || section === 'Main') && stroke && STROKE_ALLOWED.has(stroke)) return stroke;
   return '-';
 }
@@ -34,6 +34,7 @@ export function parseToSheetRow(section: string, raw: string, stroke?: string): 
   const text = (raw ?? '').trim();
   const defaultStyle = styleFromSection(section, stroke);
   if (!text) {
+    const noDash = section === 'Pre-Main' || section === 'Dive';
     return {
       section,
       distance: '-',
@@ -41,7 +42,7 @@ export function parseToSheetRow(section: string, raw: string, stroke?: string): 
       sets: '1',
       intensity: '-',
       style: defaultStyle,
-      content: '-',
+      content: noDash ? '' : '-',
       total: '-',
       cycle: '-',
     };
@@ -166,13 +167,21 @@ export function parseToSheetRow(section: string, raw: string, stroke?: string): 
     .trim();
 
   if (equipment !== '-') {
-    content = content ? `${content}（${equipment}）` : `（${equipment}）`;
+    content = content ? `${content} ${equipment}` : equipment;
   }
-  
+
+  // 内容列の不要な括弧を除去
+  content = content.replace(/[（）()]/g, ' ').replace(/\s+/g, ' ').trim();
+
+  // Main でサークル（@）があるが内容が空になった場合は @ を内容として表示
+  if (section === 'Main' && !content.trim() && cycle !== '-') {
+    content = '@';
+  }
+
   if (content.length > 60) {
     content = content.substring(0, 60) + '...';
   }
-  if (!content) content = '-';
+  if (!content.trim()) content = '-';
 
   // Total計算（距離 × 本数 × セット）
   if (distance !== '-' && count !== '-') {
@@ -189,14 +198,19 @@ export function parseToSheetRow(section: string, raw: string, stroke?: string): 
     total = distance + 'm';
   }
 
+  // W-up と Down は種目を常に Cho に固定。Pre-Main・Dive は種目・内容を「-」にしない（空で表示）
+  const finalStyle =
+    section === 'W-up' || section === 'Down' ? 'Cho' : (section === 'Pre-Main' || section === 'Dive' ? style : normalizeDash(style));
+  const displayContent = section === 'Pre-Main' || section === 'Dive' ? (content.trim() || '') : normalizeDash(content);
+
   return {
     section: normalizeDash(section),
     distance: normalizeDash(distance),
     count: normalizeDash(count),
     sets: normalizeDash(sets),
     intensity: normalizeDash(intensity),
-    style: normalizeDash(style),
-    content: normalizeDash(content),
+    style: finalStyle,
+    content: displayContent,
     total: normalizeDash(total),
     cycle: normalizeDash(cycle),
   };

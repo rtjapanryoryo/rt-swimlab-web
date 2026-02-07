@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useSession } from 'next-auth/react';
 import {
   generateTrainingMenu,
   type TrainingInput,
@@ -9,21 +10,53 @@ import {
 import { useViewMode } from './viewMode';
 import { MenuSheet } from '@/components/MenuSheet';
 
+const SAVED_INPUT_KEY_PREFIX = 'rt-swimlab-saved-input';
+
+function savedInputKey(userId: string): string {
+  return `${SAVED_INPUT_KEY_PREFIX}-${userId}`;
+}
+
+const EMPTY_INPUT: TrainingInput = {
+  period: '',
+  stroke: '',
+  gender: '',
+  age: '',
+  distanceType: '',
+  level: '',
+  purpose: '',
+  condition: '',
+  practiceTime: '',
+  volumeUp: '',
+};
+
+function isTrainingInput(obj: unknown): obj is TrainingInput {
+  if (!obj || typeof obj !== 'object') return false;
+  const keys: (keyof TrainingInput)[] = [
+    'period', 'stroke', 'gender', 'age', 'distanceType',
+    'level', 'purpose', 'condition', 'practiceTime', 'volumeUp',
+  ];
+  return keys.every((k) => typeof (obj as Record<string, unknown>)[k] === 'string');
+}
+
+function loadSavedInput(key: string): TrainingInput {
+  if (typeof window === 'undefined' || !key) return EMPTY_INPUT;
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return EMPTY_INPUT;
+    const parsed = JSON.parse(raw) as unknown;
+    if (isTrainingInput(parsed)) return parsed;
+  } catch {
+    /* ignore */
+  }
+  return EMPTY_INPUT;
+}
+
 export default function Home() {
+  const { data: session, status: sessionStatus } = useSession();
   const { viewMode, setViewMode } = useViewMode();
 
-  const [input, setInput] = useState<TrainingInput>({
-    period: '',
-    stroke: '',
-    gender: '',
-    age: '',
-    distanceType: '',
-    level: '',
-    purpose: '',
-    condition: '',
-    practiceTime: '',
-    volumeUp: '',
-  });
+  const [input, setInput] = useState<TrainingInput>(EMPTY_INPUT);
+  const [hydrated, setHydrated] = useState(false);
 
   const [result, setResult] = useState<TrainingResult | null>(null);
   const [apiMenuText, setApiMenuText] = useState<string | null>(null);
@@ -31,11 +64,50 @@ export default function Home() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [openaiConfigured, setOpenaiConfigured] = useState<boolean | null>(null);
+  const [openaiReason, setOpenaiReason] = useState<string | undefined>(undefined);
+
+  // ログインユーザーごとに前回入力を復元（個々の形・2回目以降）
+  const userKey = session?.user?.email ?? session?.user?.id ?? '';
+  useEffect(() => {
+    if (sessionStatus !== 'authenticated' || !userKey) return;
+    const key = savedInputKey(userKey);
+    const saved = loadSavedInput(key);
+    setInput(saved);
+    setHydrated(true);
+  }, [sessionStatus, userKey]);
+
+  // 入力変更を debounce して、そのユーザー用キーで localStorage に保存
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!hydrated || !userKey) return;
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
+      try {
+        localStorage.setItem(savedInputKey(userKey), JSON.stringify(input));
+      } catch {
+        /* quota / private mode */
+      }
+      saveTimeoutRef.current = null;
+    }, 400);
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
+  }, [input, hydrated, userKey]);
 
   useEffect(() => {
     fetch('/api/generate-menu')
-      .then((r) => r.json())
-      .then((data) => setOpenaiConfigured(data.openaiConfigured === true))
+      .then(async (r) => {
+        const text = await r.text();
+        try {
+          return JSON.parse(text) as { openaiConfigured?: boolean; openaiReason?: string };
+        } catch {
+          return { openaiConfigured: false };
+        }
+      })
+      .then((data) => {
+        setOpenaiConfigured(data.openaiConfigured === true);
+        setOpenaiReason(data.openaiReason);
+      })
       .catch(() => setOpenaiConfigured(false));
   }, []);
 
@@ -59,9 +131,20 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(input),
       });
-      const data = await res.json();
+      const text = await res.text();
+      let data: { error?: string; missingItems?: string[]; result?: unknown; menu?: string };
+      try {
+        data = JSON.parse(text);
+      } catch {
+        setApiError(res.status === 401 ? 'ログインが必要です。' : 'メニュー生成に失敗しました。');
+        return;
+      }
       if (!res.ok) {
-        throw new Error(data.error || 'メニュー生成に失敗しました');
+        const msg = data.missingItems?.length
+          ? `${data.error || '入力が不足しています'}\n不足項目: ${data.missingItems.join('、')}`
+          : (data.error || 'メニュー生成に失敗しました');
+        setApiError(msg);
+        return;
       }
       if (data.result && typeof data.result === 'object') {
         setResult(data.result as TrainingResult);
@@ -71,7 +154,8 @@ export default function Home() {
         setApiMenuText(data.menu ?? '');
       }
     } catch (e) {
-      setApiError(e instanceof Error ? e.message : 'メニュー生成に失敗しました');
+      const msg = e instanceof Error ? e.message : 'メニュー生成に失敗しました';
+      setApiError(msg.startsWith('Unexpected token') ? 'ログインが必要です。' : msg);
     } finally {
       setIsGenerating(false);
     }
@@ -82,17 +166,28 @@ export default function Home() {
     setApiError(null);
     let common = '';
     let local = '';
+    let quickAlgorithm = '';
     try {
       const res = await fetch('/api/content');
+      const text = await res.text();
       if (res.ok) {
-        const data = await res.json();
-        common = data.common ?? '';
-        local = data.local ?? '';
+        try {
+          const data = JSON.parse(text) as { common?: string; local?: string; quickAlgorithm?: string };
+          common = data.common ?? '';
+          local = data.local ?? '';
+          quickAlgorithm = data.quickAlgorithm ?? '';
+        } catch {
+          /* HTML 等が返った場合は空のまま */
+        }
       }
     } catch {
-      /* コンテンツ取得失敗時は空のままローカル生成 */
+      /* コンテンツ取得失敗時は空のままクイック作成 */
     }
-    const r = generateTrainingMenu(input, { commonContent: common, localContent: local });
+    const r = generateTrainingMenu(input, {
+      commonContent: common,
+      localContent: local,
+      quickAlgorithmContent: quickAlgorithm,
+    });
     setResult(r);
   };
 
@@ -394,9 +489,15 @@ export default function Home() {
           {openaiConfigured !== null && (
             <p className="mt-2 text-sm text-gray-600">
               {openaiConfigured ? (
-                <span className="text-green-700">OpenAI API: 利用可能（AIでメニュー生成が使えます）</span>
+                <span className="text-green-700">OpenAI API: 利用可能（カスタム作成が使えます）</span>
               ) : (
-                <span className="text-amber-700">OpenAI API: 未設定（.env.local の OPENAI_API_KEY を設定し、サーバーを再起動してください）</span>
+                <span className="text-amber-700">
+                  OpenAI API: 未設定（
+                  {(openaiReason === 'placeholder' && '.env.local の OPENAI_API_KEY を本物のキーに差し替え、サーバーを再起動してください') ||
+                    (openaiReason === 'missing' && '.env.local に OPENAI_API_KEY= を追加し、サーバーを再起動してください') ||
+                    '.env.local の OPENAI_API_KEY を設定し、サーバーを再起動してください'}
+                  ）
+                </span>
               )}
             </p>
           )}
@@ -407,14 +508,14 @@ export default function Home() {
               disabled={!isFormValid() || isGenerating}
               className="w-full md:w-auto px-6 py-3 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              {isGenerating ? '生成中...' : 'AIでメニュー生成'}
+              {isGenerating ? '生成中...' : 'カスタム作成'}
             </button>
             <button
               onClick={generateMenuLocal}
               disabled={!isFormValid()}
               className="w-full md:w-auto px-6 py-3 border border-gray-300 bg-white text-gray-700 font-semibold rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              ローカルで生成
+              クイック作成
             </button>
           </div>
         </div>

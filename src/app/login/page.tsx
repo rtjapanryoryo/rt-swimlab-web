@@ -11,8 +11,16 @@ function LoginContent() {
 
   useEffect(() => {
     fetch('/api/oauth-config')
-      .then((r) => r.json())
-      .then((d) => setConfigOk(d.configured))
+      .then(async (r) => {
+        const text = await r.text();
+        try {
+          const d = JSON.parse(text) as { configured?: boolean };
+          return d.configured === true;
+        } catch {
+          return false;
+        }
+      })
+      .then(setConfigOk)
       .catch(() => setConfigOk(false));
   }, []);
 
@@ -23,8 +31,11 @@ function LoginContent() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="bg-white rounded-lg shadow-md p-8 max-w-md w-full text-center">
         <h1 className="text-xl font-bold text-gray-900 mb-2">RT swim lab</h1>
-        <p className="text-sm text-gray-600 mb-6">
-          ログインして練習メニューを作成
+        <p className="text-sm text-gray-600 mb-2">
+          立石諒・高城直基監修の指導哲学に基づく練習メニューを、あなた用に作成します。
+        </p>
+        <p className="text-xs text-gray-500 mb-6">
+          まずは下のボタンでGoogleアカウントにログインしてください。入力内容はあなたのアカウントごとに保存されます。
         </p>
         {showSetupHint && (
           <div className="text-left text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md p-4 mb-4">
