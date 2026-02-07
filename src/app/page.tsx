@@ -67,7 +67,8 @@ export default function Home() {
   const [openaiReason, setOpenaiReason] = useState<string | undefined>(undefined);
 
   // ログインユーザーごとに前回入力を復元（個々の形・2回目以降）
-  const userKey = session?.user?.email ?? session?.user?.id ?? '';
+  const user = session?.user as { email?: string | null; id?: string | null } | undefined;
+  const userKey = user?.email ?? user?.id ?? '';
   useEffect(() => {
     if (sessionStatus !== 'authenticated' || !userKey) return;
     const key = savedInputKey(userKey);
@@ -94,8 +95,9 @@ export default function Home() {
     };
   }, [input, hydrated, userKey]);
 
+  // 未設定判定はサーバー側の env のみで行う（/api/health）。フロントで process.env は参照しない。
   useEffect(() => {
-    fetch('/api/generate-menu')
+    fetch('/api/health')
       .then(async (r) => {
         const text = await r.text();
         try {
@@ -485,20 +487,14 @@ export default function Home() {
             </div>
           </div>
 
-          {/* API状態: 利用可能かどうか表示 */}
-          {openaiConfigured !== null && (
-            <p className="mt-2 text-sm text-gray-600">
-              {openaiConfigured ? (
-                <span className="text-green-700">OpenAI API: 利用可能（カスタム作成が使えます）</span>
-              ) : (
-                <span className="text-amber-700">
-                  OpenAI API: 未設定（
-                  {(openaiReason === 'placeholder' && '.env.local の OPENAI_API_KEY を本物のキーに差し替え、サーバーを再起動してください') ||
-                    (openaiReason === 'missing' && '.env.local に OPENAI_API_KEY= を追加し、サーバーを再起動してください') ||
-                    '.env.local の OPENAI_API_KEY を設定し、サーバーを再起動してください'}
-                  ）
-                </span>
-              )}
+          {/* API未設定時のみ表示（利用可能のときは何も出さない） */}
+          {openaiConfigured === false && (
+            <p className="mt-2 text-sm text-amber-700">
+              OpenAI API: 未設定（
+              {(openaiReason === 'placeholder' && 'OPENAI_API_KEY を本物のキーに差し替えてください') ||
+                (openaiReason === 'missing' && '.env.local に OPENAI_API_KEY=あなたのキー を追加してください') ||
+                'OPENAI_API_KEY を設定してください'}
+              ）。設定後は必ず開発サーバーを再起動（npm run dev のやり直し）してください。キーはクォートで囲まないでください。
             </p>
           )}
 

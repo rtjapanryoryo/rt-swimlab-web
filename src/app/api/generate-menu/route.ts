@@ -194,7 +194,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = (await request.json()) as Record<string, unknown>;
+    let body: Record<string, unknown>;
+    try {
+      body = (await request.json()) as Record<string, unknown>;
+    } catch {
+      return NextResponse.json(
+        { error: 'リクエストのJSON形式が不正です。' },
+        { status: 400 }
+      );
+    }
     const missingLabels = getMissingInputLabels(body);
     if (missingLabels) {
       return NextResponse.json(
@@ -270,10 +278,17 @@ ${conditionInstructions}
   "expectedEffect": "期待効果（2〜3行）"
 }`;
 
-    const [promptContent, commonContent] = await Promise.all([
-      getPromptContent(),
-      getCommonContent(),
-    ]);
+    let promptContent = '';
+    let commonContent = '';
+    try {
+      [promptContent, commonContent] = await Promise.all([
+        getPromptContent(),
+        getCommonContent(),
+      ]);
+    } catch (contentErr) {
+      console.error('[generate-menu] getPromptContent/getCommonContent error:', contentErr);
+      // コンテンツ取得失敗時は空のまま続行（メニュー生成は可能）
+    }
 
     let systemContent = '';
     if (promptContent) {
@@ -330,6 +345,7 @@ ${conditionInstructions}
     }
     return NextResponse.json({ menu: content, result: null });
   } catch (err) {
+    console.error('[generate-menu] POST error:', err);
     const message = err instanceof Error ? err.message : '不明なエラー';
     const isAuthError =
       String(message).includes('API key') ||
