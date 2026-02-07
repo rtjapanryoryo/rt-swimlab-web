@@ -599,10 +599,11 @@ function generateExpectedEffect(
 // メイン生成関数
 // ============================================================
 
-/** 共通・ローカル専用コンテンツ（content/common と content/local から取得） */
+/** 共通・ローカル・クイックアルゴリズム用コンテンツ（content から取得） */
 export interface GeneratorContentOptions {
   commonContent?: string;
   localContent?: string;
+  quickAlgorithmContent?: string;
 }
 
 export function generateTrainingMenu(
