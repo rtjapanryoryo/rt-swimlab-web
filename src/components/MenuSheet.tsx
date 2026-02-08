@@ -20,19 +20,47 @@ function normalizeDash(v?: string | null) {
   return s.length ? s : '-';
 }
 
-const STROKE_ALLOWED = new Set(['Cho', 'IM', 'Fr', 'Br', 'Ba', 'Fly']);
+const STROKE_ALLOWED = new Set(['Cho', 'IM', 'S1', 'Fr', 'Br', 'Ba', 'Fly']);
 
-function styleFromSection(section: string, stroke?: string): string {
+/** セクションkey → 表表示ラベル（順序変更用） */
+export const SECTION_KEY_TO_LABEL: Record<string, string> = {
+  warmUp: 'W-up',
+  drill: 'Drill',
+  kick: 'Kick',
+  pull: 'Pull',
+  preMain: 'Pre-Main',
+  dive: 'Dive',
+  rest: 'Rest',
+  main: 'Main',
+  down: 'Down',
+};
+
+const DEFAULT_SECTION_ORDER: (keyof TrainingResult)[] = [
+  'warmUp', 'drill', 'kick', 'pull', 'rest', 'preMain', 'dive', 'main', 'down',
+];
+
+/** 本文から種目を抽出。テンプレ通りに表示する（条件の種目は使わずテンプレ優先） */
+function extractStyleFromText(text: string): string | null {
+  const m = text.match(/\b(S1|FR|Fr|Ba|Br|Fly|IM|cho)\b/i);
+  if (!m) return null;
+  const s = m[1].toLowerCase();
+  if (s === 'cho') return 'Cho';
+  if (s === 'fr') return 'Fr';
+  return m[1]; // S1, Ba, Br, Fly, IM はそのまま
+}
+
+/** テンプレに種目が無いときのみ使用（条件の種目は Pre-Main/Dive の補助のみ） */
+function fallbackStyle(section: string, stroke?: string): string {
   if (section === 'Rest') return '-';
   if (section === 'W-up' || section === 'Down') return 'Cho';
-  if (section === 'Pre-Main' || section === 'Dive') return ''; // 種目列は「-」にしない
-  if ((section === 'Drill' || section === 'Kick' || section === 'Pull' || section === 'Main') && stroke && STROKE_ALLOWED.has(stroke)) return stroke;
-  return '-';
+  if (section === 'Pre-Main' || section === 'Dive') return stroke && STROKE_ALLOWED.has(stroke) ? stroke : (stroke || '-');
+  return '-'; // Drill/Kick/Pull/Main はテンプレに無ければ "-"
 }
 
 export function parseToSheetRow(section: string, raw: string, stroke?: string): MenuSheetRow {
   const text = (raw ?? '').trim();
-  const defaultStyle = styleFromSection(section, stroke);
+  const styleFromContent = text ? extractStyleFromText(text) : null;
+  const style = (styleFromContent && STROKE_ALLOWED.has(styleFromContent)) ? styleFromContent : fallbackStyle(section, stroke);
   if (!text) {
     const noDash = section === 'Pre-Main' || section === 'Dive';
     return {
@@ -41,7 +69,7 @@ export function parseToSheetRow(section: string, raw: string, stroke?: string): 
       count: '-',
       sets: '1',
       intensity: '-',
-      style: defaultStyle,
+      style: fallbackStyle(section, stroke),
       content: noDash ? '' : '-',
       total: '-',
       cycle: '-',
@@ -53,7 +81,6 @@ export function parseToSheetRow(section: string, raw: string, stroke?: string): 
   let sets = '1';
   let cycle = '-';
   let intensity = '-';
-  let style = defaultStyle;
   let equipment = '-';
   let content = text;
   let total = '-';
@@ -124,10 +151,9 @@ export function parseToSheetRow(section: string, raw: string, stroke?: string): 
     if (restMatch?.[1]) cycle = `${restMatch[1]}秒`;
   }
 
-  // 器具を抽出
+  // 器具を抽出（プルブイはサンプル用のため使用しない）
   const equipmentPatterns = [
     { pattern: /(ボード|board)/i, value: 'ボード' },
-    { pattern: /(プルブイ|pull|buoy)/i, value: 'プルブイ' },
     { pattern: /(フィン|fin)/i, value: 'フィン' },
     { pattern: /(パドル|paddle)/i, value: 'パドル' },
     { pattern: /(No\s*board|ボードなし)/i, value: 'ボードなし' },
@@ -198,9 +224,13 @@ export function parseToSheetRow(section: string, raw: string, stroke?: string): 
     total = distance + 'm';
   }
 
-  // W-up と Down は種目を常に Cho に固定。Pre-Main・Dive は種目・内容を「-」にしない（空で表示）
+  // W-up と Down は Cho。Pre-Main・Dive は種目を空にしない（内容から抽出した種目 or 入力種目 or '-'）
   const finalStyle =
-    section === 'W-up' || section === 'Down' ? 'Cho' : (section === 'Pre-Main' || section === 'Dive' ? style : normalizeDash(style));
+    section === 'W-up' || section === 'Down'
+      ? 'Cho'
+      : section === 'Pre-Main' || section === 'Dive'
+        ? (style && style !== '-' ? style : (stroke || '-'))
+        : normalizeDash(style);
   const displayContent = section === 'Pre-Main' || section === 'Dive' ? (content.trim() || '') : normalizeDash(content);
 
   return {
@@ -220,23 +250,24 @@ type MenuSheetProps = {
   input: TrainingInput;
   result: TrainingResult;
   isCardView?: boolean;
+  /** セクション表示順（quick-settings.json の sectionOrder）。未指定時はデフォルト順 */
+  sectionOrder?: string[];
 };
 
-export function MenuSheet({ input, result, isCardView = false }: MenuSheetProps) {
+export function MenuSheet({ input, result, isCardView = false, sectionOrder: sectionOrderProp }: MenuSheetProps) {
+  const order = sectionOrderProp?.length ? sectionOrderProp : DEFAULT_SECTION_ORDER;
   const rows: MenuSheetRow[] = useMemo(() => {
     const sheetRows: MenuSheetRow[] = [];
-    const s = input.stroke && STROKE_ALLOWED.has(input.stroke) ? input.stroke : undefined;
-    sheetRows.push(parseToSheetRow('W-up', result.warmUp, s));
-    sheetRows.push(parseToSheetRow('Drill', result.drill, s));
-    sheetRows.push(parseToSheetRow('Kick', result.kick, s));
-    sheetRows.push(parseToSheetRow('Pull', result.pull, s));
-    sheetRows.push(parseToSheetRow('Pre-Main', result.preMain, s));
-    if (result.dive) sheetRows.push(parseToSheetRow('Dive', result.dive, s));
-    if (result.rest) sheetRows.push(parseToSheetRow('Rest', result.rest, s));
-    sheetRows.push(parseToSheetRow('Main', result.main, s));
-    sheetRows.push(parseToSheetRow('Down', result.down, s));
+    const s = (input.stroke && STROKE_ALLOWED.has(input.stroke) ? input.stroke : 'S1') as string;
+    for (const key of order) {
+      if (key === 'dive' && !(result.dive ?? '').trim()) continue;
+      if (key === 'rest' && !(result.rest ?? '').trim()) continue;
+      const label = SECTION_KEY_TO_LABEL[key] ?? key;
+      const value = (result as unknown as Record<string, string>)[key] ?? '';
+      sheetRows.push(parseToSheetRow(label, value, s));
+    }
     return sheetRows;
-  }, [result, input.stroke]);
+  }, [result, input.stroke, order]);
 
   // 日付を取得
   const today = new Date();
@@ -248,19 +279,20 @@ export function MenuSheet({ input, result, isCardView = false }: MenuSheetProps)
     '1': '① リカバリー期',
     '2': '② 基礎形成期',
     '3': '③ 発展形成期',
-    '4': '④ 強化期①',
-    '5': '⑤ 強化期②',
+    '4': '④ 強化期 (スピード持久力)',
+    '5': '⑤ 強化期 (対乳酸)',
     '6': '⑥ 調整期',
     '7': '⑦ テーパー期',
   };
 
-  // 種目の表示名
+  // 種目の表示名（IMはメドレー、S1はスタイル1）
   const strokeNames: Record<string, string> = {
     Fr: 'Fr（自由形）',
     Ba: 'Ba（背泳ぎ）',
     Br: 'Br（平泳ぎ）',
     Fly: 'Fly（バタフライ）',
-    IM: 'IM（個人メドレー）',
+    IM: 'メドレー',
+    S1: 'S1（スタイル1）',
   };
 
   // 距離タイプの表示名
@@ -303,7 +335,7 @@ export function MenuSheet({ input, result, isCardView = false }: MenuSheetProps)
             </div>
             <div className="flex">
               <span className="font-semibold text-gray-700 w-24">種目:</span>
-              <span className="text-gray-900">{strokeNames[input.stroke] || input.stroke}</span>
+              <span className="text-gray-900">{strokeNames[input.stroke] || strokeNames['Fr'] || input.stroke || 'Fr（自由形）'}</span>
             </div>
             <div className="flex">
               <span className="font-semibold text-gray-700 w-24">性別:</span>

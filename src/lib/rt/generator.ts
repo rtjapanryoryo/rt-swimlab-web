@@ -260,8 +260,8 @@ const PERIOD_NAMES: Record<string, string> = {
   '1': 'リカバリー期',
   '2': '基礎形成期',
   '3': '発展形成期',
-  '4': '強化期①',
-  '5': '強化期②',
+  '4': '強化期 (スピード持久力)',
+  '5': '強化期 (対乳酸)',
   '6': '調整期',
   '7': 'テーパー期',
 };
@@ -272,19 +272,21 @@ const PERIOD_NAMES: Record<string, string> = {
 
 const STROKE_NAMES: Record<string, string> = {
   FR: 'FR（自由形）',
+  Fr: 'Fr（自由形）',
   Ba: 'Ba（背泳）',
   Br: 'Br（平泳）',
   Fly: 'Fly（バタフライ）',
-  IM: 'IM（個人メドレー）',
+  IM: 'メドレー',
+  S1: 'S1（スタイル1）',
 };
 
 // ============================================================
 // サークル記入
 // ============================================================
 
-function formatCircle(circleMethod: string, rest: string): string {
-  if (circleMethod === '3') return ''; // サークル不要
-  return ` @${rest}`;
+function formatCircle(circleMethod: string, _rest: string): string {
+  if (!circleMethod || circleMethod === '3') return '';
+  return ` @${_rest}`;
 }
 
 // ============================================================
@@ -316,26 +318,25 @@ function normalizeStrokeKey(stroke: string): string {
 function generateDrill(
   stroke: string,
   ageGroup: AgeGroup,
-  purposeType: PurposeType,
+  _purposeType: PurposeType,
   period: string
 ): string {
-  const drills: Record<string, string[]> = {
-    FR: ['片手ドリル', 'キャッチアップ', 'フィストスイム', '片手＋キック'],
-    Ba: ['片手ドリル', '片手＋キック', 'ダブルアーム'],
-    Br: ['片手ドリル', 'キックのみ', 'プル＋キック'],
-    Fly: ['片手ドリル', 'キックのみ', '片手＋キック'],
-    IM: ['各泳法のドリル', 'IMドリル'],
-  };
-  const contentOptions = ['左右交互', '片手ずつ', 'Scull+Drill', 'IM Order', 'キャッチ意識'];
   const strokeKey = normalizeStrokeKey(stroke);
+  const drills: Record<string, string[]> = {
+    FR: ['ドリル'],
+    Fr: ['ドリル'],
+    Ba: ['ドリル'],
+    Br: ['ドリル'],
+    Fly: ['ドリル'],
+    IM: ['ドリル'],
+    S1: ['ドリル'],
+  };
   const strokeDrills = drills[strokeKey] || ['ドリル'];
   const idx = pickIndex(stroke + period, strokeDrills.length);
-  const contentIdx = pickIndex(purposeType + period, contentOptions.length);
   const drillName = strokeDrills[idx];
   const sets = ageGroup === '小学生' ? 4 : 6;
   const distance = ageGroup === '小学生' ? 25 : 50;
-  const content = contentOptions[contentIdx];
-  return `${drillName} ${sets}×${distance}m ${content}`;
+  return `${drillName} ${sets}×${distance}m`;
 }
 
 function generateKick(
@@ -359,35 +360,22 @@ function generateKick(
   let intensity = 'EN1';
   if (purposeType === '対乳酸') intensity = 'EN2';
 
-  const contentOptions = ['Des', 'Variable', 'Setup', 'S1', 'Good Kick'];
-  let boardInfo = 'ボード';
-  if (purposeType === '対乳酸' || purposeType === 'スピード') {
-    boardInfo = 'ノーボード';
-  } else if ((ageGroup === '高校生' || ageGroup === '大学生以上') && sets >= 6) {
-    boardInfo = 'ボード・ノーボード交互';
-  }
-  const contentIdx = pickIndex(period + purposeType, contentOptions.length);
-  const contentLabel = contentOptions[contentIdx];
-  return `キック ${sets}×${distance}m ${contentLabel} ${boardInfo}（${intensity}）`;
+  return `キック ${sets}×${distance}m（${intensity}）`;
 }
 
 function generatePull(
   stroke: string,
-  ageGroup: AgeGroup,
+  _ageGroup: AgeGroup,
   practiceTime: string,
-  period: string
+  _period: string
 ): string {
   const time = parseInt(practiceTime, 10);
   const sets = time >= 120 ? 6 : time >= 90 ? 5 : 4;
   const distance = 50;
-  const contentOptions = ['肩甲骨意識', '体幹意識', 'DPS', 'Ac/CA', 'Scull/Drill'];
-  const contentIdx = pickIndex(stroke + period, contentOptions.length);
-  const content = contentOptions[contentIdx];
-
   if (stroke === 'Br') {
-    return `プル（専門） ${sets}×${distance}m ${content}`;
+    return `プル（専門） ${sets}×${distance}m`;
   }
-  return `プル ${sets}×${distance}m ${content}`;
+  return `プル ${sets}×${distance}m`;
 }
 
 function generatePreMain(
@@ -413,9 +401,9 @@ function generateRest(condition: string, purposeType: PurposeType): string {
 }
 
 function generateMain(
-  distanceType: DistanceType,
-  purposeType: PurposeType,
-  ageGroup: AgeGroup,
+  _distanceType: DistanceType,
+  _purposeType: PurposeType,
+  _ageGroup: AgeGroup,
   circleMethod: string,
   mainRule: MainSetRule
 ): string {
@@ -430,12 +418,9 @@ function generateDown(practiceTime: string): string {
   return `Easy Swim ${distance}m（A1）`;
 }
 
-function generateDive(ageGroup: AgeGroup, period: string): string {
+function generateDive(ageGroup: AgeGroup, _period: string): string {
   const sets = ageGroup === '小学生' ? 4 : ageGroup === '中学生' ? 6 : 8;
-  const contentOptions = ['スタート練習', 'ターン練習', 'Dive/SD'];
-  const contentIdx = pickIndex(period, contentOptions.length);
-  const content = contentOptions[contentIdx];
-  return `Dive ${sets}×15m（${content}）（A1）`;
+  return `Dive ${sets}×15m（A1）`;
 }
 
 // ============================================================
@@ -599,20 +584,70 @@ function generateExpectedEffect(
 // メイン生成関数
 // ============================================================
 
-/** 共通・ローカル・クイックアルゴリズム用コンテンツ（content から取得） */
+/** 9通りテンプレ（距離タイプ S/M/D ごとに候補配列）。PDF「自動生成メニュー - 9通り」をJSON化したもの。 */
+export type MenuTemplates9 = { S: unknown[]; M: unknown[]; D: unknown[] };
+
+/** 共通・ローカル・クイックアルゴリズム・9通りテンプレ用（content から取得） */
 export interface GeneratorContentOptions {
   commonContent?: string;
   localContent?: string;
   quickAlgorithmContent?: string;
+  /** 9通りメニュー。ある場合は距離タイプ最優先でここから1つ選ぶ */
+  menuTemplates9?: MenuTemplates9 | null;
+}
+
+const TRAINING_RESULT_KEYS: (keyof TrainingResult)[] = [
+  'purpose', 'warmUp', 'drill', 'kick', 'pull', 'preMain', 'dive', 'rest',
+  'main', 'down', 'total', 'intention', 'coachingPoint', 'caution', 'expectedEffect',
+];
+
+function isTrainingResultLike(obj: unknown): obj is TrainingResult {
+  if (!obj || typeof obj !== 'object') return false;
+  return TRAINING_RESULT_KEYS.every((k) => typeof (obj as Record<string, unknown>)[k] === 'string');
+}
+
+/**
+ * 距離軸（S/M/D）でテンプレ配列を決め、その中から 1〜3 のどれを選ぶかは「10条件のシード」で決定。
+ * - 軸: input.distanceType（S/M/D）→ templates.S / templates.M / templates.D のいずれかを使用。
+ * - 抽出: 上記配列のうち、purpose/main/warmUp のいずれかが空でないものだけに絞る。
+ * - 1〜3 の選択: 10条件（期・種目・性別・年齢・距離タイプ・レベル・目的・状況・練習時間・ボリュームUP）を
+ *   連結した文字列をシードに pickIndex(seed, list.length) で 0〜(length-1) のインデックスを算出し、
+ *   同じ入力なら常に同じテンプレ（①/②/③のどれか）が選ばれる。
+ */
+function selectFrom9Templates(input: TrainingInput, templates: MenuTemplates9): TrainingResult | null {
+  const distanceType = (input.distanceType === 'S' || input.distanceType === 'M' || input.distanceType === 'D')
+    ? input.distanceType
+    : 'M';
+  const rawList = templates[distanceType];
+  if (!rawList?.length) return null;
+  const list = rawList.filter((c): c is TrainingResult => {
+    if (!isTrainingResultLike(c)) return false;
+    return (c.purpose?.trim() || c.main?.trim() || c.warmUp?.trim()) !== '';
+  });
+  if (!list.length) return null;
+  const seed = [
+    input.period, input.stroke, input.gender, input.age, input.distanceType,
+    input.level, input.purpose, input.condition, input.practiceTime, input.volumeUp,
+  ].join('');
+  const idx = pickIndex(seed, list.length);
+  return list[idx];
 }
 
 export function generateTrainingMenu(
   input: TrainingInput,
   options?: GeneratorContentOptions
-): TrainingResult {
-  // options.commonContent / options.localContent / options.quickAlgorithmContent は
-  // 将来のルール・テンプレート・クイック専用アルゴリズム拡張用に接続済み。現時点では参照のみ。
-  void options;
+): TrainingResult | null {
+  // クイック作成：出力は必ずテンプレ内（絶対）。アルゴリズムは使わず、テンプレが渡されている間はここで返す。
+  const templates9 = options?.menuTemplates9;
+  if (templates9 !== undefined) {
+    if (templates9 == null || (!templates9.S?.length && !templates9.M?.length && !templates9.D?.length)) {
+      return null;
+    }
+    const selected = selectFrom9Templates(input, templates9);
+    if (selected) return selected;
+    return null;
+  }
+
   const ageGroup = getAgeGroup(input.age);
   const purposeType = getPurposeType(input.purpose);
   const distanceType = input.distanceType as DistanceType;

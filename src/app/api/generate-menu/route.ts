@@ -108,8 +108,8 @@ function buildConditionInstructions(
     '1': '①リカバリー期: 回復・感覚維持・姿勢安定。強度控えめ、W-up/Drill/Down多め。Mainは短め・A1〜EN1中心。',
     '2': '②基礎形成期: 水感覚・姿勢・呼吸・フォーム固め。DrillとKickを丁寧に。Mainは技術を崩さない範囲の強度。',
     '3': '③発展形成期: 技術精度向上・スピード導入。Pre-Mainで強度を段階的に。Mainは目的に合わせて設計。',
-    '4': '④強化期①: ボリュームと心肺土台。総距離多め、Kick/Pullの量を確保。強度は段階的に。',
-    '5': '⑤強化期②: 乳酸耐性・レースペース持続。Mainの本数・レスト・強度を目的に合わせて明確に。',
+    '4': '④強化期 (スピード持久力): ボリュームと心肺土台。総距離多め、Kick/Pullの量を確保。強度は段階的に。',
+    '5': '⑤強化期 (対乳酸): 乳酸耐性・レースペース持続。Mainの本数・レスト・強度を目的に合わせて明確に。',
     '6': '⑥調整期: 疲労除去＋スピード維持。量より質、短いスピード刺激を入れる。崩れた状態でMainに入らない。',
     '7': '⑦テーパー期: 神経調整・反応・仕上げ。短い本数・レスト長め・スピード感。追い込まない。',
   };
@@ -118,7 +118,8 @@ function buildConditionInstructions(
     Ba: '背泳ぎ: 専門種目をW-upで少なめに。Ba専門のドリル・キック・プルを入れる。',
     Br: '平泳ぎ: Brは専門Pullを多め。キックはBrキックの目的を明示。',
     Fly: 'バタフライ: Fly専門ドリル・キック。強度はフォームを崩さない範囲で。',
-    IM: '個人メドレー: 4泳法のバランス。W-upでIM多め。ドリルは泳法別に分けてもよい。',
+    IM: 'メドレー: 4泳法のバランス。W-upでIM多め。ドリルは泳法別に分けてもよい。',
+    S1: 'スタイル1: メイン種目に合わせたドリル・キック・プル。種目名はS1のままでよい。',
   };
   const purposeGuide: Record<string, string> = {
     技術: '目的=技術: Mainはフォーム維持が最優先。本数・レストは余裕を持たせ、ドリル的な要素をMain前後に。',
@@ -177,16 +178,25 @@ function buildConditionInstructions(
 }
 
 export async function POST(request: NextRequest) {
+  let token: unknown = null;
   try {
-    const token = await getToken({
+    token = await getToken({
       req: request,
       secret: process.env.NEXTAUTH_SECRET,
     });
-    if (!token) {
-      return NextResponse.json({ error: 'ログインが必要です。' }, { status: 401 });
-    }
+  } catch (authErr) {
+    console.error('[generate-menu] getToken error:', authErr);
+    return NextResponse.json(
+      { error: '認証の取得に失敗しました。NEXTAUTH_SECRET が設定されているか確認してください。' },
+      { status: 500 }
+    );
+  }
+  if (!token) {
+    return NextResponse.json({ error: 'ログインが必要です。' }, { status: 401 });
+  }
 
-    const apiKey = (process.env.OPENAI_API_KEY || '').trim();
+  try {
+    const apiKey = (process.env.OPENAI_API_KEY || '').trim().replace(/\r?\n/g, '');
     if (!apiKey || apiKey === 'YOUR_API_KEY_HERE') {
       return NextResponse.json(
         { error: 'OPENAI_API_KEY が設定されていません。.env.local に本物のAPIキーを設定してください。' },

@@ -17,8 +17,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const { common, local, quickAlgorithm } = await getAllContent();
-    return NextResponse.json({ common, local, quickAlgorithm });
+    const { common, local, quickAlgorithm, menuTemplates9 } = await getAllContent();
+    return NextResponse.json({ common, local, quickAlgorithm, menuTemplates9 });
   } catch (e) {
     const message = e instanceof Error ? e.message : 'コンテンツの取得に失敗しました';
     return NextResponse.json({ error: message }, { status: 500 });

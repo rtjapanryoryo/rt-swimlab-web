@@ -7,14 +7,13 @@ export type ViewMode = 'table' | 'card';
 const STORAGE_KEY = 'rt-view-mode';
 
 export function useViewMode() {
-  // サーバー・クライアントで同じ初期値にし、ハイドレーション不一致を防ぐ
   const [viewMode, setViewModeState] = useState<ViewMode>('table');
 
   useEffect(() => {
     try {
       const stored = window.localStorage.getItem(STORAGE_KEY);
       if (stored === 'table' || stored === 'card') {
-        setViewModeState(stored as ViewMode);
+        queueMicrotask(() => setViewModeState(stored as ViewMode));
       }
     } catch {
       /* ignore */

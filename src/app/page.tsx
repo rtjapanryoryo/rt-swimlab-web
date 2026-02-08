@@ -7,8 +7,16 @@ import {
   type TrainingInput,
   type TrainingResult,
 } from '@/lib/rt/generator';
+import { menuTemplates9Fallback } from '@/lib/rt/menu-templates-9-fallback';
 import { useViewMode } from './viewMode';
 import { MenuSheet } from '@/components/MenuSheet';
+
+/** クイック用テンプレ（API不要・常にメニュー生成可能） */
+const QUICK_TEMPLATES = {
+  S: [...menuTemplates9Fallback.S],
+  M: [...menuTemplates9Fallback.M],
+  D: [...menuTemplates9Fallback.D],
+};
 
 const SAVED_INPUT_KEY_PREFIX = 'rt-swimlab-saved-input';
 
@@ -18,7 +26,7 @@ function savedInputKey(userId: string): string {
 
 const EMPTY_INPUT: TrainingInput = {
   period: '',
-  stroke: '',
+  stroke: 'Fr',
   gender: '',
   age: '',
   distanceType: '',
@@ -65,6 +73,19 @@ export default function Home() {
   const [isExporting, setIsExporting] = useState(false);
   const [openaiConfigured, setOpenaiConfigured] = useState<boolean | null>(null);
   const [openaiReason, setOpenaiReason] = useState<string | undefined>(undefined);
+  const [sectionOrder, setSectionOrder] = useState<string[] | null>(null);
+
+  // クイックメニュー用セクション順（quick-settings.json）
+  useEffect(() => {
+    fetch('/api/quick-settings')
+      .then((r) => r.ok ? r.json() : null)
+      .then((data: { sectionOrder?: string[] } | null) => {
+        if (Array.isArray(data?.sectionOrder) && data.sectionOrder.length > 0) {
+          setSectionOrder(data.sectionOrder);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // ログインユーザーごとに前回入力を復元（個々の形・2回目以降）
   const user = session?.user as { email?: string | null; id?: string | null } | undefined;
@@ -122,6 +143,16 @@ export default function Home() {
     return Object.values(input).every((v) => (v ?? '') !== '');
   };
 
+  const fallbackToQuickMenu = () => {
+    const effectiveInput: TrainingInput = {
+      ...input,
+      distanceType: input.distanceType === 'S' || input.distanceType === 'M' || input.distanceType === 'D' ? input.distanceType : 'M',
+    };
+    const r = generateTrainingMenu(effectiveInput, { menuTemplates9: QUICK_TEMPLATES });
+    setResult(r ?? null);
+    setApiError(null);
+  };
+
   const generateMenuWithAI = async () => {
     setIsGenerating(true);
     setApiError(null);
@@ -138,26 +169,24 @@ export default function Home() {
       try {
         data = JSON.parse(text);
       } catch {
-        setApiError(res.status === 401 ? 'ログインが必要です。' : 'メニュー生成に失敗しました。');
+        fallbackToQuickMenu();
         return;
       }
       if (!res.ok) {
-        const msg = data.missingItems?.length
-          ? `${data.error || '入力が不足しています'}\n不足項目: ${data.missingItems.join('、')}`
-          : (data.error || 'メニュー生成に失敗しました');
-        setApiError(msg);
+        fallbackToQuickMenu();
         return;
       }
       if (data.result && typeof data.result === 'object') {
         setResult(data.result as TrainingResult);
         setApiMenuText(null);
-      } else {
+      } else if (data.menu) {
         setResult(null);
-        setApiMenuText(data.menu ?? '');
+        setApiMenuText(data.menu);
+      } else {
+        fallbackToQuickMenu();
       }
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'メニュー生成に失敗しました';
-      setApiError(msg.startsWith('Unexpected token') ? 'ログインが必要です。' : msg);
+    } catch {
+      fallbackToQuickMenu();
     } finally {
       setIsGenerating(false);
     }
@@ -166,31 +195,33 @@ export default function Home() {
   const generateMenuLocal = async () => {
     setApiMenuText(null);
     setApiError(null);
-    let common = '';
-    let local = '';
-    let quickAlgorithm = '';
+    const effectiveInput: TrainingInput = {
+      ...input,
+      stroke: input.stroke || 'Fr',
+      distanceType: input.distanceType === 'S' || input.distanceType === 'M' || input.distanceType === 'D' ? input.distanceType : 'M',
+    };
+    let templates: { S: unknown[]; M: unknown[]; D: unknown[] } = QUICK_TEMPLATES;
     try {
-      const res = await fetch('/api/content');
-      const text = await res.text();
+      const res = await fetch('/api/quick-templates');
       if (res.ok) {
-        try {
-          const data = JSON.parse(text) as { common?: string; local?: string; quickAlgorithm?: string };
-          common = data.common ?? '';
-          local = data.local ?? '';
-          quickAlgorithm = data.quickAlgorithm ?? '';
-        } catch {
-          /* HTML 等が返った場合は空のまま */
+        const data = (await res.json()) as {
+          S?: unknown[];
+          M?: unknown[];
+          D?: unknown[];
+          settings?: { sectionOrder?: string[] };
+        };
+        if (Array.isArray(data.S) && Array.isArray(data.M) && Array.isArray(data.D) && (data.S.length > 0 || data.M.length > 0 || data.D.length > 0)) {
+          templates = { S: data.S, M: data.M, D: data.D };
+        }
+        if (Array.isArray(data.settings?.sectionOrder) && data.settings.sectionOrder.length > 0) {
+          setSectionOrder(data.settings.sectionOrder);
         }
       }
     } catch {
-      /* コンテンツ取得失敗時は空のままクイック作成 */
+      /* 取得できなければ埋め込みテンプレのまま */
     }
-    const r = generateTrainingMenu(input, {
-      commonContent: common,
-      localContent: local,
-      quickAlgorithmContent: quickAlgorithm,
-    });
-    setResult(r);
+    const r = generateTrainingMenu(effectiveInput, { menuTemplates9: templates });
+    setResult(r ?? null);
   };
 
   const exportPDFBlob = async (): Promise<Blob> => {
@@ -327,27 +358,26 @@ export default function Home() {
                 <option value="1">① リカバリー期</option>
                 <option value="2">② 基礎形成期</option>
                 <option value="3">③ 発展形成期</option>
-                <option value="4">④ 強化期①</option>
-                <option value="5">⑤ 強化期②</option>
+                <option value="4">④ 強化期 (スピード持久力)</option>
+                <option value="5">⑤ 強化期 (対乳酸)</option>
                 <option value="6">⑥ 調整期</option>
                 <option value="7">⑦ テーパー期</option>
               </select>
             </div>
 
-            {/* 2. 種目 */}
+            {/* 2. 種目（無記入にしない：Fr/Ba/Br/Fly/IM） */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">2. 種目</label>
               <select
-                value={input.stroke}
+                value={input.stroke || 'Fr'}
                 onChange={(e) => handleInputChange('stroke', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">選択してください</option>
                 <option value="Fr">Fr（自由形）</option>
                 <option value="Ba">Ba（背泳ぎ）</option>
                 <option value="Br">Br（平泳ぎ）</option>
                 <option value="Fly">Fly（バタフライ）</option>
-                <option value="IM">IM（個人メドレー）</option>
+                <option value="IM">メドレー</option>
               </select>
             </div>
 
@@ -508,7 +538,6 @@ export default function Home() {
             </button>
             <button
               onClick={generateMenuLocal}
-              disabled={!isFormValid()}
               className="w-full md:w-auto px-6 py-3 border border-gray-300 bg-white text-gray-700 font-semibold rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               クイック作成
@@ -583,11 +612,11 @@ export default function Home() {
               ) : result ? (
                 viewMode === 'table' ? (
                   <div className="p-6">
-                    <MenuSheet input={input} result={result} />
+                    <MenuSheet input={input} result={result} sectionOrder={sectionOrder ?? undefined} />
                   </div>
                 ) : (
                   <div className="p-6">
-                    <MenuSheet input={input} result={result} isCardView />
+                    <MenuSheet input={input} result={result} isCardView sectionOrder={sectionOrder ?? undefined} />
                   </div>
                 )
               ) : null}

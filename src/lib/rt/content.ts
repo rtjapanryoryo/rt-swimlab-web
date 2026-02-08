@@ -1,7 +1,7 @@
 /**
- * 共通・ローカル専用コンテンツの読み込み（サーバー専用）
+ * コンテンツ読み込み（サーバー専用）
  * - content/common/ … カスタム・クイック両方で参照
- * - content/local/  … クイック作成のみで参照（quick-algorithm.md は別取得）
+ * - content/quick/  … クイック作成のみで参照（PDF・JSON・md等）
  * 対応形式: .md / .txt / .json / .pdf（PDFはテキスト抽出）
  */
 
@@ -17,13 +17,17 @@ const PROJECT_ROOT = process.cwd();
 const PROMPT_FILES = ['prompt.pdf', 'prompt.md', 'prompt.txt'];
 
 async function extractPdfText(fullPath: string): Promise<string> {
-  const buf = await fs.readFile(fullPath);
-  const parser = new PDFParse({ data: buf });
   try {
-    const result = await parser.getText();
-    return result?.text?.trim() ?? '';
-  } finally {
-    await parser.destroy();
+    const buf = await fs.readFile(fullPath);
+    const parser = new PDFParse({ data: buf });
+    try {
+      const result = await parser.getText();
+      return result?.text?.trim() ?? '';
+    } finally {
+      await parser.destroy();
+    }
+  } catch {
+    return '';
   }
 }
 
@@ -78,9 +82,13 @@ export async function getCommonContent(): Promise<string> {
     .sort();
   const parts: string[] = [];
   for (const name of files) {
-    const fullPath = path.join(dir, name);
-    const raw = await readFileAsText(fullPath, name);
-    if (raw.trim()) parts.push(`--- ${name}\n${raw.trim()}`);
+    try {
+      const fullPath = path.join(dir, name);
+      const raw = await readFileAsText(fullPath, name);
+      if (raw.trim()) parts.push(`--- ${name}\n${raw.trim()}`);
+    } catch {
+      /* 1ファイル失敗しても他を続ける */
+    }
   }
   return parts.join('\n\n');
 }
@@ -103,17 +111,17 @@ export async function getPromptContent(): Promise<string> {
   return '';
 }
 
+const QUICK_DIR = path.join(PROJECT_ROOT, 'content', 'quick');
 const QUICK_ALGORITHM_FILES = ['quick-algorithm.md', 'quick-algorithm.pdf'];
+const QUICK_EXCLUDE_FILES = ['menu-templates-9.json', 'menu-template-1sample.json', 'quick-settings.json', ...QUICK_ALGORITHM_FILES];
 
 /**
- * ローカル専用コンテンツ（ローカル生成のみで使用）
- * quick-algorithm.md / quick-algorithm.pdf はクイック専用アルゴリズム用のため除外して返す。
+ * クイック用その他コンテンツ（content/quick 内のアルゴリズム・テンプレJSON以外）
  */
 export async function getLocalContent(): Promise<string> {
-  const dir = path.join(PROJECT_ROOT, 'content', 'local');
   let entries: Dirent[];
   try {
-    entries = await fs.readdir(dir, { withFileTypes: true });
+    entries = await fs.readdir(QUICK_DIR, { withFileTypes: true });
   } catch {
     return '';
   }
@@ -121,14 +129,14 @@ export async function getLocalContent(): Promise<string> {
     .filter(
       (e) =>
         e.isFile() &&
-        !QUICK_ALGORITHM_FILES.includes(e.name) &&
+        !QUICK_EXCLUDE_FILES.includes(e.name) &&
         ALLOWED_EXT.includes(path.extname(e.name).toLowerCase())
     )
     .map((e) => e.name)
     .sort();
   const parts: string[] = [];
   for (const name of files) {
-    const fullPath = path.join(dir, name);
+    const fullPath = path.join(QUICK_DIR, name);
     const raw = await readFileAsText(fullPath, name);
     if (raw.trim()) parts.push(`--- ${name}\n${raw.trim()}`);
   }
@@ -136,13 +144,12 @@ export async function getLocalContent(): Promise<string> {
 }
 
 /**
- * クイック作成専用アルゴリズム（content/local/quick-algorithm.md または .pdf）
- * .md を優先し、なければ .pdf のテキストを抽出して返す。クイック作成時にジェネレータに渡される。
+ * クイック作成専用コンテンツ（content/quick 内のPDF等）
+ * quick-algorithm.pdf / .md を優先。なければフォルダ内の最初の .pdf（例: 9通り.pdf）を使用。
  */
 export async function getQuickAlgorithmContent(): Promise<string> {
-  const dir = path.join(PROJECT_ROOT, 'content', 'local');
   for (const name of QUICK_ALGORITHM_FILES) {
-    const fullPath = path.join(dir, name);
+    const fullPath = path.join(QUICK_DIR, name);
     try {
       const raw = await readFileAsText(fullPath, name);
       if (raw?.trim()) return raw.trim();
@@ -150,22 +157,85 @@ export async function getQuickAlgorithmContent(): Promise<string> {
       /* 次の候補を試す */
     }
   }
+  let entries: Dirent[];
+  try {
+    entries = await fs.readdir(QUICK_DIR, { withFileTypes: true });
+  } catch {
+    return '';
+  }
+  const pdfs = entries
+    .filter((e) => e.isFile() && path.extname(e.name).toLowerCase() === '.pdf')
+    .map((e) => e.name)
+    .sort();
+  for (const name of pdfs) {
+    const fullPath = path.join(QUICK_DIR, name);
+    try {
+      const raw = await readFileAsText(fullPath, name);
+      if (raw?.trim()) return raw.trim();
+    } catch {
+      /* 次 */
+    }
+  }
   return '';
+}
+
+/** クイックメニュー用設定（content/quick/quick-settings.json）。セクション順など。 */
+const DEFAULT_SECTION_ORDER = [
+  'warmUp', 'drill', 'kick', 'pull', 'rest', 'preMain', 'dive', 'main', 'down',
+];
+
+export async function getQuickSettings(): Promise<{ sectionOrder: string[] }> {
+  const fullPath = path.join(QUICK_DIR, 'quick-settings.json');
+  try {
+    const raw = await fs.readFile(fullPath, 'utf-8');
+    const parsed = JSON.parse(raw) as unknown;
+    if (parsed && typeof parsed === 'object' && Array.isArray((parsed as Record<string, unknown>).sectionOrder)) {
+      const order = (parsed as { sectionOrder: string[] }).sectionOrder;
+      if (order.length > 0) return { sectionOrder: order };
+    }
+  } catch {
+    /* ignore */
+  }
+  return { sectionOrder: [...DEFAULT_SECTION_ORDER] };
+}
+
+/** 9通りメニューテンプレ（content/quick/menu-templates-9.json）。PDFをJSON化したもの。 */
+export async function getMenuTemplates9(): Promise<{
+  S: unknown[];
+  M: unknown[];
+  D: unknown[];
+} | null> {
+  const fullPath = path.join(QUICK_DIR, 'menu-templates-9.json');
+  try {
+    const raw = await fs.readFile(fullPath, 'utf-8');
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== 'object') return null;
+    const o = parsed as Record<string, unknown>;
+    const S = Array.isArray(o.S) ? o.S : [];
+    const M = Array.isArray(o.M) ? o.M : [];
+    const D = Array.isArray(o.D) ? o.D : [];
+    if (S.length === 0 && M.length === 0 && D.length === 0) return null;
+    return { S, M, D };
+  } catch {
+    return null;
+  }
 }
 
 /**
  * 両方取得（APIでまとめて返す用）
- * common / local / quickAlgorithm を返す。
+ * common / local / quickAlgorithm / menuTemplates9 を返す。
  */
 export async function getAllContent(): Promise<{
   common: string;
   local: string;
   quickAlgorithm: string;
+  menuTemplates9: { S: unknown[]; M: unknown[]; D: unknown[] } | null;
 }> {
-  const [common, local, quickAlgorithm] = await Promise.all([
+  const [common, local, quickAlgorithm, menuTemplates9] = await Promise.all([
     getCommonContent(),
     getLocalContent(),
     getQuickAlgorithmContent(),
+    getMenuTemplates9(),
   ]);
-  return { common, local, quickAlgorithm };
+  return { common, local, quickAlgorithm, menuTemplates9: menuTemplates9 ?? null };
 }
