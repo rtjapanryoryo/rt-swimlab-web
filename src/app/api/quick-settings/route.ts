@@ -1,15 +1,30 @@
+import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { getToken } from 'next-auth/jwt';
 import { getQuickSettings } from '@/lib/rt/content';
 
 /**
- * GET: クイックメニュー用設定（セクション順など）。認証不要。
+ * GET: クイックメニュー用設定（セクション順など）。未ログインなら 401 + JSON。
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const token = await getToken({
+      req: request,
+      secret: process.env.NEXTAUTH_SECRET,
+    });
+    if (!token) {
+      return NextResponse.json(
+        { error: 'login_required', message: 'ログインが必要です' },
+        { status: 401, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+      );
+    }
     const settings = await getQuickSettings();
     return NextResponse.json(settings);
-  } catch (e) {
-    const message = e instanceof Error ? e.message : '設定の取得に失敗しました';
-    return NextResponse.json({ error: message }, { status: 500 });
+  } catch (e: unknown) {
+    console.error('[quick-settings] GET error:', e);
+    return NextResponse.json(
+      { error: 'internal_error', message: '現在生成できません。時間をおいて再試行してください' },
+      { status: 500, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+    );
   }
 }

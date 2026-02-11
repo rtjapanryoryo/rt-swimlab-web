@@ -6,8 +6,8 @@ const FADE_IN_MS = 600;
 const FADE_OUT_MS = 800;
 
 function SplashContent({ durationMs }: { durationMs: number }) {
-  const [imageLoaded, setImageLoaded] = useState(() => false);
-  const [imageError, setImageError] = useState(() => false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const holdMs = Math.max(durationMs - FADE_IN_MS - FADE_OUT_MS, 0);
 
   return (
@@ -15,10 +15,7 @@ function SplashContent({ durationMs }: { durationMs: number }) {
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-white"
       style={{
         willChange: 'opacity, transform',
-        animation: `
-          splashFadeIn ${FADE_IN_MS}ms cubic-bezier(.2,.8,.2,1) 0ms forwards,
-          splashFadeOut ${FADE_OUT_MS}ms cubic-bezier(.2,.8,.2,1) ${FADE_IN_MS + holdMs}ms forwards
-        `,
+        animation: `splashFadeIn ${FADE_IN_MS}ms cubic-bezier(.2,.8,.2,1) 0ms forwards, splashFadeOut ${FADE_OUT_MS}ms cubic-bezier(.2,.8,.2,1) ${FADE_IN_MS + holdMs}ms forwards`,
       }}
     >
       {!imageError && (
@@ -27,17 +24,13 @@ function SplashContent({ durationMs }: { durationMs: number }) {
           alt="RT-japan"
           width={420}
           height={420}
+          className="h-auto w-[260px]"
           style={{
-            width: 260,
-            height: 'auto',
             willChange: 'opacity, transform',
             opacity: imageLoaded ? 1 : 0,
             transition: 'opacity 200ms ease',
             animation: imageLoaded
-              ? `
-                logoIn ${FADE_IN_MS}ms cubic-bezier(.2,.8,.2,1) 0ms forwards,
-                logoOut ${FADE_OUT_MS}ms cubic-bezier(.2,.8,.2,1) ${FADE_IN_MS + holdMs}ms forwards
-              `
+              ? `splashLogoIn ${FADE_IN_MS}ms cubic-bezier(.2,.8,.2,1) 0ms forwards, splashLogoOut ${FADE_OUT_MS}ms cubic-bezier(.2,.8,.2,1) ${FADE_IN_MS + holdMs}ms forwards`
               : 'none',
           }}
           onLoad={() => {
@@ -53,23 +46,6 @@ function SplashContent({ durationMs }: { durationMs: number }) {
       {imageError && (
         <div className="text-2xl font-bold text-gray-900">RT-japan</div>
       )}
-
-      <style jsx>{`
-        @keyframes splashFadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes splashFadeOut {
-          to { opacity: 0; }
-        }
-        @keyframes logoIn {
-          from { opacity: 0; transform: translateY(8px) scale(0.98); }
-          to { opacity: 1; transform: translateY(0px) scale(1); }
-        }
-        @keyframes logoOut {
-          to { opacity: 0; transform: translateY(-6px) scale(0.99); }
-        }
-      `}</style>
     </div>
   );
 }
@@ -94,7 +70,6 @@ export function SplashScreenProvider({
   storageKey?: string;
   durationMs?: number;
 }) {
-  // サーバー・クライアントで同じ初期値にし、ハイドレーション不一致を防ぐ
   const [show, setShow] = useState(true);
 
   useEffect(() => {

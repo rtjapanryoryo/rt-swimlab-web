@@ -637,14 +637,14 @@ export function generateTrainingMenu(
   input: TrainingInput,
   options?: GeneratorContentOptions
 ): TrainingResult | null {
-  // クイック作成：出力は必ずテンプレ内（絶対）。アルゴリズムは使わず、テンプレが渡されている間はここで返す。
+  // クイック作成：100%テンプレートに沿って出力。アルゴリズムは一切使わず、テンプレの内容をそのまま返す。
   const templates9 = options?.menuTemplates9;
   if (templates9 !== undefined) {
     if (templates9 == null || (!templates9.S?.length && !templates9.M?.length && !templates9.D?.length)) {
       return null;
     }
     const selected = selectFrom9Templates(input, templates9);
-    if (selected) return selected;
+    if (selected) return { ...selected }; // テンプレのコピーのみ返却（アルゴリズム由来のフィールドは一切混入させない）
     return null;
   }
 

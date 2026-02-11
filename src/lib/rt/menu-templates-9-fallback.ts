@@ -94,7 +94,7 @@ export const menuTemplates9Fallback = {
     {
       purpose: '【目的】ミドル向け③｜心拍が上がっても無駄を抑え、安定して泳ぎ続ける',
       warmUp: 'W-up 400m（A1）',
-      drill: 'IM reverse 200m（EN1）',
+      drill: 'IM reverse 1×200m（EN1）',
       kick: 'Kick S1 15×50m（EN2）｜1-4 Dec, 5 Hard Alt',
       pull: 'Pull FR 8×100m（EN2）｜B-up',
       preMain: 'Pre-Main FR 9×50m（EN2）｜1-3 Dec Alt',
@@ -130,7 +130,7 @@ export const menuTemplates9Fallback = {
     {
       purpose: '【目的】ディスタンス向け②｜低抵抗フォームを"維持し続ける力"を養う',
       warmUp: 'W-up 400m（A1）',
-      drill: 'IM reverse 200m（EN1）',
+      drill: 'IM reverse 1×200m（EN1）',
       kick: 'Kick S1 6×100m（EN2）｜good kick',
       pull: 'Pull FR 10×100m（EN2）｜1-5 Des DPS',
       preMain: 'Pre-Main FR 8×100m（EN2）｜1-4 Dec good form',

@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "lsof -i :3000 2>/dev/null && (echo 'Port 3000 in use. Killing...'; npx kill-port 3000) || true",
     "dev": "next dev",
+    "dev:3001": "next dev -p 3001",
     "dev:daemon": "pm2 start ecosystem.config.cjs",
     "dev:daemon:stop": "pm2 stop rt-swimlab-web",
     "dev:daemon:logs": "pm2 logs rt-swimlab-web",
@@ -26,6 +28,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^17.2.4",
     "eslint": "^9",
     "eslint-config-next": "16.1.3",
     "pm2": "^5.4.3",

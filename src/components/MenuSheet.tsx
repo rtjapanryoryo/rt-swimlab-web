@@ -39,6 +39,25 @@ const DEFAULT_SECTION_ORDER: (keyof TrainingResult)[] = [
   'warmUp', 'drill', 'kick', 'pull', 'rest', 'preMain', 'dive', 'main', 'down',
 ];
 
+/** テンプレ本文の先頭からセクション表示名を抽出（ミドル２等で Drill 枠に W-up が入る場合に正しく表示） */
+function extractSectionLabelFromContent(text: string): string | null {
+  const t = (text ?? '').trim();
+  if (!t) return null;
+  // 先頭の語句で判定（長い表現を先にマッチ）
+  if (/^(W-up|W-up\s|ウォームアップ)/i.test(t)) return 'W-up';
+  if (/^(W-down|W-down\s)/i.test(t)) return 'W-down';
+  if (/^Pre-Main\b/i.test(t)) return 'Pre-Main';
+  if (/^Easy\s+Swim\b/i.test(t)) return 'W-down';
+  if (/^Main\b/i.test(t)) return 'Main';
+  if (/^(Drill|ドリル)\b/i.test(t)) return 'Drill';
+  if (/^(Kick|キック)\b/i.test(t)) return 'Kick';
+  if (/^(Pull|プル)\b/i.test(t)) return 'Pull';
+  if (/^Rest\b/i.test(t)) return 'Rest';
+  if (/^Dive\b/i.test(t)) return 'Dive';
+  if (/^Down\b/i.test(t)) return 'W-down';
+  return null;
+}
+
 /** 本文から種目を抽出。テンプレ通りに表示する（条件の種目は使わずテンプレ優先） */
 function extractStyleFromText(text: string): string | null {
   const m = text.match(/\b(S1|FR|Fr|Ba|Br|Fly|IM|cho)\b/i);
@@ -49,18 +68,27 @@ function extractStyleFromText(text: string): string | null {
   return m[1]; // S1, Ba, Br, Fly, IM はそのまま
 }
 
-/** テンプレに種目が無いときのみ使用（条件の種目は Pre-Main/Dive の補助のみ） */
-function fallbackStyle(section: string, stroke?: string): string {
+/** テンプレに種目が無いときのみ使用。Rest以外で "-" になりうる種目は S1 に統一。 */
+function fallbackStyle(section: string, stroke?: string, templateOnly?: boolean): string {
   if (section === 'Rest') return '-';
-  if (section === 'W-up' || section === 'Down') return 'Cho';
-  if (section === 'Pre-Main' || section === 'Dive') return stroke && STROKE_ALLOWED.has(stroke) ? stroke : (stroke || '-');
-  return '-'; // Drill/Kick/Pull/Main はテンプレに無ければ "-"
+  // クイック時: Pre-Main, Dive, Main は条件2（種目）に合わせる
+  if (templateOnly && (section === 'Pre-Main' || section === 'Dive' || section === 'Main')) {
+    return stroke && STROKE_ALLOWED.has(stroke) ? stroke : 'S1';
+  }
+  if (templateOnly) return 'S1';
+  if (section === 'W-up' || section === 'Down' || section === 'W-down') return 'Cho';
+  if (section === 'Pre-Main' || section === 'Dive') return stroke && STROKE_ALLOWED.has(stroke) ? stroke : 'S1';
+  return 'S1';
 }
 
-export function parseToSheetRow(section: string, raw: string, stroke?: string): MenuSheetRow {
+export function parseToSheetRow(section: string, raw: string, stroke?: string, templateOnly?: boolean): MenuSheetRow {
   const text = (raw ?? '').trim();
   const styleFromContent = text ? extractStyleFromText(text) : null;
-  const style = (styleFromContent && STROKE_ALLOWED.has(styleFromContent)) ? styleFromContent : fallbackStyle(section, stroke);
+  // クイック時: Pre-Main/Dive/Main は条件2（種目）を常に優先。他はテンプレ優先、未指定時は S1
+  const style =
+    templateOnly && (section === 'Pre-Main' || section === 'Dive' || section === 'Main')
+      ? (stroke && STROKE_ALLOWED.has(stroke) ? stroke : 'S1')
+      : (styleFromContent && STROKE_ALLOWED.has(styleFromContent) ? styleFromContent : fallbackStyle(section, stroke, templateOnly));
   if (!text) {
     const noDash = section === 'Pre-Main' || section === 'Dive';
     return {
@@ -69,7 +97,7 @@ export function parseToSheetRow(section: string, raw: string, stroke?: string): 
       count: '-',
       sets: '1',
       intensity: '-',
-      style: fallbackStyle(section, stroke),
+      style: fallbackStyle(section, stroke, templateOnly),
       content: noDash ? '' : '-',
       total: '-',
       cycle: '-',
@@ -118,12 +146,12 @@ export function parseToSheetRow(section: string, raw: string, stroke?: string): 
 
   // 種目: Cho, IM, Fr, Br, Ba, Fly のいずれか。Rest は - のまま。
 
-  // 距離を抽出（例: 200m, 50m）
-  const distMatch = text.match(/(\d+)\s*m/);
+  // 距離を抽出（例: 200m, 50m）。5~10min 等の「min」を 10m と誤認しないよう m の直後に単語文字が続く場合は除外
+  const distMatch = text.match(/(\d+)\s*m(?!\w)/);
   if (distMatch?.[1]) distance = distMatch[1];
 
   // 本数×距離のパターンを抽出（例: 4×50m → count=4, distance=50）
-  const countDistMatch = text.match(/(\d+)\s*[×x]\s*(\d+)\s*m/);
+  const countDistMatch = text.match(/(\d+)\s*[×x]\s*(\d+)\s*m(?!\w)/);
   if (countDistMatch) {
     count = countDistMatch[1];
     if (!distMatch) distance = countDistMatch[2];
@@ -135,7 +163,11 @@ export function parseToSheetRow(section: string, raw: string, stroke?: string): 
     sets = setOnlyMatch[1];
   }
 
-  // W-up と Down で本数が - のときだけ 1 に（- を避ける）
+  // 距離があるが本数が - のときは 1 とする（Drill 等で「200m」のみの表記でも本数を開示）
+  if (count === '-' && distance !== '-') {
+    count = '1';
+  }
+  // W-up と Down は距離が無くても本数 1
   if ((section === 'W-up' || section === 'Down') && count === '-') {
     count = '1';
   }
@@ -165,49 +197,12 @@ export function parseToSheetRow(section: string, raw: string, stroke?: string): 
     }
   }
 
-  // 内容を簡潔に。強度コード削除＋セクション・距離・本数と重複する表記は除く
-  const intensityCodesToRemove = ['AN1', 'AN2', 'AN3', 'AN', 'EN1', 'EN2', 'EN3', 'EN4', 'A1', 'A2'];
-  content = text;
-  for (const code of intensityCodesToRemove) {
-    const pattern = new RegExp(`[(\（]${code}[)\）]`, 'gi');
-    content = content.replace(pattern, '');
+  // 内容はテンプレの文字列をそのまま表示（クイックは全てテンプレに合わせる）
+  content = text.trim();
+  if (content.length > 120) {
+    content = content.substring(0, 120) + '...';
   }
-  // 本数×距離（例: 6×50m, 8×100m）
-  content = content.replace(/\d+\s*[×x]\s*\d+\s*m/gi, '');
-  // 単体の距離（例: 200m, 100m）
-  content = content.replace(/\b\d+\s*m\b/g, '');
-  // レスト・サイクル表記（秒）→ サイクル列に出るため重複削除
-  content = content.replace(/\s*\d+\s*秒\s*(レスト)?/g, '');
-  // セクションと重複するブロック名・ドリル名
-  content = content.replace(/^(キック|プル（専門）|プル|Pre-Main|Main|Easy Swim|Dive)\s*/i, '');
-  content = content.replace(/^(片手ドリル|キャッチアップ|フィストスイム|片手＋キック|キックのみ|プル＋キック|各泳法のドリル|IMドリル|ドリル)\s*/i, '');
-  content = content
-    .replace(/\s*@\d+\s*秒\s*/g, '')
-    .replace(/\s*\d{2}:\d{2}\s*/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-  // 器具の括弧表記は後で追加するため、既存の重複を削除
-  content = content
-    .replace(/[(\（](ボード|ノーボード|ボード・ノーボード交互|No\s*board|ボードなし)[)\）]/gi, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  if (equipment !== '-') {
-    content = content ? `${content} ${equipment}` : equipment;
-  }
-
-  // 内容列の不要な括弧を除去
-  content = content.replace(/[（）()]/g, ' ').replace(/\s+/g, ' ').trim();
-
-  // Main でサークル（@）があるが内容が空になった場合は @ を内容として表示
-  if (section === 'Main' && !content.trim() && cycle !== '-') {
-    content = '@';
-  }
-
-  if (content.length > 60) {
-    content = content.substring(0, 60) + '...';
-  }
-  if (!content.trim()) content = '-';
+  if (!content) content = '-';
 
   // Total計算（距離 × 本数 × セット）
   if (distance !== '-' && count !== '-') {
@@ -224,13 +219,13 @@ export function parseToSheetRow(section: string, raw: string, stroke?: string): 
     total = distance + 'm';
   }
 
-  // W-up と Down は Cho。Pre-Main・Dive は種目を空にしない（内容から抽出した種目 or 入力種目 or '-'）
+  // Rest以外で "-" になりうる種目は S1 に統一
   const finalStyle =
-    section === 'W-up' || section === 'Down'
-      ? 'Cho'
-      : section === 'Pre-Main' || section === 'Dive'
-        ? (style && style !== '-' ? style : (stroke || '-'))
-        : normalizeDash(style);
+    section === 'Rest'
+      ? '-'
+      : section === 'W-up' || section === 'Down' || section === 'W-down'
+        ? 'Cho'
+        : (style && style !== '-' ? style : 'S1');
   const displayContent = section === 'Pre-Main' || section === 'Dive' ? (content.trim() || '') : normalizeDash(content);
 
   return {
@@ -250,24 +245,30 @@ type MenuSheetProps = {
   input: TrainingInput;
   result: TrainingResult;
   isCardView?: boolean;
+  /** クイック(テンプレ)由来なら true。種目・内容をフォーム値で補完しない */
+  source?: 'quick' | 'custom';
   /** セクション表示順（quick-settings.json の sectionOrder）。未指定時はデフォルト順 */
   sectionOrder?: string[];
+  /** セクション表示ラベル（quick-settings.json の sectionLabels）。未指定時は SECTION_KEY_TO_LABEL */
+  sectionLabels?: Record<string, string>;
 };
 
-export function MenuSheet({ input, result, isCardView = false, sectionOrder: sectionOrderProp }: MenuSheetProps) {
+export function MenuSheet({ input, result, isCardView = false, source = 'custom', sectionOrder: sectionOrderProp, sectionLabels: sectionLabelsProp }: MenuSheetProps) {
   const order = sectionOrderProp?.length ? sectionOrderProp : DEFAULT_SECTION_ORDER;
+  const templateOnly = source === 'quick';
   const rows: MenuSheetRow[] = useMemo(() => {
     const sheetRows: MenuSheetRow[] = [];
     const s = (input.stroke && STROKE_ALLOWED.has(input.stroke) ? input.stroke : 'S1') as string;
     for (const key of order) {
       if (key === 'dive' && !(result.dive ?? '').trim()) continue;
       if (key === 'rest' && !(result.rest ?? '').trim()) continue;
-      const label = SECTION_KEY_TO_LABEL[key] ?? key;
       const value = (result as unknown as Record<string, string>)[key] ?? '';
-      sheetRows.push(parseToSheetRow(label, value, s));
+      const labelFromContent = extractSectionLabelFromContent(value);
+      const label = labelFromContent ?? sectionLabelsProp?.[key] ?? SECTION_KEY_TO_LABEL[key] ?? key;
+      sheetRows.push(parseToSheetRow(label, value, s, templateOnly));
     }
     return sheetRows;
-  }, [result, input.stroke, order]);
+  }, [result, input.stroke, order, sectionLabelsProp, templateOnly]);
 
   // 日付を取得
   const today = new Date();

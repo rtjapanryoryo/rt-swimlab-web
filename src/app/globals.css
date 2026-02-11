@@ -3,6 +3,8 @@
 :root {
   --background: #f9fafb;
   --foreground: #171717;
+  --font-geist-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-geist-mono: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace;
 }
 
 @theme inline {
@@ -107,4 +109,20 @@ body {
   background: white;
   box-shadow: 0 4px 20px rgba(0,0,0,0.06);
   border: 1px solid rgba(0,0,0,0.06);
+}
+
+/* スプラッシュ用キーフレーム（styled-jsx の代わり） */
+@keyframes splashFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes splashFadeOut {
+  to { opacity: 0; }
+}
+@keyframes splashLogoIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes splashLogoOut {
+  to { opacity: 0; transform: translateY(-6px) scale(0.99); }
 }

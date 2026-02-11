@@ -8,7 +8,6 @@
 import type { Dirent } from 'fs';
 import fs from 'fs/promises';
 import path from 'path';
-import { PDFParse } from 'pdf-parse';
 
 const ALLOWED_EXT = ['.md', '.txt', '.json', '.pdf'];
 const PROJECT_ROOT = process.cwd();
@@ -19,10 +18,13 @@ const PROMPT_FILES = ['prompt.pdf', 'prompt.md', 'prompt.txt'];
 async function extractPdfText(fullPath: string): Promise<string> {
   try {
     const buf = await fs.readFile(fullPath);
+    if (!buf || !Buffer.isBuffer(buf) || buf.length === 0) return '';
+    const { PDFParse } = await import('pdf-parse');
     const parser = new PDFParse({ data: buf });
     try {
       const result = await parser.getText();
-      return result?.text?.trim() ?? '';
+      const text = result?.text?.trim() ?? '';
+      return typeof text === 'string' ? text : '';
     } finally {
       await parser.destroy();
     }
@@ -184,15 +186,24 @@ const DEFAULT_SECTION_ORDER = [
   'warmUp', 'drill', 'kick', 'pull', 'rest', 'preMain', 'dive', 'main', 'down',
 ];
 
-export async function getQuickSettings(): Promise<{ sectionOrder: string[] }> {
+export async function getQuickSettings(): Promise<{
+  sectionOrder: string[];
+  sectionLabels?: Record<string, string>;
+}> {
   const fullPath = path.join(QUICK_DIR, 'quick-settings.json');
   try {
     const raw = await fs.readFile(fullPath, 'utf-8');
     const parsed = JSON.parse(raw) as unknown;
-    if (parsed && typeof parsed === 'object' && Array.isArray((parsed as Record<string, unknown>).sectionOrder)) {
-      const order = (parsed as { sectionOrder: string[] }).sectionOrder;
-      if (order.length > 0) return { sectionOrder: order };
-    }
+    if (!parsed || typeof parsed !== 'object') return { sectionOrder: [...DEFAULT_SECTION_ORDER] };
+    const obj = parsed as Record<string, unknown>;
+    const order = Array.isArray(obj.sectionOrder) && obj.sectionOrder.length > 0
+      ? (obj.sectionOrder as string[])
+      : [...DEFAULT_SECTION_ORDER];
+    const sectionLabels =
+      obj.sectionLabels && typeof obj.sectionLabels === 'object' && !Array.isArray(obj.sectionLabels)
+        ? (obj.sectionLabels as Record<string, string>)
+        : undefined;
+    return { sectionOrder: order, sectionLabels };
   } catch {
     /* ignore */
   }

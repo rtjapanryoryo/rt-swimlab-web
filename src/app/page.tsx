@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession, signIn } from 'next-auth/react';
 import {
   generateTrainingMenu,
   type TrainingInput,
@@ -66,22 +66,40 @@ export default function Home() {
   const [input, setInput] = useState<TrainingInput>(EMPTY_INPUT);
   const [hydrated, setHydrated] = useState(false);
 
+  // 共通表示（最後に押した方で上書き）
   const [result, setResult] = useState<TrainingResult | null>(null);
   const [apiMenuText, setApiMenuText] = useState<string | null>(null);
+  const [resultSource, setResultSource] = useState<'quick' | 'custom' | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [apiErrorKind, setApiErrorKind] = useState<'login_required' | 'retry' | 'unexpected' | null>(null);
+  const [customIsGenerating, setCustomIsGenerating] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [openaiConfigured, setOpenaiConfigured] = useState<boolean | null>(null);
   const [openaiReason, setOpenaiReason] = useState<string | undefined>(undefined);
   const [sectionOrder, setSectionOrder] = useState<string[] | null>(null);
+  const [sectionLabels, setSectionLabels] = useState<Record<string, string> | null>(null);
 
-  // クイックメニュー用セクション順（quick-settings.json）
+  // クイックメニュー用セクション順・ラベル（quick-settings.json）
   useEffect(() => {
-    fetch('/api/quick-settings')
-      .then((r) => r.ok ? r.json() : null)
-      .then((data: { sectionOrder?: string[] } | null) => {
-        if (Array.isArray(data?.sectionOrder) && data.sectionOrder.length > 0) {
-          setSectionOrder(data.sectionOrder);
+    fetch('/api/quick-settings', { credentials: 'include' })
+      .then(async (r) => {
+        if (!r.ok) return null;
+        const ct = r.headers.get('content-type') ?? '';
+        if (!ct.includes('application/json')) return null;
+        try {
+          return (await r.json()) as { sectionOrder?: string[]; sectionLabels?: Record<string, string> };
+        } catch {
+          return null;
+        }
+      })
+      .then((data) => {
+        if (data) {
+          if (Array.isArray(data.sectionOrder) && data.sectionOrder.length > 0) {
+            setSectionOrder(data.sectionOrder);
+          }
+          if (data.sectionLabels && typeof data.sectionLabels === 'object') {
+            setSectionLabels(data.sectionLabels);
+          }
         }
       })
       .catch(() => {});
@@ -137,6 +155,7 @@ export default function Home() {
   const handleInputChange = (field: keyof TrainingInput, value: string) => {
     setInput((prev) => ({ ...prev, [field]: value }));
     setApiError(null);
+    setApiErrorKind(null);
   };
 
   const isFormValid = () => {
@@ -150,32 +169,67 @@ export default function Home() {
     };
     const r = generateTrainingMenu(effectiveInput, { menuTemplates9: QUICK_TEMPLATES });
     setResult(r ?? null);
+    setApiMenuText(null);
+    setResultSource('quick');
     setApiError(null);
+    setApiErrorKind(null);
   };
 
   const generateMenuWithAI = async () => {
-    setIsGenerating(true);
+    setCustomIsGenerating(true);
     setApiError(null);
-    setApiMenuText(null);
-    setResult(null);
+    setApiErrorKind(null);
     try {
       const res = await fetch('/api/generate-menu', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(input),
+        redirect: 'manual',
+        credentials: 'include',
       });
+      if (res.status === 401) {
+        setApiError('ログインが必要です');
+        setApiErrorKind('login_required');
+        return;
+      }
+      const contentType = res.headers.get('content-type') ?? '';
+      if (!contentType.includes('application/json')) {
+        await res.text();
+        setApiError('想定外の応答。再読み込みしてください');
+        setApiErrorKind('unexpected');
+        return;
+      }
       const text = await res.text();
       let data: { error?: string; missingItems?: string[]; result?: unknown; menu?: string };
       try {
-        data = JSON.parse(text);
+        data = JSON.parse(text) as { error?: string; missingItems?: string[]; result?: unknown; menu?: string };
       } catch {
-        fallbackToQuickMenu();
+        setApiError('想定外の応答。再読み込みしてください');
+        setApiErrorKind('unexpected');
         return;
       }
       if (!res.ok) {
-        fallbackToQuickMenu();
+        if (res.status >= 500) {
+          setApiError('現在生成できません。再試行してください');
+          setApiErrorKind('retry');
+        } else {
+          const msg = data.error ?? `エラー（${res.status}）`;
+          const missing = data.missingItems?.length
+            ? `${msg} 不足: ${data.missingItems.join('・')}`
+            : msg;
+          setApiError(missing);
+          setApiErrorKind(null);
+        }
         return;
       }
+      if (data.error && !data.result && !data.menu) {
+        setApiError(data.error);
+        setApiErrorKind(null);
+        return;
+      }
+      setApiError(null);
+      setApiErrorKind(null);
+      setResultSource('custom');
       if (data.result && typeof data.result === 'object') {
         setResult(data.result as TrainingResult);
         setApiMenuText(null);
@@ -183,18 +237,22 @@ export default function Home() {
         setResult(null);
         setApiMenuText(data.menu);
       } else {
-        fallbackToQuickMenu();
+        setApiError('メニューを取得できませんでした。APIの応答形式を確認してください。');
+        setApiErrorKind(null);
       }
-    } catch {
-      fallbackToQuickMenu();
+    } catch (e) {
+      console.error('[generateMenuWithAI]', e);
+      setApiError('現在生成できません。再試行してください');
+      setApiErrorKind('retry');
+      return;
     } finally {
-      setIsGenerating(false);
+      setCustomIsGenerating(false);
     }
   };
 
   const generateMenuLocal = async () => {
-    setApiMenuText(null);
     setApiError(null);
+    setApiErrorKind(null);
     const effectiveInput: TrainingInput = {
       ...input,
       stroke: input.stroke || 'Fr',
@@ -204,17 +262,23 @@ export default function Home() {
     try {
       const res = await fetch('/api/quick-templates');
       if (res.ok) {
-        const data = (await res.json()) as {
-          S?: unknown[];
-          M?: unknown[];
-          D?: unknown[];
-          settings?: { sectionOrder?: string[] };
-        };
-        if (Array.isArray(data.S) && Array.isArray(data.M) && Array.isArray(data.D) && (data.S.length > 0 || data.M.length > 0 || data.D.length > 0)) {
-          templates = { S: data.S, M: data.M, D: data.D };
-        }
-        if (Array.isArray(data.settings?.sectionOrder) && data.settings.sectionOrder.length > 0) {
-          setSectionOrder(data.settings.sectionOrder);
+        const ct = res.headers.get('content-type') ?? '';
+        if (ct.includes('application/json')) {
+          const data = (await res.json()) as {
+            S?: unknown[];
+            M?: unknown[];
+            D?: unknown[];
+            settings?: { sectionOrder?: string[]; sectionLabels?: Record<string, string> };
+          };
+          if (Array.isArray(data.S) && Array.isArray(data.M) && Array.isArray(data.D) && (data.S.length > 0 || data.M.length > 0 || data.D.length > 0)) {
+            templates = { S: data.S, M: data.M, D: data.D };
+          }
+          if (Array.isArray(data.settings?.sectionOrder) && data.settings.sectionOrder.length > 0) {
+            setSectionOrder(data.settings.sectionOrder);
+          }
+          if (data.settings?.sectionLabels && typeof data.settings.sectionLabels === 'object') {
+            setSectionLabels(data.settings.sectionLabels);
+          }
         }
       }
     } catch {
@@ -222,10 +286,12 @@ export default function Home() {
     }
     const r = generateTrainingMenu(effectiveInput, { menuTemplates9: templates });
     setResult(r ?? null);
+    setApiMenuText(null);
+    setResultSource('quick');
   };
 
-  const exportPDFBlob = async (): Promise<Blob> => {
-    const el = document.getElementById('menu-capture');
+  const exportPDFBlob = async (captureId: string): Promise<Blob> => {
+    const el = document.getElementById(captureId);
     if (!el) throw new Error('PDF化する要素が見つかりません');
 
     setIsExporting(true);
@@ -281,9 +347,9 @@ export default function Home() {
     }
   };
 
-  const handleDownloadPDF = async () => {
+  const handleDownloadPDF = async (captureId: string) => {
     try {
-      const blob = await exportPDFBlob();
+      const blob = await exportPDFBlob(captureId);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -299,9 +365,9 @@ export default function Home() {
     }
   };
 
-  const handleSharePDF = async () => {
+  const handleSharePDF = async (captureId: string) => {
     try {
-      const blob = await exportPDFBlob();
+      const blob = await exportPDFBlob(captureId);
       const file = new File([blob], `RT-menu_${new Date().toISOString().slice(0, 10)}.pdf`, {
         type: 'application/pdf',
       });
@@ -318,13 +384,13 @@ export default function Home() {
           files: [file],
         });
       } else {
-        await handleDownloadPDF();
+        await handleDownloadPDF(captureId);
       }
     } catch (e) {
       if ((e as Error)?.name === 'AbortError') return; // ユーザーが共有をキャンセル
       console.error(e);
       try {
-        await handleDownloadPDF();
+        await handleDownloadPDF(captureId);
       } catch {
         alert('共有・PDF出力に失敗しました。もう一度お試しください。');
       }
@@ -528,32 +594,62 @@ export default function Home() {
             </p>
           )}
 
-          <div className="mt-6 flex flex-wrap gap-3">
-            <button
-              onClick={generateMenuWithAI}
-              disabled={!isFormValid() || isGenerating}
-              className="w-full md:w-auto px-6 py-3 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-              {isGenerating ? '生成中...' : 'カスタム作成'}
-            </button>
-            <button
-              onClick={generateMenuLocal}
-              className="w-full md:w-auto px-6 py-3 border border-gray-300 bg-white text-gray-700 font-semibold rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              クイック作成
-            </button>
-          </div>
         </div>
 
-        {/* 出力 */}
+        {/* 生成ボタン（最後に押した方で表示が上書きされる） */}
+        <div className="mb-6 flex flex-wrap gap-3">
+          <button
+            onClick={generateMenuLocal}
+            className="px-6 py-3 border border-gray-300 bg-white text-gray-700 font-semibold rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            クイック作成
+          </button>
+          <button
+            onClick={generateMenuWithAI}
+            disabled={!isFormValid() || customIsGenerating || openaiConfigured === false}
+            className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            title={openaiConfigured === false ? 'カスタム作成はOPENAI_API_KEY設定後に利用できます' : undefined}
+          >
+            {customIsGenerating ? '生成中...' : 'カスタム作成'}
+          </button>
+        </div>
+
+        {/* 出力（クイック→カスタム or カスタム→クイック で上書き） */}
         {apiError && (
-          <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 mb-4">
-            {apiError}
+          <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 mb-4 space-y-3">
+            <p>{apiError}</p>
+            {apiErrorKind === 'login_required' && (
+              <button
+                type="button"
+                onClick={() => signIn('google', { callbackUrl: typeof window !== 'undefined' ? window.location.href : '/' })}
+                className="px-4 py-2 bg-white border border-gray-300 rounded-md font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                Googleでログイン
+              </button>
+            )}
+            {apiErrorKind === 'retry' && (
+              <button
+                type="button"
+                onClick={generateMenuWithAI}
+                disabled={customIsGenerating}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              >
+                再試行
+              </button>
+            )}
+            {apiErrorKind === 'unexpected' && (
+              <button
+                type="button"
+                onClick={() => typeof window !== 'undefined' && window.location.reload()}
+                className="px-4 py-2 bg-white border border-gray-300 rounded-md font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                再読み込み
+              </button>
+            )}
           </div>
         )}
         {(apiMenuText || result) && (
           <div className="space-y-4">
-            {/* ツールバー: 表示切替（構造化データ時） + PDF/共有 */}
             <div className="bg-white rounded-lg shadow-md p-4 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
               <div className="flex items-center gap-2 flex-wrap">
                 {result && (
@@ -561,38 +657,29 @@ export default function Home() {
                     <span className="text-sm text-gray-600">表示:</span>
                     <button
                       onClick={() => setViewMode('table')}
-                      className={`px-3 py-1 rounded-md border text-sm ${
-                        viewMode === 'table'
-                          ? 'bg-blue-600 text-white border-blue-600'
-                          : 'bg-white text-gray-700 border-gray-300'
-                      }`}
+                      className={`px-3 py-1 rounded-md border text-sm ${viewMode === 'table' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300'}`}
                     >
                       テーブル
                     </button>
                     <button
                       onClick={() => setViewMode('card')}
-                      className={`px-3 py-1 rounded-md border text-sm ${
-                        viewMode === 'card'
-                          ? 'bg-blue-600 text-white border-blue-600'
-                          : 'bg-white text-gray-700 border-gray-300'
-                      }`}
+                      className={`px-3 py-1 rounded-md border text-sm ${viewMode === 'card' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300'}`}
                     >
                       カード
                     </button>
                   </>
                 )}
               </div>
-
               <div className="flex gap-2">
                 <button
-                  onClick={handleDownloadPDF}
+                  onClick={() => handleDownloadPDF('menu-capture')}
                   disabled={isExporting}
                   className="px-4 py-2 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-gray-900 disabled:opacity-50"
                 >
                   {isExporting ? 'PDF生成中...' : 'PDFダウンロード'}
                 </button>
                 <button
-                  onClick={handleSharePDF}
+                  onClick={() => handleSharePDF('menu-capture')}
                   disabled={isExporting}
                   className="px-4 py-2 rounded-md bg-gray-900 text-white hover:bg-black disabled:opacity-50"
                 >
@@ -600,23 +687,19 @@ export default function Home() {
                 </button>
               </div>
             </div>
-
-            {/* PDFキャプチャ対象 */}
             <div id="menu-capture" className="space-y-4">
               {apiMenuText ? (
                 <div className="bg-white rounded-lg shadow-md p-6">
-                  <pre className="whitespace-pre-wrap font-sans text-sm text-gray-800 leading-relaxed">
-                    {apiMenuText}
-                  </pre>
+                  <pre className="whitespace-pre-wrap font-sans text-sm text-gray-800 leading-relaxed">{apiMenuText}</pre>
                 </div>
               ) : result ? (
                 viewMode === 'table' ? (
-                  <div className="p-6">
-                    <MenuSheet input={input} result={result} sectionOrder={sectionOrder ?? undefined} />
+                  <div className="p-6 bg-white rounded-lg shadow-md">
+                    <MenuSheet input={input} result={result} source={resultSource ?? 'custom'} sectionOrder={sectionOrder ?? undefined} sectionLabels={sectionLabels ?? undefined} />
                   </div>
                 ) : (
-                  <div className="p-6">
-                    <MenuSheet input={input} result={result} isCardView sectionOrder={sectionOrder ?? undefined} />
+                  <div className="p-6 bg-white rounded-lg shadow-md">
+                    <MenuSheet input={input} result={result} source={resultSource ?? 'custom'} isCardView sectionOrder={sectionOrder ?? undefined} sectionLabels={sectionLabels ?? undefined} />
                   </div>
                 )
               ) : null}

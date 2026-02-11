@@ -1,13 +1,14 @@
 {
-  "sectionOrder": [
-    "warmUp",
-    "drill",
-    "kick",
-    "pull",
-    "rest",
-    "preMain",
-    "dive",
-    "main",
-    "down"
-  ]
+  "sectionOrder": ["warmUp", "drill", "kick", "pull", "rest", "preMain", "dive", "main", "down"],
+  "sectionLabels": {
+    "warmUp": "W-up",
+    "drill": "Drill",
+    "kick": "Kick",
+    "pull": "Pull",
+    "rest": "Rest",
+    "preMain": "Pre-Main",
+    "dive": "Dive",
+    "main": "Main",
+    "down": "W-down"
+  }
 }

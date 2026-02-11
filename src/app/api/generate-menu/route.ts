@@ -1,8 +1,17 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import path from 'path';
+import { config as loadEnv } from 'dotenv';
 import { getToken } from 'next-auth/jwt';
 import OpenAI from 'openai';
 import { getCommonContent, getPromptContent } from '@/lib/rt/content';
+
+// APIルートでも .env.ai を読む（next.config 経由で読めない場合のフォールバック）。失敗してもルートは登録する
+try {
+  loadEnv({ path: path.resolve(process.cwd(), '.env.ai') });
+} catch {
+  // .env.ai が無くても続行
+}
 
 function getOpenAIStatus(): { configured: boolean; reason?: 'missing' | 'placeholder' } {
   const key = (process.env.OPENAI_API_KEY || '').trim();
@@ -11,20 +20,31 @@ function getOpenAIStatus(): { configured: boolean; reason?: 'missing' | 'placeho
   return { configured: true };
 }
 
-/** GET: ログイン済みユーザー向けに OpenAI API が利用可能か返す */
+/** GET: ログイン済みユーザー向けに OpenAI API が利用可能か返す。診断用の keyExists も返す */
 export async function GET(request: NextRequest) {
-  const token = await getToken({
-    req: request,
-    secret: process.env.NEXTAUTH_SECRET,
-  });
-  if (!token) {
-    return NextResponse.json({ openaiConfigured: false }, { status: 200 });
+  try {
+    const token = await getToken({
+      req: request,
+      secret: process.env.NEXTAUTH_SECRET,
+    });
+    const keyExists = (process.env.OPENAI_API_KEY || '').trim().length > 0;
+    const status = getOpenAIStatus();
+    console.log('[generate-menu] GET: OPENAI_API_KEY exists:', keyExists, 'configured:', status.configured, 'reason:', status.reason ?? 'ok');
+    if (!token) {
+      return NextResponse.json({ openaiConfigured: false, keyExists }, { status: 200 });
+    }
+    return NextResponse.json({
+      openaiConfigured: status.configured,
+      openaiReason: status.reason,
+      keyExists,
+    });
+  } catch (e: unknown) {
+    console.error('[generate-menu] GET error:', e);
+    return NextResponse.json(
+      { error: 'internal_error', message: '現在生成できません。時間をおいて再試行してください' },
+      { status: 500, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+    );
   }
-  const status = getOpenAIStatus();
-  return NextResponse.json({
-    openaiConfigured: status.configured,
-    openaiReason: status.reason,
-  });
 }
 
 const SYSTEM_PROMPT = `あなたはRT-japanの競泳専門AIコーチです。立石諒と渡部コーチ監修の指導哲学に基づき、渡部コーチが現場で判断するのと同じ基準でメニューを生成してください。
@@ -177,31 +197,36 @@ function buildConditionInstructions(
   return lines.join('\n');
 }
 
+const INTERNAL_ERROR_JSON = { error: 'internal_error', message: '現在生成できません。時間をおいて再試行してください' } as const;
+
 export async function POST(request: NextRequest) {
-  let token: unknown = null;
-  try {
-    token = await getToken({
-      req: request,
-      secret: process.env.NEXTAUTH_SECRET,
-    });
-  } catch (authErr) {
-    console.error('[generate-menu] getToken error:', authErr);
-    return NextResponse.json(
-      { error: '認証の取得に失敗しました。NEXTAUTH_SECRET が設定されているか確認してください。' },
-      { status: 500 }
-    );
-  }
-  if (!token) {
-    return NextResponse.json({ error: 'ログインが必要です。' }, { status: 401 });
-  }
+  const ensureJson500 = () =>
+    NextResponse.json(INTERNAL_ERROR_JSON, { status: 500, headers: { 'Content-Type': 'application/json; charset=utf-8' } });
 
   try {
-    const apiKey = (process.env.OPENAI_API_KEY || '').trim().replace(/\r?\n/g, '');
-    if (!apiKey || apiKey === 'YOUR_API_KEY_HERE') {
+    let token: unknown = null;
+    try {
+      token = await getToken({
+        req: request,
+        secret: process.env.NEXTAUTH_SECRET,
+      });
+    } catch (authErr) {
+      console.error('[generate-menu] getToken error:', authErr);
+      return ensureJson500();
+    }
+    if (!token) {
       return NextResponse.json(
-        { error: 'OPENAI_API_KEY が設定されていません。.env.local に本物のAPIキーを設定してください。' },
-        { status: 500 }
+        { error: 'login_required', message: 'ログインが必要です' },
+        { status: 401, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
       );
+    }
+
+    try {
+    const apiKey = (process.env.OPENAI_API_KEY || '').trim().replace(/\r?\n/g, '');
+    console.log('[generate-menu] POST: OPENAI_API_KEY exists:', apiKey.length > 0, 'keyPrefix:', apiKey ? `${apiKey.slice(0, 7)}...` : 'none');
+    if (!apiKey || apiKey === 'YOUR_API_KEY_HERE') {
+      console.error('[generate-menu] OPENAI_API_KEY not configured');
+      return ensureJson500();
     }
 
     let body: Record<string, unknown>;
@@ -333,10 +358,8 @@ ${conditionInstructions}
 
     const content = completion.choices[0]?.message?.content?.trim();
     if (!content) {
-      return NextResponse.json(
-        { error: 'メニューの生成に失敗しました。' },
-        { status: 500 }
-      );
+      console.error('[generate-menu] Empty completion content');
+      return NextResponse.json(INTERNAL_ERROR_JSON, { status: 500, headers: { 'Content-Type': 'application/json; charset=utf-8' } });
     }
 
     const keys = [
@@ -354,26 +377,51 @@ ${conditionInstructions}
       /* JSONでない場合はテキストとして返す */
     }
     return NextResponse.json({ menu: content, result: null });
-  } catch (err) {
-    console.error('[generate-menu] POST error:', err);
-    const message = err instanceof Error ? err.message : '不明なエラー';
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[generate-menu] POST error (HTTP 500):', message, err);
+    const errObj = err as { status?: number; response?: { status?: number; headers?: Headers; body?: unknown }; message?: string };
+    const status = errObj?.status ?? errObj?.response?.status;
+    const contentType = errObj?.response?.headers?.get?.('content-type') ?? '';
+    const body = errObj?.response?.body;
+    const isOpenAIError = status != null || (errObj?.response != null);
+    if (isOpenAIError) {
+      console.error('[generate-menu] OpenAI error detail:', {
+        status,
+        contentType: contentType?.slice(0, 50),
+        bodyHint: body != null ? (typeof body === 'object' ? JSON.stringify(body).slice(0, 300) : String(body).slice(0, 300)) : undefined,
+      });
+    }
     const isAuthError =
       String(message).includes('API key') ||
       String(message).includes('401') ||
+      String(message).includes('403') ||
       String(message).includes('Incorrect API key');
     const isQuotaError =
       String(message).includes('429') ||
       String(message).includes('quota') ||
       String(message).includes('billing');
     let errorText: string;
-    if (isAuthError) {
-      errorText = 'APIキーが無効です。.env.local の OPENAI_API_KEY を確認してください。';
+    if (status === 401 || status === 403) {
+      errorText = 'キーが無効か権限不足です。OpenAIのAPIキーとモデル(gpt-4o-mini)の利用可否を確認してください。';
+    } else if (contentType.includes('text/html')) {
+      errorText = 'OpenAIではなくHTMLが返っています。認証・プロキシ・ネットワークを確認してください。';
+    } else if (isAuthError) {
+      errorText = 'APIキーが無効です。.env.ai の OPENAI_API_KEY を確認してください。';
     } else if (isQuotaError) {
       errorText =
         'OpenAIの利用枠を超えました。Billingで支払い方法を追加するか、「クイック作成」ボタンをご利用ください。';
-    } else {
+    } else if (isOpenAIError) {
       errorText = `メニュー生成エラー: ${message}`;
+    } else {
+      errorText = `サーバーエラー(500): ${message}. .env.ai の OPENAI_API_KEY と NEXTAUTH_SECRET、ターミナルログを確認してください。`;
     }
-    return NextResponse.json({ error: errorText }, { status: 500 });
+    console.error('[generate-menu] Error detail:', errorText);
+    return ensureJson500();
+  }
+  } catch (outerErr: unknown) {
+    const msg = outerErr instanceof Error ? outerErr.message : String(outerErr);
+    console.error('[generate-menu] POST uncaught (500):', msg, outerErr);
+    return ensureJson500();
   }
 }
