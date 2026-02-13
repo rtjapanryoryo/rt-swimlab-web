@@ -96,6 +96,15 @@ export async function getCommonContent(): Promise<string> {
 }
 
 /**
+ * プロトコル＝ジェネレート（docs/RT_MENU_GENERATION_RULES_JA.md）
+ * カスタム作成時にシステムプロンプトの冒頭に注入。思想・ルールの唯一の正本。
+ */
+export async function getProtocolContent(): Promise<string> {
+  const fullPath = path.join(PROJECT_ROOT, 'docs', 'RT_MENU_GENERATION_RULES_JA.md');
+  return fs.readFile(fullPath, 'utf-8').catch(() => '');
+}
+
+/**
  * プロンプト用コンテンツ（content/common/prompt.pdf または .md / .txt）
  * カスタム作成時にシステムプロンプトの先頭に挿入される。PDFで載せたい場合に利用。
  */

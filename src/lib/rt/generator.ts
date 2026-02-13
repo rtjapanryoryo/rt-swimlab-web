@@ -266,6 +266,80 @@ const PERIOD_NAMES: Record<string, string> = {
   '7': 'テーパー期',
 };
 
+/**
+ * 期ごとのMain制御（カスタム専用）。
+ * - リカバリー期: 対乳酸MAX不要。強度を落としフォーム再構築に集中。
+ * - 基礎形成期: 対乳酸MAXは原則入れない。内容と強度を一致させる。
+ * - 発展形成期: 変更なし。
+ * - スピード持久期: 対乳酸MAXは入れない。スピード×持久までに留める。
+ * - 対乳酸期: 現状維持。
+ * - 調整期: 現状維持。
+ * - テーパー期: 対乳酸セットは入れない。短いスピード・テンポ調整に。
+ */
+const DEFAULT_MAIN_RULE: MainSetRule = {
+  sets: 6,
+  distance: 50,
+  rest: '30秒',
+  intensity: 'EN1',
+  intensityNote: '10秒心拍26-27',
+};
+
+function getEffectiveMainRule(
+  period: string,
+  purposeType: PurposeType,
+  distanceType: DistanceType,
+  ageGroup: AgeGroup
+): { mainRule: MainSetRule; effectivePurposeType: PurposeType } {
+  const rules = MAIN_SET_RULES[distanceType];
+  if (!rules) {
+    return { mainRule: DEFAULT_MAIN_RULE, effectivePurposeType: purposeType };
+  }
+
+  const getRule = (p: PurposeType): MainSetRule =>
+    rules[p]?.[ageGroup] || rules['その他']?.[ageGroup] || DEFAULT_MAIN_RULE;
+
+  switch (period) {
+    case '1': // リカバリー期: 強度を落とす。対乳酸→技術相当に。
+      if (purposeType === '対乳酸' || purposeType === 'スピード') {
+        return { mainRule: getRule('技術'), effectivePurposeType: '技術' };
+      }
+      const r1 = getRule(purposeType);
+      if (['EN3', 'EN4', 'AN', 'AN1', 'AN2', 'AN3'].includes(r1.intensity)) {
+        return {
+          mainRule: { ...r1, intensity: 'EN2', intensityNote: '強度を落としフォーム再構築に集中' },
+          effectivePurposeType: purposeType,
+        };
+      }
+      return { mainRule: r1, effectivePurposeType: purposeType };
+
+    case '2': // 基礎形成期: 対乳酸MAXは原則入れない。
+      if (purposeType === '対乳酸') {
+        return { mainRule: getRule('技術'), effectivePurposeType: '技術' };
+      }
+      return { mainRule: getRule(purposeType), effectivePurposeType: purposeType };
+
+    case '3': // 発展形成期: 変更なし
+    case '5': // 対乳酸期: 現状維持
+    case '6': // 調整期: 現状維持
+      return { mainRule: getRule(purposeType), effectivePurposeType: purposeType };
+
+    case '4': // スピード持久期: 対乳酸MAXは入れない。スピード×持久まで。
+      if (purposeType === '対乳酸') {
+        return { mainRule: getRule('持久力'), effectivePurposeType: '持久力' };
+      }
+      return { mainRule: getRule(purposeType), effectivePurposeType: purposeType };
+
+    case '7': // テーパー期: 対乳酸セットは入れない。短いスピード・テンポ調整に。
+      if (purposeType === '対乳酸') {
+        return { mainRule: getRule('スピード'), effectivePurposeType: 'スピード' };
+      }
+      return { mainRule: getRule(purposeType), effectivePurposeType: purposeType };
+
+    default:
+      return { mainRule: getRule(purposeType), effectivePurposeType: purposeType };
+  }
+}
+
 // ============================================================
 // 種目の表示名
 // ============================================================
@@ -418,7 +492,12 @@ function generateDown(practiceTime: string): string {
   return `Easy Swim ${distance}m（A1）`;
 }
 
-function generateDive(ageGroup: AgeGroup, _period: string): string {
+/**
+ * Diveは調整期・テーパー期が中心。
+ * リカバリー・基礎形成・発展形成・スピード持久・対乳酸期では入れない。
+ */
+function generateDive(ageGroup: AgeGroup, period: string): string {
+  if (!['6', '7'].includes(period)) return '';
   const sets = ageGroup === '小学生' ? 4 : ageGroup === '中学生' ? 6 : 8;
   return `Dive ${sets}×15m（A1）`;
 }
@@ -607,13 +686,84 @@ function isTrainingResultLike(obj: unknown): obj is TrainingResult {
 }
 
 /**
- * 距離軸（S/M/D）でテンプレ配列を決め、その中から 1〜3 のどれを選ぶかは「10条件のシード」で決定。
- * - 軸: input.distanceType（S/M/D）→ templates.S / templates.M / templates.D のいずれかを使用。
- * - 抽出: 上記配列のうち、purpose/main/warmUp のいずれかが空でないものだけに絞る。
- * - 1〜3 の選択: 10条件（期・種目・性別・年齢・距離タイプ・レベル・目的・状況・練習時間・ボリュームUP）を
- *   連結した文字列をシードに pickIndex(seed, list.length) で 0〜(length-1) のインデックスを算出し、
- *   同じ入力なら常に同じテンプレ（①/②/③のどれか）が選ばれる。
+ * 10条件に合わせたテンプレ選択（スコアリング＋タイブレーク）。
+ * - 軸: distanceType（S/M/D）でグループを決める。
+ * - スコア: 各テンプレの purpose/intention/expectedEffect 等をキーワードマッチでスコアリング。
+ * - 同点時: pickIndex(seed, N) で上位N件から1つ選ぶ（決定論を維持）。
  */
+function scoreTemplateMatch(c: TrainingResult, input: TrainingInput): number {
+  const text = [
+    c.purpose ?? '',
+    c.intention ?? '',
+    c.coachingPoint ?? '',
+    c.expectedEffect ?? '',
+    c.main ?? '',
+  ].join(' ');
+
+  let score = 0;
+
+  // 期（period）: テンプレの目的・意図に含まれるキーワードと照合
+  const periodKeywords: Record<string, string[]> = {
+    '1': ['回復', '感覚維持', 'フォーム再構築', '姿勢安定', 'リラックス', '解放'],
+    '2': ['基礎形成', 'フォーム固め', '水感覚', '正しい形', '低～中強度', '再現性'],
+    '3': ['発展', '技術精度', 'スピード導入', '強度を上げ', '粘り', '神経系'],
+    '4': ['心肺', 'ボリューム', '持久', '一定の強度', 'バランス'],
+    '5': ['対乳酸', 'レースペース', '乳酸', '耐性'],
+    '6': ['調整', '疲労除去', 'スピード維持'],
+    '7': ['テーパー', '神経', '仕上げ', '最大スピード', 'レース局面'],
+  };
+  const pKw = periodKeywords[input.period];
+  if (pKw) {
+    for (const kw of pKw) {
+      if (text.includes(kw)) score += 2;
+    }
+  }
+
+  // 目的（purpose）
+  const purposeKeywords: Record<string, string[]> = {
+    技術: ['フォーム', '技術', '姿勢', '形', 'ドリル'],
+    スピード: ['スピード', '爆発', '動きのキレ', '反応'],
+    対乳酸: ['対乳酸', 'レース', '粘り', '耐性'],
+    持久: ['持久', '距離', '省エネ', '効率'],
+    レースペース: ['レース', 'ペース', '本番'],
+    回復: ['回復', 'リラックス', '楽に', '解放'],
+  };
+  const purKw = purposeKeywords[input.purpose];
+  if (purKw) {
+    for (const kw of purKw) {
+      if (text.includes(kw)) score += 2;
+    }
+  }
+
+  // 状況（condition）
+  if (input.condition?.includes('疲労')) {
+    if (text.includes('休息') || text.includes('軽め') || text.includes('リラックス')) score += 2;
+  }
+  if (input.condition === '月経期') {
+    if (text.includes('本人') || text.includes('希望')) score += 2;
+  }
+
+  // 種目（stroke）: テンプレの内容に種目が含まれるか
+  const strokeMap: Record<string, string> = {
+    Fr: 'Fr', Ba: 'Ba', Br: 'Br', Fly: 'Fly', IM: 'IM',
+  };
+  const strokeStr = strokeMap[input.stroke] || input.stroke;
+  if (strokeStr && (c.drill?.includes(strokeStr) || c.kick?.includes(strokeStr) || c.pull?.includes(strokeStr) || c.main?.includes(strokeStr))) {
+    score += 1;
+  }
+  if (input.stroke === 'IM' && text.includes('IM')) score += 1;
+
+  // 練習時間: total の距離と practiceTime の目安の近さ
+  const totalMatch = c.total?.match(/(\d[\d,]*)\s*m/);
+  const totalM = totalMatch ? parseInt(totalMatch[1].replace(/,/g, ''), 10) : 0;
+  const timeNum = parseInt(input.practiceTime || '90', 10);
+  const targetMin = timeNum <= 60 ? 2000 : timeNum <= 90 ? 2500 : 3500;
+  const targetMax = timeNum <= 60 ? 2500 : timeNum <= 90 ? 3500 : 4500;
+  if (totalM >= targetMin && totalM <= targetMax) score += 1;
+
+  return score;
+}
+
 function selectFrom9Templates(input: TrainingInput, templates: MenuTemplates9): TrainingResult | null {
   const distanceType = (input.distanceType === 'S' || input.distanceType === 'M' || input.distanceType === 'D')
     ? input.distanceType
@@ -625,12 +775,23 @@ function selectFrom9Templates(input: TrainingInput, templates: MenuTemplates9): 
     return (c.purpose?.trim() || c.main?.trim() || c.warmUp?.trim()) !== '';
   });
   if (!list.length) return null;
+
+  // スコアでソート（降順）。同点は元の並び順を維持
+  const scored = list.map((c, i) => ({ template: c, score: scoreTemplateMatch(c, input), index: i }));
+  scored.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return a.index - b.index;
+  });
+
+  // 最高スコアのテンプレを同点で複数ある場合、シードで1つ選ぶ（決定論）
+  const maxScore = scored[0]?.score ?? 0;
+  const topCandidates = scored.filter((s) => s.score === maxScore);
   const seed = [
     input.period, input.stroke, input.gender, input.age, input.distanceType,
     input.level, input.purpose, input.condition, input.practiceTime, input.volumeUp,
   ].join('');
-  const idx = pickIndex(seed, list.length);
-  return list[idx];
+  const idx = pickIndex(seed, topCandidates.length);
+  return topCandidates[idx]?.template ?? list[0];
 }
 
 export function generateTrainingMenu(
@@ -652,14 +813,13 @@ export function generateTrainingMenu(
   const purposeType = getPurposeType(input.purpose);
   const distanceType = input.distanceType as DistanceType;
 
-  // Main Set ルール取得
-  const mainRule = MAIN_SET_RULES[distanceType]?.[purposeType]?.[ageGroup] || {
-    sets: 6,
-    distance: 50,
-    rest: '30秒',
-    intensity: 'EN1',
-    intensityNote: '10秒心拍26-27',
-  };
+  // Main Set ルール取得（期ごとの制御を適用：対乳酸MAXは対乳酸期のみ等）
+  const { mainRule, effectivePurposeType } = getEffectiveMainRule(
+    input.period,
+    purposeType,
+    distanceType,
+    ageGroup
+  );
 
   // 各ブロック生成
   const warmUp = generateWarmUp(ageGroup, input.practiceTime);
@@ -670,18 +830,18 @@ export function generateTrainingMenu(
   const dive = generateDive(ageGroup, input.period);
   const rest = generateRest(input.condition, purposeType);
   // volumeUpは将来的に使用予定（現在は互換性のため空文字列を使用）
-  const main = generateMain(distanceType, purposeType, ageGroup, '', mainRule);
+  const main = generateMain(distanceType, effectivePurposeType, ageGroup, '', mainRule);
   const down = generateDown(input.practiceTime);
 
   // 合計距離計算
   const totalDistance = calculateTotal(warmUp, drill, kick, pull, preMain, dive, main, down);
 
-  // 目的・意図・ポイント生成
+  // 目的・意図・ポイント生成（actualのMain内容に合わせてeffectivePurposeTypeを使用）
   const purpose = generatePurposeText(input.period, purposeType, distanceType, input.stroke);
-  const intention = generateIntention(purposeType, mainRule);
-  const coachingPoint = generateCoachingPoint(purposeType, ageGroup, mainRule);
+  const intention = generateIntention(effectivePurposeType, mainRule);
+  const coachingPoint = generateCoachingPoint(effectivePurposeType, ageGroup, mainRule);
   const caution = generateCaution(input.condition, ageGroup, purposeType);
-  const expectedEffect = generateExpectedEffect(purposeType, distanceType);
+  const expectedEffect = generateExpectedEffect(effectivePurposeType, distanceType);
 
   return {
     purpose,
