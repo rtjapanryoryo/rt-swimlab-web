@@ -79,6 +79,33 @@ export default function Home() {
   const [sectionOrder, setSectionOrder] = useState<string[] | null>(null);
   const [sectionLabels, setSectionLabels] = useState<Record<string, string> | null>(null);
   const [showForm, setShowForm] = useState(true);
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+
+  const LOADING_MESSAGES = [
+    '条件を分析しています...',
+    'メニューを組み立てています...',
+    '強度と距離を調整しています...',
+    '仕上げています...',
+  ];
+
+  useEffect(() => {
+    if (!customIsGenerating) return;
+    const id = setInterval(() => {
+      setLoadingMessageIndex((i) => (i + 1) % LOADING_MESSAGES.length);
+    }, 2500);
+    return () => clearInterval(id);
+  }, [customIsGenerating]);
+
+  useEffect(() => {
+    if (customIsGenerating) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [customIsGenerating]);
 
   // クイックメニュー用セクション順・ラベル（quick-settings.json）
   useEffect(() => {
@@ -178,6 +205,7 @@ export default function Home() {
 
   const generateMenuWithAI = async () => {
     setCustomIsGenerating(true);
+    setLoadingMessageIndex(0);
     setApiError(null);
     setApiErrorKind(null);
     try {
@@ -658,6 +686,55 @@ export default function Home() {
           </button>
         </div>
         </>
+        )}
+
+        {/* カスタム生成中：全画面アニメーション */}
+        {customIsGenerating && (
+          <div className="generate-loading-in fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-slate-100 via-white to-sky-50/80">
+            <div className="generate-loading-shimmer absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.5)_50%,transparent_100%)] bg-[length:200%_100%]" />
+            <div className="relative flex flex-col items-center gap-8 px-6">
+              {/* 波アイコン（大きく） */}
+              <div className="flex items-center justify-center gap-4">
+                <svg className="h-12 w-12 text-sky-500/80 md:h-14 md:w-14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M2 12c2-2 4-4 6-4s4 2 6 4 4 4 6 4" />
+                  <path d="M2 16c2-2 4-4 6-4s4 2 6 4 4 4 6 4" />
+                  <path d="M2 8c2-2 4-4 6-4s4 2 6 4 4 4 6 4" className="generate-loading-pulse" style={{ animationDelay: '0s' }} />
+                </svg>
+                <div className="flex gap-2">
+                  {[0, 1, 2].map((i) => (
+                    <div
+                      key={i}
+                      className="generate-loading-wave h-3 w-3 rounded-full bg-slate-500 md:h-4 md:w-4"
+                      style={{ animationDelay: `${i * 0.15}s` }}
+                    />
+                  ))}
+                </div>
+                <svg className="h-12 w-12 text-sky-500/80 md:h-14 md:w-14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M2 12c2-2 4-4 6-4s4 2 6 4 4 4 6 4" />
+                  <path d="M2 16c2-2 4-4 6-4s4 2 6 4 4 4 6 4" />
+                  <path d="M2 8c2-2 4-4 6-4s4 2 6 4 4 4 6 4" className="generate-loading-pulse" style={{ animationDelay: '0.3s' }} />
+                </svg>
+              </div>
+              <p className="text-slate-700 font-medium tracking-wide text-lg md:text-xl">
+                {LOADING_MESSAGES[loadingMessageIndex]}
+              </p>
+              <div className="flex flex-wrap justify-center gap-3">
+                {['W-up', 'Drill', 'Kick', 'Main'].map((label, i) => (
+                  <span
+                    key={label}
+                    className="generate-loading-pulse rounded-xl bg-slate-100/90 px-4 py-2 text-sm font-medium text-slate-600 md:px-5 md:py-2.5 md:text-base"
+                    style={{ animationDelay: `${i * 0.2}s` }}
+                  >
+                    {label}
+                  </span>
+                ))}
+              </div>
+              {/* プログレスバー風アニメーション */}
+              <div className="w-full max-w-sm h-2 rounded-full bg-slate-200/80 overflow-hidden relative">
+                <div className="generate-loading-progress absolute inset-y-0 w-1/3 rounded-full bg-gradient-to-r from-sky-300/50 to-sky-500/70" />
+              </div>
+            </div>
+          </div>
         )}
 
         {/* エラー表示 */}

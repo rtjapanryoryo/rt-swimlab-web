@@ -258,3 +258,40 @@ body {
 @keyframes splashLogoOut {
   to { opacity: 0; transform: translateY(-6px) scale(0.99); }
 }
+
+/* カスタム生成ローディング */
+@keyframes generateShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes generateWave {
+  0%, 100% { transform: translateX(0) scaleY(1); opacity: 0.6; }
+  50% { transform: translateX(4px) scaleY(1.1); opacity: 1; }
+}
+@keyframes generatePulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+@keyframes generateLoadingIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes generateProgressSlide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+.generate-loading-shimmer {
+  animation: generateShimmer 2.5s ease-in-out infinite;
+}
+.generate-loading-wave {
+  animation: generateWave 1.2s ease-in-out infinite;
+}
+.generate-loading-pulse {
+  animation: generatePulse 2s ease-in-out infinite;
+}
+.generate-loading-in {
+  animation: generateLoadingIn 0.4s ease-out forwards;
+}
+.generate-loading-progress {
+  animation: generateProgressSlide 2s ease-in-out infinite;
+}
