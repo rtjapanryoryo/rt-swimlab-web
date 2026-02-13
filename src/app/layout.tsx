@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { SplashScreenProvider } from "@/components/SplashScreen";
 import { SessionProvider } from "@/components/SessionProvider";
@@ -7,6 +7,12 @@ import { UserNav } from "@/components/UserNav";
 export const metadata: Metadata = {
   title: "RT swim lab",
   description: "立石諒と高城直基が監修の指導哲学に基づく練習メニュー",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({
@@ -18,10 +24,10 @@ export default function RootLayout({
     <html lang="ja">
       <body className="antialiased font-sans">
         <SessionProvider>
-          <div className="fixed top-0 right-0 z-50 p-4">
+          <div className="fixed top-0 right-0 z-50 p-4 no-print">
             <UserNav />
           </div>
-          <div className="pr-40 pt-2">
+          <div className="w-full min-w-0 pt-2 pr-3 sm:pr-20 md:pr-40">
             <SplashScreenProvider>{children}</SplashScreenProvider>
           </div>
         </SessionProvider>

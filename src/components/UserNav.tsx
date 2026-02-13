@@ -21,7 +21,7 @@ export function UserNav() {
 
   return (
     <div className="flex items-center gap-3">
-      <span className="text-sm text-gray-700 truncate max-w-[180px]">
+      <span className="text-xs md:text-sm text-gray-700 truncate max-w-[100px] md:max-w-[180px]">
         {name ?? email ?? 'ログイン中'}
       </span>
       {image && (

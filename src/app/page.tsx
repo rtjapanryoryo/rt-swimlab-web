@@ -78,6 +78,7 @@ export default function Home() {
   const [openaiReason, setOpenaiReason] = useState<string | undefined>(undefined);
   const [sectionOrder, setSectionOrder] = useState<string[] | null>(null);
   const [sectionLabels, setSectionLabels] = useState<Record<string, string> | null>(null);
+  const [showForm, setShowForm] = useState(true);
 
   // クイックメニュー用セクション順・ラベル（quick-settings.json）
   useEffect(() => {
@@ -233,9 +234,11 @@ export default function Home() {
       if (data.result && typeof data.result === 'object') {
         setResult(data.result as TrainingResult);
         setApiMenuText(null);
+        setShowForm(false);
       } else if (data.menu) {
         setResult(null);
         setApiMenuText(data.menu);
+        setShowForm(false);
       } else {
         setApiError('メニューを取得できませんでした。APIの応答形式を確認してください。');
         setApiErrorKind(null);
@@ -288,6 +291,7 @@ export default function Home() {
     setResult(r ?? null);
     setApiMenuText(null);
     setResultSource('quick');
+    setShowForm(false);
   };
 
   const exportPDFBlob = async (captureId: string): Promise<Blob> => {
@@ -302,7 +306,7 @@ export default function Home() {
       ]);
 
       el.scrollIntoView({ behavior: 'auto', block: 'start' });
-      await new Promise((r) => setTimeout(r, 150));
+      await new Promise((r) => setTimeout(r, 300));
 
       const opts = {
         scale: 1.5,
@@ -323,6 +327,9 @@ export default function Home() {
         });
       }
 
+      if (canvas.width === 0 || canvas.height === 0) {
+        throw new Error('キャプチャ範囲が空です。画面をスクロールしてメニューを表示してから再度お試しください。');
+      }
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
@@ -398,27 +405,32 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-slate-50/95 to-slate-100 py-8 px-4">
       <div className="max-w-5xl mx-auto">
-        <header className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <header className="mb-10 text-center no-print">
+          <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2 tracking-tight">
             RT swim lab
           </h1>
-          <p className="text-gray-600">立石諒と高城直基が監修の指導哲学に基づく練習メニュー</p>
+          <p className="text-slate-600 text-base md:text-lg">立石諒と高城直基が監修の指導哲学に基づく練習メニュー</p>
         </header>
 
-        {/* 入力 */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">入力（必須10項目）</h2>
+        {/* 入力（メニュー生成後は非表示） */}
+        {showForm && (
+        <>
+        <div id="input-form" className="panel-premium p-6 md:p-8 mb-6">
+          <h2 className="text-xl font-semibold text-slate-900 mb-5 flex items-center gap-2">
+            <span className="w-1 h-6 bg-slate-400/70 rounded-full" />
+            入力（必須10項目）
+          </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* 1. 期 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">1. 期</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">1. 期</label>
               <select
                 value={input.period}
                 onChange={(e) => handleInputChange('period', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40 focus:border-slate-300 transition-colors"
               >
                 <option value="">選択してください</option>
                 <option value="1">① リカバリー期</option>
@@ -433,11 +445,11 @@ export default function Home() {
 
             {/* 2. 種目（無記入にしない：Fr/Ba/Br/Fly/IM） */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">2. 種目</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">2. 種目</label>
               <select
                 value={input.stroke || 'Fr'}
                 onChange={(e) => handleInputChange('stroke', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40 focus:border-slate-300 transition-colors"
               >
                 <option value="Fr">Fr（自由形）</option>
                 <option value="Ba">Ba（背泳ぎ）</option>
@@ -449,11 +461,11 @@ export default function Home() {
 
             {/* 3. 性別 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">3. 性別</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">3. 性別</label>
               <select
                 value={input.gender}
                 onChange={(e) => handleInputChange('gender', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40 focus:border-slate-300 transition-colors"
               >
                 <option value="">選択してください</option>
                 <option value="男">男</option>
@@ -463,11 +475,11 @@ export default function Home() {
 
             {/* 4. 年齢（スクロール選択で入力エラーを防止） */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">4. 年齢</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">4. 年齢</label>
               <select
                 value={input.age}
                 onChange={(e) => handleInputChange('age', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40 focus:border-slate-300 transition-colors"
               >
                 <option value="">選択してください</option>
                 {Array.from({ length: 94 }, (_, i) => 6 + i).map((n) => (
@@ -480,11 +492,11 @@ export default function Home() {
 
             {/* 5. 距離タイプ */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">5. 距離タイプ</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">5. 距離タイプ</label>
               <select
                 value={input.distanceType}
                 onChange={(e) => handleInputChange('distanceType', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40 focus:border-slate-300 transition-colors"
               >
                 <option value="">選択してください</option>
                 <option value="S">S（スプリント）</option>
@@ -495,11 +507,11 @@ export default function Home() {
 
             {/* 6. レベル */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">6. レベル</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">6. レベル</label>
               <select
                 value={input.level}
                 onChange={(e) => handleInputChange('level', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40 focus:border-slate-300 transition-colors"
               >
                 <option value="">選択してください</option>
                 <option value="全国大会入賞〜代表クラス">全国大会入賞〜代表クラス</option>
@@ -515,11 +527,11 @@ export default function Home() {
 
             {/* 7. 目的 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">7. 目的</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">7. 目的</label>
               <select
                 value={input.purpose}
                 onChange={(e) => handleInputChange('purpose', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40 focus:border-slate-300 transition-colors"
               >
                 <option value="">選択してください</option>
                 <option value="技術">技術</option>
@@ -533,11 +545,11 @@ export default function Home() {
 
             {/* 8. 状況 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">8. 状況</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">8. 状況</label>
               <select
                 value={input.condition}
                 onChange={(e) => handleInputChange('condition', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40 focus:border-slate-300 transition-colors"
               >
                 <option value="">選択してください</option>
                 <option value="良好">良好</option>
@@ -550,11 +562,11 @@ export default function Home() {
 
             {/* 9. 練習時間 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">9. 練習時間</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">9. 練習時間</label>
               <select
                 value={input.practiceTime}
                 onChange={(e) => handleInputChange('practiceTime', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40 focus:border-slate-300 transition-colors"
               >
                 <option value="">選択してください</option>
                 <option value="60">60分</option>
@@ -565,13 +577,13 @@ export default function Home() {
 
             {/* 10. ボリュームアップ項目 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-slate-700 mb-1">
                 10. ボリュームアップ項目
               </label>
               <select
                 value={input.volumeUp}
                 onChange={(e) => handleInputChange('volumeUp', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40 focus:border-slate-300 transition-colors"
               >
                 <option value="">選択してください</option>
                 <option value="Drill">Drill</option>
@@ -596,25 +608,27 @@ export default function Home() {
 
         </div>
 
-        {/* 生成ボタン（最後に押した方で表示が上書きされる） */}
+        {/* 生成ボタン */}
         <div className="mb-6 flex flex-wrap gap-3">
           <button
             onClick={generateMenuLocal}
-            className="px-6 py-3 border border-gray-300 bg-white text-gray-700 font-semibold rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-6 py-3 border border-slate-200 bg-white text-slate-700 font-semibold rounded-xl shadow-sm hover:bg-slate-50 hover:shadow-md hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400/50 transition-all"
           >
             クイック作成
           </button>
           <button
             onClick={generateMenuWithAI}
             disabled={!isFormValid() || customIsGenerating || openaiConfigured === false}
-            className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="px-6 py-3 bg-slate-800 text-white font-semibold rounded-xl shadow-md hover:bg-slate-900 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-slate-500/50 disabled:bg-slate-400 disabled:cursor-not-allowed transition-all"
             title={openaiConfigured === false ? 'カスタム作成はOPENAI_API_KEY設定後に利用できます' : undefined}
           >
             {customIsGenerating ? '生成中...' : 'カスタム作成'}
           </button>
         </div>
+        </>
+        )}
 
-        {/* 出力（クイック→カスタム or カスタム→クイック で上書き） */}
+        {/* エラー表示 */}
         {apiError && (
           <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 mb-4 space-y-3">
             <p>{apiError}</p>
@@ -648,40 +662,47 @@ export default function Home() {
             )}
           </div>
         )}
-        {(apiMenuText || result) && (
-          <div className="space-y-4">
-            <div className="bg-white rounded-lg shadow-md p-4 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+        {!showForm && (apiMenuText || result) && (
+          <div className="space-y-5 w-full min-w-0">
+            <div className="bg-white rounded-lg shadow-md p-4 flex flex-col md:flex-row gap-3 md:items-center md:justify-between no-print">
               <div className="flex items-center gap-2 flex-wrap">
                 {result && (
                   <>
-                    <span className="text-sm text-gray-600">表示:</span>
+                    <span className="text-sm text-slate-500 font-medium">表示:</span>
                     <button
                       onClick={() => setViewMode('table')}
-                      className={`px-3 py-1 rounded-md border text-sm ${viewMode === 'table' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300'}`}
+                      className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-all ${viewMode === 'table' ? 'bg-slate-800 text-white border-slate-800 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
                     >
                       テーブル
                     </button>
                     <button
                       onClick={() => setViewMode('card')}
-                      className={`px-3 py-1 rounded-md border text-sm ${viewMode === 'card' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300'}`}
+                      className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-all ${viewMode === 'card' ? 'bg-slate-800 text-white border-slate-800 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
                     >
                       カード
                     </button>
                   </>
                 )}
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-900 font-medium text-sm shadow-sm transition-all"
+                >
+                  印刷
+                </button>
                 <button
                   onClick={() => handleDownloadPDF('menu-capture')}
                   disabled={isExporting}
-                  className="px-4 py-2 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-gray-900 disabled:opacity-50"
+                  className="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-900 disabled:opacity-50 font-medium text-sm shadow-sm transition-all"
                 >
                   {isExporting ? 'PDF生成中...' : 'PDFダウンロード'}
                 </button>
                 <button
                   onClick={() => handleSharePDF('menu-capture')}
                   disabled={isExporting}
-                  className="px-4 py-2 rounded-md bg-gray-900 text-white hover:bg-black disabled:opacity-50"
+                  className="px-4 py-2 rounded-xl bg-slate-800 text-white hover:bg-slate-900 disabled:opacity-50 font-medium text-sm shadow-md transition-all"
                 >
                   {isExporting ? '共有準備中...' : '共有'}
                 </button>
@@ -703,6 +724,18 @@ export default function Home() {
                   </div>
                 )
               ) : null}
+            </div>
+            <div className="flex justify-center pt-6 pb-2 no-print">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowForm(true);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="px-6 py-3 rounded-xl border border-slate-200 bg-white text-slate-700 font-semibold hover:bg-slate-50 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400/50 transition-all shadow-sm"
+              >
+                もう一度作る
+              </button>
             </div>
           </div>
         )}

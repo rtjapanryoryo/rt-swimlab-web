@@ -382,50 +382,60 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
 
       {/* 本文（メニュー） */}
       {isCardView ? (
-        <div className="mb-6 grid grid-cols-1 gap-3">
+        <div className="mb-6 grid grid-cols-1 gap-4">
           {rows.map((row, idx) => (
-            <div key={idx} className="app-card p-4">
-              <div className="flex items-center justify-between gap-3 mb-2">
-                <div className="font-semibold text-gray-900 text-base">{row.section}</div>
-                {row.total !== '-' && (
-                  <div className="text-sm text-gray-600 font-medium">Total: {row.total}</div>
-                )}
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm mb-2">
-                {row.distance !== '-' && (
-                  <div>
-                    <span className="text-gray-500">距離: </span>
-                    <span className="text-gray-900 font-medium">{row.distance}m</span>
+            <div key={idx} className="app-card overflow-visible">
+              <div className="flex items-stretch min-w-0">
+                <div className="w-1.5 bg-gradient-to-b from-slate-400/80 via-slate-500/60 to-slate-600/40 flex-shrink-0 rounded-l-[15px]" />
+                <div className="flex-1 p-5 pl-6 min-w-0 overflow-visible">
+                  <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-slate-100/90 text-slate-900 border border-slate-200/80">
+                      {row.section}
+                    </span>
+                    {row.total !== '-' && (
+                      <span className="text-sm font-semibold text-slate-600 tabular-nums bg-slate-50/80 px-2.5 py-1 rounded-lg">
+                        Total: {row.total}
+                      </span>
+                    )}
                   </div>
-                )}
-                {row.count !== '-' && (
-                  <div>
-                    <span className="text-gray-500">本数: </span>
-                    <span className="text-gray-900 font-medium">{row.count}</span>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm mb-3">
+                    {row.distance !== '-' && (
+                      <span className="text-slate-600">
+                        <span className="text-slate-400 font-medium">距離</span>
+                        <span className="ml-1 font-semibold text-slate-800">{row.distance}m</span>
+                      </span>
+                    )}
+                    {row.count !== '-' && (
+                      <span className="text-slate-600">
+                        <span className="text-slate-400 font-medium">本数</span>
+                        <span className="ml-1 font-semibold text-slate-800">{row.count}</span>
+                      </span>
+                    )}
+                    {row.sets !== '-' && row.sets !== '1' && (
+                      <span className="text-slate-600">
+                        <span className="text-slate-400 font-medium">セット</span>
+                        <span className="ml-1 font-semibold text-slate-800">{row.sets}</span>
+                      </span>
+                    )}
+                    {row.style !== '-' && (
+                      <span className="text-slate-600">
+                        <span className="text-slate-400 font-medium">種目</span>
+                        <span className="ml-1 font-semibold text-slate-800">{row.style}</span>
+                      </span>
+                    )}
                   </div>
-                )}
-                {row.sets !== '-' && row.sets !== '1' && (
-                  <div>
-                    <span className="text-gray-500">セット: </span>
-                    <span className="text-gray-900 font-medium">{row.sets}</span>
-                  </div>
-                )}
-                {row.style !== '-' && (
-                  <div>
-                    <span className="text-gray-500">種目: </span>
-                    <span className="text-gray-900 font-medium">{row.style}</span>
-                  </div>
-                )}
-              </div>
-              {row.content !== '-' && (
-                <div className="mt-2 text-gray-700 text-sm leading-relaxed">{row.content}</div>
-              )}
-              {row.intensity !== '-' && (
-                <div className="mt-1">
-                  <span className="text-gray-500">強度: </span>
-                  <span className="text-gray-900 font-medium">{row.intensity}</span>
+                  {row.content !== '-' && (
+                    <p className="mt-2 text-slate-700 text-sm leading-relaxed break-words">
+                      {row.content}
+                    </p>
+                  )}
+                  {row.intensity !== '-' && (
+                    <div className="mt-2 text-xs font-medium text-slate-500">
+                      強度: <span className="text-slate-700">{row.intensity}</span>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           ))}
         </div>
