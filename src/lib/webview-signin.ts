@@ -30,3 +30,20 @@ export function getGoogleSignInUrl(callbackUrl: string): string {
   const url = `${base}/api/auth/signin/google?callbackUrl=${encodeURIComponent(callbackUrl)}`;
   return url;
 }
+
+/** Android かどうか */
+function isAndroid(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  return /Android/i.test(navigator.userAgent);
+}
+
+/** ブラウザで開く用 URL（Android は intent で Chrome を起動） */
+export function getOpenInBrowserUrl(path = '/'): string {
+  if (typeof window === 'undefined') return '';
+  const url = `${window.location.origin}${path}`;
+  if (isAndroid()) {
+    const fallback = encodeURIComponent(url);
+    return `intent://${window.location.host}${path}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${fallback};end`;
+  }
+  return url;
+}

@@ -3,6 +3,7 @@
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 import { GoogleSignInButton } from '@/components/GoogleSignInButton';
+import { WebViewOpenInBrowser } from '@/components/WebViewOpenInBrowser';
 
 function LoginContent() {
   const searchParams = useSearchParams();
@@ -27,7 +28,10 @@ function LoginContent() {
   const showSetupHint = configOk === false;
   const showOAuthError = error && configOk !== false;
 
+  const callbackUri = typeof window !== 'undefined' ? `${window.location.origin}/api/auth/callback/google` : '';
+
   return (
+    <WebViewOpenInBrowser path="/login">
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="bg-white rounded-lg shadow-md p-8 max-w-md w-full text-center">
         <h1 className="text-xl font-bold text-gray-900 mb-2">RT swim lab</h1>
@@ -46,7 +50,7 @@ function LoginContent() {
             <ul className="list-disc list-inside space-y-1 text-xs">
               <li>GOOGLE_CLIENT_ID（Google Cloud Console で作成）</li>
               <li>GOOGLE_CLIENT_SECRET</li>
-              <li>承認済みリダイレクトURI: <code className="bg-amber-100 px-1 rounded">http://localhost:3000/api/auth/callback/google</code></li>
+              <li>承認済みリダイレクトURI: <code className="bg-amber-100 px-1 rounded">{callbackUri || 'http://localhost:3000/api/auth/callback/google'}</code></li>
             </ul>
             <p className="mt-2 text-xs">設定後、開発サーバーを再起動してください。</p>
           </div>
@@ -56,7 +60,7 @@ function LoginContent() {
             <p className="font-semibold mb-2">ログインに失敗しました（invalid_client）</p>
             <ul className="list-disc list-inside space-y-1 text-xs">
               <li>Google Cloud Console のクライアントIDが正しいか</li>
-              <li>「承認済みのリダイレクトURI」に <code className="bg-red-100 px-1 rounded">http://localhost:3000/api/auth/callback/google</code> が登録されているか</li>
+              <li>「承認済みのリダイレクトURI」に <code className="bg-red-100 px-1 rounded break-all">{callbackUri || 'https://あなたのドメイン/api/auth/callback/google'}</code> が登録されているか</li>
               <li>アプリケーションの種類が「ウェブアプリケーション」か</li>
             </ul>
           </div>
@@ -71,6 +75,7 @@ function LoginContent() {
         </GoogleSignInButton>
       </div>
     </div>
+    </WebViewOpenInBrowser>
   );
 }
 
