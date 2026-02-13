@@ -1,8 +1,8 @@
 'use client';
 
-import { signIn } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
+import { GoogleSignInButton } from '@/components/GoogleSignInButton';
 
 function LoginContent() {
   const searchParams = useSearchParams();
@@ -61,14 +61,14 @@ function LoginContent() {
             </ul>
           </div>
         )}
-        <button
-          type="button"
-          onClick={() => signIn('google', { callbackUrl: '/' })}
+        <GoogleSignInButton
+          callbackUrl="/"
           disabled={showSetupHint}
-          className="w-full px-4 py-3 bg-white border border-gray-300 rounded-md hover:bg-gray-50 text-gray-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          variant="primary"
+          className="w-full"
         >
           {showSetupHint ? 'OAuth設定後に有効になります' : 'Googleでログイン'}
-        </button>
+        </GoogleSignInButton>
       </div>
     </div>
   );

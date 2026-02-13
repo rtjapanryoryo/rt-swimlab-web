@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useSession, signIn } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import {
   generateTrainingMenu,
   type TrainingInput,
@@ -10,6 +10,7 @@ import {
 import { menuTemplates9Fallback } from '@/lib/rt/menu-templates-9-fallback';
 import { useViewMode } from './viewMode';
 import { MenuSheet } from '@/components/MenuSheet';
+import { GoogleSignInButton } from '@/components/GoogleSignInButton';
 
 /** クイック用テンプレ（API不要・常にメニュー生成可能） */
 const QUICK_TEMPLATES = {
@@ -742,13 +743,7 @@ export default function Home() {
           <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 mb-4 space-y-3">
             <p>{apiError}</p>
             {apiErrorKind === 'login_required' && (
-              <button
-                type="button"
-                onClick={() => signIn('google', { callbackUrl: typeof window !== 'undefined' ? window.location.href : '/' })}
-                className="px-4 py-2 bg-white border border-gray-300 rounded-md font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                Googleでログイン
-              </button>
+              <GoogleSignInButton callbackUrl={typeof window !== 'undefined' ? window.location.href : '/'} variant="secondary" />
             )}
             {apiErrorKind === 'retry' && (
               <button
