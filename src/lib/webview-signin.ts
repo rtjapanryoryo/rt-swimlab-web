@@ -23,6 +23,12 @@ export function isLikelyWebView(): boolean {
   return WEBVIEW_PATTERNS.some((p) => p.test(ua));
 }
 
+/** LINE かどうか */
+export function isLineWebView(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  return /Line\//i.test(navigator.userAgent);
+}
+
 /** Google ログイン用の URL（ブラウザで開く用） */
 export function getGoogleSignInUrl(callbackUrl: string): string {
   if (typeof window === 'undefined') return '';
@@ -37,13 +43,33 @@ function isAndroid(): boolean {
   return /Android/i.test(navigator.userAgent);
 }
 
-/** ブラウザで開く用 URL（Android は intent で Chrome を起動） */
+
+function addParam(url: string, param: string, value: string): string {
+  const u = new URL(url);
+  u.searchParams.set(param, value);
+  return u.toString();
+}
+
+/** ブラウザで開く用 URL
+ * - LINE: openExternalBrowser=1 で外部ブラウザ起動
+ * - Android（LINE以外）: intent で Chrome 起動
+ */
 export function getOpenInBrowserUrl(path = '/'): string {
   if (typeof window === 'undefined') return '';
-  const url = `${window.location.origin}${path}`;
+  let url = `${window.location.origin}${path}`;
+  if (isLineWebView()) {
+    return addParam(url, 'openExternalBrowser', '1');
+  }
   if (isAndroid()) {
     const fallback = encodeURIComponent(url);
     return `intent://${window.location.host}${path}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${fallback};end`;
   }
   return url;
+}
+
+/** LINEで共有するときのURL（openExternalBrowser=1 付き・相手がブラウザで開ける） */
+export function getLineShareUrl(path = '/'): string {
+  if (typeof window === 'undefined') return '';
+  const url = `${window.location.origin}${path}`;
+  return addParam(url, 'openExternalBrowser', '1');
 }
