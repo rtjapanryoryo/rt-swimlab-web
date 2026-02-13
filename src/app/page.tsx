@@ -294,6 +294,37 @@ export default function Home() {
     setShowForm(false);
   };
 
+  /** PDF用：指定文字の前後に半角スペースを追加（視認性向上） */
+  const addSpacesForPdf = (element: HTMLElement): (() => void) => {
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+    const nodes: Text[] = [];
+    let node: Text | null;
+    while ((node = walker.nextNode() as Text | null)) {
+      if (node?.textContent) nodes.push(node);
+    }
+    const originals = new Map<Text, string>();
+    for (const n of nodes) {
+      let t = n.textContent ?? '';
+      originals.set(n, t);
+      t = t
+        .replace(/（/g, ' （ ')
+        .replace(/）/g, ' ） ')
+        .replace(/、/g, ' 、 ')
+        .replace(/～/g, ' ～ ')
+        .replace(/~/g, ' ~ ')
+        .replace(/×/g, ' × ')
+        .replace(/(\d)[-\−](\d)/g, '$1 - $2')
+        .replace(/(\d)～(\d)/g, '$1 ～ $2')
+        .replace(/(\d)~(\d)/g, '$1 ~ $2');
+      n.textContent = t;
+    }
+    return () => {
+      for (const n of nodes) {
+        n.textContent = originals.get(n) ?? n.textContent;
+      }
+    };
+  };
+
   const exportPDFBlob = async (captureId: string): Promise<Blob> => {
     const el = document.getElementById(captureId);
     if (!el) throw new Error('PDF化する要素が見つかりません');
@@ -306,10 +337,13 @@ export default function Home() {
       ]);
 
       el.scrollIntoView({ behavior: 'auto', block: 'start' });
-      await new Promise((r) => setTimeout(r, 300));
+      await new Promise((r) => setTimeout(r, 200));
+
+      const restore = addSpacesForPdf(el as HTMLElement);
+      await new Promise((r) => setTimeout(r, 50));
 
       const opts = {
-        scale: 1.5,
+        scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
@@ -325,6 +359,8 @@ export default function Home() {
           scale: 1,
           ignoreElements: (node) => node.tagName === 'IMG',
         });
+      } finally {
+        restore();
       }
 
       if (canvas.width === 0 || canvas.height === 0) {
@@ -334,19 +370,15 @@ export default function Home() {
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = pageWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let imgWidth = pageWidth;
+      let imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-      let remaining = imgHeight;
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-      remaining -= pageHeight;
-
-      while (remaining > 0) {
-        pdf.addPage();
-        const y = -(imgHeight - remaining);
-        pdf.addImage(imgData, 'PNG', 0, y, imgWidth, imgHeight);
-        remaining -= pageHeight;
+      if (imgHeight > pageHeight) {
+        const scale = pageHeight / imgHeight;
+        imgWidth *= scale;
+        imgHeight *= scale;
       }
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
 
       return pdf.output('blob') as Blob;
     } finally {

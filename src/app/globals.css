@@ -109,6 +109,111 @@ html, body {
   background: #f5f6f8;
 }
 
+/* PDFキャプチャ用：1枚に収め、文字の潰れ・重なりを防ぐ */
+.pdf-capture-mode {
+  width: 794px !important; /* A4幅(210mm) @96dpi */
+  max-width: 794px !important;
+  font-size: 11px !important;
+  line-height: 1.35 !important;
+}
+.pdf-capture-mode .menu-sheet {
+  width: 100% !important;
+  padding: 14px 18px !important;
+}
+.pdf-capture-mode .menu-sheet .border-b {
+  padding-bottom: 10px !important;
+  margin-bottom: 10px !important;
+}
+.pdf-capture-mode .menu-sheet table,
+.pdf-capture-mode .pdf-capture-table {
+  table-layout: fixed !important;
+  width: 100% !important;
+  font-size: 9px !important;
+  line-height: 1.3 !important;
+}
+.pdf-capture-mode .menu-sheet th,
+.pdf-capture-mode .menu-sheet td {
+  padding: 4px 5px !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  word-break: break-word !important;
+  white-space: normal !important;
+  line-height: 1.3 !important;
+  vertical-align: top !important;
+}
+.pdf-capture-mode .menu-sheet td:first-child {
+  white-space: nowrap !important; /* セクションは1行 */
+}
+.pdf-capture-mode .menu-sheet td:nth-child(2),
+.pdf-capture-mode .menu-sheet td:nth-child(9) {
+  min-width: 48px !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+}
+.pdf-capture-mode .menu-sheet td:nth-child(6) {
+  min-width: 0 !important;
+}
+.pdf-capture-mode .dist-unit {
+  font-size: 0.85em !important;
+}
+.pdf-capture-mode .menu-sheet .grid {
+  gap: 2px 8px !important;
+  font-size: 9px !important;
+}
+.pdf-capture-mode .menu-sheet .grid > div {
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+}
+.pdf-capture-mode .menu-sheet .space-y-3 > div {
+  min-height: 1.3em !important;
+  line-height: 1.35 !important;
+  font-size: 10px !important;
+  gap: 2px !important;
+}
+.pdf-capture-mode .menu-sheet .space-y-3 .flex {
+  gap: 4px !important;
+}
+.pdf-capture-mode .menu-sheet .flex-1 {
+  min-width: 0 !important;
+  word-break: break-word !important;
+  white-space: normal !important;
+}
+.pdf-capture-mode .menu-sheet .pt-4 {
+  padding-top: 8px !important;
+}
+.pdf-capture-mode .menu-sheet .mb-6 {
+  margin-bottom: 8px !important;
+}
+.pdf-capture-mode .menu-sheet .space-y-2 {
+  gap: 2px !important;
+}
+.pdf-capture-mode .menu-sheet .space-y-2 > div {
+  font-size: 10px !important;
+  line-height: 1.4 !important;
+}
+.pdf-capture-mode .menu-sheet .gap-4 {
+  gap: 8px 16px !important;
+}
+
+/* 距離表示：数字と単位mを分離して重なりを防ぐ */
+.dist-cell {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+}
+.dist-num {
+  font-variant-numeric: tabular-nums;
+}
+.dist-unit {
+  margin-left: 2px;
+  font-size: 0.88em;
+}
+.dist-td {
+  min-width: 52px;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+
 /* overflow-x: hidden は html2canvas・印刷でコンテンツが切れるため削除 */
 
 body {

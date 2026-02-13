@@ -20,6 +20,24 @@ function normalizeDash(v?: string | null) {
   return s.length ? s : '-';
 }
 
+/** 距離表示：数字と単位mを分離して重なりを防ぐ */
+function DistDisplay({ value, addUnit = false }: { value: string; addUnit?: boolean }) {
+  if (!value || value === '-') return <>-</>;
+  let num: string;
+  if (addUnit) {
+    num = value;
+  } else {
+    const m = value.match(/^(.+?)m$/);
+    num = m ? m[1] : value;
+  }
+  return (
+    <span className="dist-cell inline-flex items-baseline gap-[3px]">
+      <span className="dist-num tabular-nums">{num}</span>
+      <span className="dist-unit">m</span>
+    </span>
+  );
+}
+
 const STROKE_ALLOWED = new Set(['Cho', 'IM', 'S1', 'Fr', 'Br', 'Ba', 'Fly']);
 
 /** セクションkey → 表表示ラベル（順序変更用） */
@@ -393,8 +411,8 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
                       {row.section}
                     </span>
                     {row.total !== '-' && (
-                      <span className="text-sm font-semibold text-slate-600 tabular-nums bg-slate-50/80 px-2.5 py-1 rounded-lg">
-                        Total: {row.total}
+                      <span className="text-sm font-semibold text-slate-600 bg-slate-50/80 px-2.5 py-1 rounded-lg">
+                        Total: <DistDisplay value={row.total} />
                       </span>
                     )}
                   </div>
@@ -402,7 +420,9 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
                     {row.distance !== '-' && (
                       <span className="text-slate-600">
                         <span className="text-slate-400 font-medium">距離</span>
-                        <span className="ml-1 font-semibold text-slate-800">{row.distance}m</span>
+                        <span className="ml-1 font-semibold text-slate-800">
+                          <DistDisplay value={row.distance} addUnit />
+                        </span>
                       </span>
                     )}
                     {row.count !== '-' && (
@@ -441,10 +461,20 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
         </div>
       ) : (
         <div className="mb-6 overflow-x-auto">
-          <table className="min-w-full border-collapse text-xs print:text-sm">
+          <table className="min-w-full border-collapse text-xs print:text-sm pdf-capture-table">
+            <colgroup>
+              <col style={{ width: '9%' }} />
+              <col style={{ width: '11%' }} />
+              <col style={{ width: '6%' }} />
+              <col style={{ width: '6%' }} />
+              <col style={{ width: '7%' }} />
+              <col style={{ width: '36%' }} />
+              <col style={{ width: '7%' }} />
+              <col style={{ width: '18%' }} />
+            </colgroup>
             <thead>
               <tr className="bg-gray-50 border-b-2 border-gray-300">
-                <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300 text-center">セクション</th>
+                <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300 text-center whitespace-nowrap">セクション</th>
                 <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300 text-center">距離(m)</th>
                 <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300 text-center">本数</th>
                 <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300 text-center">セット</th>
@@ -457,14 +487,18 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
             <tbody>
               {rows.map((row, idx) => (
                 <tr key={idx} className="border-b border-gray-200 hover:bg-gray-50">
-                  <td className="py-2 px-2 font-medium text-gray-900 text-center border-r border-gray-200">{row.section}</td>
-                  <td className="py-2 px-2 text-gray-700 text-center tabular-nums border-r border-gray-200">{row.distance !== '-' ? `${row.distance}m` : '-'}</td>
+                  <td className="py-2 px-2 font-medium text-gray-900 text-center border-r border-gray-200 whitespace-nowrap">{row.section}</td>
+                  <td className="py-2 px-2 text-gray-700 text-center border-r border-gray-200 dist-td">
+                    <DistDisplay value={row.distance} addUnit />
+                  </td>
                   <td className="py-2 px-2 text-gray-700 text-center tabular-nums border-r border-gray-200">{row.count}</td>
                   <td className="py-2 px-2 text-gray-700 text-center tabular-nums border-r border-gray-200">{row.sets}</td>
                   <td className="py-2 px-2 text-gray-700 text-center border-r border-gray-200">{row.style}</td>
-                  <td className="py-2 px-2 text-gray-700 text-left border-r border-gray-200">{row.content}</td>
+                  <td className="py-2 px-2 text-gray-700 text-left border-r border-gray-200 break-words">{row.content}</td>
                   <td className="py-2 px-2 text-gray-700 text-center border-r border-gray-200">{row.intensity}</td>
-                  <td className="py-2 px-2 text-gray-700 text-center tabular-nums font-semibold">{row.total}</td>
+                  <td className="py-2 px-2 text-gray-700 text-center border-r border-gray-200 font-semibold dist-td">
+                    <DistDisplay value={row.total} />
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -475,14 +509,14 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
       {/* 強度の凡例 */}
       <div className="mb-6 pt-4 border-t border-gray-300 text-xs">
         <div className="font-semibold text-gray-900 mb-2">強度の凡例:</div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          <div>①HR~120 (A1 Easy, Relax)</div>
-          <div>②HR120~140 (EN1)</div>
-          <div>③HR140~160 (EN2)</div>
-          <div>④HR160~180 (EN3)</div>
-          <div>⑤HR Max (AN1 耐乳酸)</div>
-          <div>⑥HR Max (AN2 乳酸生成)</div>
-          <div>⑦パワーやスピードなど</div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1">
+          <div>① HR~120 (A1 Easy, Relax)</div>
+          <div>② HR 120~140 (EN1)</div>
+          <div>③ HR 140~160 (EN2)</div>
+          <div>④ HR 160~180 (EN3)</div>
+          <div>⑤ HR Max (AN1 耐乳酸)</div>
+          <div>⑥ HR Max (AN2 乳酸生成)</div>
+          <div>⑦ パワーやスピードなど</div>
         </div>
       </div>
 
@@ -490,7 +524,9 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
       <div className="border-t border-gray-300 pt-4 space-y-3 text-sm">
         <div className="flex items-start">
           <span className="font-semibold text-gray-700 w-24">総距離:</span>
-          <span className="text-gray-900">{(result.total ?? '').replace('合計距離：', '')}</span>
+          <span className="text-gray-900 dist-cell-wrapper">
+            <DistDisplay value={(result.total ?? '').replace('合計距離：', '').trim()} />
+          </span>
         </div>
         <div className="flex items-start">
           <span className="font-semibold text-gray-700 w-24">今日の狙い:</span>
