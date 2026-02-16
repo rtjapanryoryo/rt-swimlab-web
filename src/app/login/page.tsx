@@ -44,13 +44,11 @@ function LoginContent() {
         {showSetupHint && (
           <div className="text-left text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md p-4 mb-4">
             <p className="font-semibold mb-2">OAuth が未設定です</p>
-            <p className="mb-2">
-              .env.local に以下を設定してください：
-            </p>
+            <p className="mb-2">.env.local に以下を設定してください：</p>
             <ul className="list-disc list-inside space-y-1 text-xs">
               <li>GOOGLE_CLIENT_ID（Google Cloud Console で作成）</li>
               <li>GOOGLE_CLIENT_SECRET</li>
-              <li>承認済みリダイレクトURI: <code className="bg-amber-100 px-1 rounded">{callbackUri || 'http://localhost:3000/api/auth/callback/google'}</code></li>
+              <li>承認済みリダイレクトURI: <code className="bg-amber-100 px-1 rounded">http://localhost:3000/api/auth/callback/google</code></li>
             </ul>
             <p className="mt-2 text-xs">設定後、開発サーバーを再起動してください。</p>
           </div>

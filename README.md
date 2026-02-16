@@ -1,5 +1,22 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## 環境変数（必須）
+
+`.env.ai` に以下を設定してください。テンプレートは `.env.ai.example` を参照。
+
+```bash
+cp .env.ai.example .env.ai
+# .env.ai を編集して GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, NEXTAUTH_SECRET を設定
+```
+
+**注意**: `.env.ai` は Git に含まれません。作成後は安全な場所にバックアップしてください。
+
+詳細は [docs/ENV_SETUP.md](docs/ENV_SETUP.md) を参照。
+
+## LINEで共有する場合
+
+LINEでURLを送ると、デフォルトではLINE内ブラウザで開き、PDF保存が制限される場合があります。**URLの末尾に `?openExternalBrowser=1` を付ける**と外部ブラウザで開き、PDF保存・印刷が確実に動作します。詳細は [docs/LINE_SHARING.md](docs/LINE_SHARING.md) を参照。
+
 ## Getting Started
 
 First, run the development server:

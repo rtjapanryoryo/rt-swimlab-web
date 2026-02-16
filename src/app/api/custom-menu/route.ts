@@ -63,7 +63,9 @@ const CORE_SYSTEM_PROMPT = `【出力指示】
 - **kick と pull のブロック名は英語で書く**: 「キック」→「Kick」、「プル」→「Pull」とする。例: Kick 4×50m（EN1）、Pull 6×50m（DPS）（EN2）。
 - W-up / Down: 種目は Cho 固定。warmUp と down の文字列に Fr/Fly/Ba/Br/IM を一切含めない。
 - Dive: 期が調整期・テーパー期のときのみ。それ以外の期では空文字。
-- Rest 以外は強度を ①〜⑦ に対応（A1/EN1/EN2 等）で書く。`;
+- Rest 以外は強度を ①〜⑦ に対応（A1/EN1/EN2 等）で書く。
+- **強度の天井**: 期ごとにメイン・非メインの上限がある。リカバリー③③、基礎形成④③、発展形成④④、スピード持久⑤④、対乳酸⑥④、調整⑤④、テーパー④③。これを超えないこと。
+- **W-down前の神経刺激**: 練習の最後（Down前）に 25m×2本 MAX（強度⑦）などを入れてもよい。量ではなく神経刺激が目的。`;
 
 /** 必須10項目のラベル（不足時レスポンス用） */
 const REQUIRED_KEYS: { key: string; label: string }[] = [
@@ -107,14 +109,38 @@ function buildConditionInstructions(
   const isMasters = level.includes('マスターズ');
   const isFemale = gender === '女';
 
+  const distanceTargets120: Record<string, Record<string, number>> = {
+    '1': { S: 3000, M: 3500, D: 4000 },
+    '2': { S: 4000, M: 5000, D: 6000 },
+    '3': { S: 5000, M: 6500, D: 8000 },
+    '4': { S: 5000, M: 7000, D: 8500 },
+    '5': { S: 4000, M: 6000, D: 8000 },
+    '6': { S: 3500, M: 3500, D: 6000 },
+    '7': { S: 3000, M: 3500, D: 4000 },
+  };
+  const intensityCeiling: Record<string, { main: string; nonMain: string }> = {
+    '1': { main: '③', nonMain: '③' },
+    '2': { main: '④', nonMain: '③' },
+    '3': { main: '④', nonMain: '④' },
+    '4': { main: '⑤', nonMain: '④' },
+    '5': { main: '⑥', nonMain: '④' },
+    '6': { main: '⑤', nonMain: '④' },
+    '7': { main: '④', nonMain: '③' },
+  };
+  const timeScale = timeNum === 60 ? 0.5 : timeNum === 90 ? 0.75 : 1;
+  const levelScale =
+    level.includes('初級') ? 0.65 : level.includes('中級') ? 0.8 : level.includes('マスターズ') ? 0.85 : 1;
+  const targets = distanceTargets120[period]?.[distanceType];
+  const targetDist = targets ? Math.round(targets * timeScale * levelScale) : null;
+
   const periodGuide: Record<string, string> = {
-    '1': '①リカバリー期: 回復・感覚維持・姿勢安定。Diveなし。強度控えめ、W-up/Drill/Down多め。Mainは短め・A1〜EN1中心、フォーム再構築に集中。',
-    '2': '②基礎形成期: 水感覚・姿勢・呼吸・フォーム固め。Diveなし。対乳酸MAXは入れない。DrillとKickを丁寧に。Mainは技術を崩さない範囲の強度。',
-    '3': '③発展形成期: 技術精度向上・スピード導入。Diveなし。Pre-Mainで強度を段階的に。Mainは目的に合わせて設計。',
-    '4': '④強化期 (スピード持久力): ボリュームと心肺土台。Diveなし。対乳酸MAXは入れない、スピード×持久までに留める。総距離多め、Kick/Pullの量を確保。',
-    '5': '⑤強化期 (対乳酸): 乳酸耐性・レースペース持続。Mainの本数・レスト・強度を目的に合わせて明確に。',
-    '6': '⑥調整期: 疲労除去＋スピード維持。Diveを少しずつ導入可。量より質、短いスピード刺激を入れる。',
-    '7': '⑦テーパー期: 神経調整・反応・仕上げ。Diveでテンポアップ・レース動作の最終調整。対乳酸セットは入れない。短い本数・レスト長め・スピード感。追い込まない。',
+    '1': `①リカバリー期: 回復・感覚維持・姿勢安定。Diveなし。強度控えめ（メイン③・非メイン③まで）。フォーム再構築に集中。上級者は量を落としすぎない。${targetDist ? `目標距離: 約${targetDist}m` : ''}`,
+    '2': `②基礎形成期: 水感覚・姿勢・呼吸・フォーム固め。Diveなし。対乳酸MAXは入れない。メイン④・非メイン③まで。内容と強度表記を必ず一致させる。${targetDist ? `目標距離: 約${targetDist}m` : ''}`,
+    '3': `③発展形成期: 技術精度向上・スピード導入。Diveなし。メイン④・非メイン④まで。技術×持久の積み上げに集中。${targetDist ? `目標距離: 約${targetDist}m` : ''}`,
+    '4': `④強化期 (スピード持久力): ボリュームと心肺土台。Diveなし。対乳酸MAXは入れない。メイン⑤・非メイン④まで。スピード×持久までに留める。${targetDist ? `目標距離: 約${targetDist}m` : ''}`,
+    '5': `⑤強化期 (対乳酸): 乳酸耐性・レースペース持続。メイン⑥・非メイン④まで。対乳酸MAXはこの期のみ。${targetDist ? `目標距離: 約${targetDist}m` : ''}`,
+    '6': `⑥調整期: 疲労除去＋スピード維持。Diveを少しずつ導入可。メイン⑤・非メイン④まで。量より質。${targetDist ? `目標距離: 約${targetDist}m` : ''}`,
+    '7': `⑦テーパー期: 神経調整・反応・仕上げ。Diveでテンポアップ・レース動作の最終調整。対乳酸セットは入れない。メイン④・非メイン③まで。${targetDist ? `目標距離: 約${targetDist}m` : ''}`,
   };
   const strokeGuide: Record<string, string> = {
     Fr: '自由形: W-upはFR・IM多め。Drillは片手・キャッチアップ等。Kick/PullはFR中心。',
@@ -165,10 +191,13 @@ function buildConditionInstructions(
       : '性別=女: 月経期でなければ通常の設計。必要に応じて配慮を含める。',
   };
 
+  const ceiling = intensityCeiling[period];
+  const ceilingNote = ceiling ? `強度の天井: メイン${ceiling.main}まで、非メイン${ceiling.nonMain}まで。` : '';
+
   const lines: string[] = [
     '【必須】この10条件すべてから導いた練習設計にすること。全項目を反映した上でメニューを組み立てる。',
     '',
-    `1. 期: ${periodGuide[period] || `期=${period}: 上記の期の定義に沿って重点を置く。`}`,
+    `1. 期: ${periodGuide[period] || `期=${period}: 上記の期の定義に沿って重点を置く。`} ${ceilingNote}`,
     `2. 種目: ${strokeGuide[stroke] || `種目=${stroke}: その種目に合ったドリル・キック・プルにする。`}`,
     `3. 性別: ${genderGuide[gender] || `性別=${gender}`}`,
     `4. 年齢: 年齢=${age}歳。年齢補正を強度に反映。${ageNum < 13 ? 'Kick比率高め・説明を丁寧に。' : ageNum >= 40 ? '強度-2〜3、安全最優先。' : '高校・大学基準でよい。'}`,
@@ -176,7 +205,7 @@ function buildConditionInstructions(
     `6. レベル: ${levelGuide[level] || (isMasters ? levelGuide['マスターズ（記録狙い）'] : `レベル=${level}: 育成〜初級は技術・フォーム優先、全国〜代表は量・強度高め。`)}`,
     `7. 目的: ${purposeGuide[purpose] || `目的=${purpose}: MainとPre-Mainをこの目的で一貫させる。`}`,
     `8. 状況: ${conditionGuide[condition] || `状況=${condition}: 疲労・コンディションに合わせて強度・量・休息を調整する。`}`,
-    `9. 練習時間: ${timeNum}分。総距離は60分なら約2000-2500m、90分なら約2500-3500m、120分なら約3500-4500m。レベルと状況で増減。`,
+    `9. 練習時間: ${timeNum}分。総距離は期×距離タイプの基準を時間比でスケール（120分基準）。${targetDist ? `本条件の目標: 約${targetDist}m。` : ''}レベルと状況で増減。`,
     `10. ボリュームUP: ${volumeUpGuide[volumeUp] || `ボリュームUP=${volumeUp}: 該当ブロックの量を他より多めにし、内容を具体的に書く。`}`,
   ];
   return lines.join('\n');

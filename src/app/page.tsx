@@ -21,6 +21,16 @@ const QUICK_TEMPLATES = {
 
 const SAVED_INPUT_KEY_PREFIX = 'rt-swimlab-saved-input';
 
+/** LINEで共有する際の本番URL（openExternalBrowser=1 で外部ブラウザ起動） */
+const LINE_SHARE_BASE_URL = 'https://rt-swimlab-web-tl3a.vercel.app';
+
+/** LINE内ブラウザ（WebView）かどうか。PDF保存・印刷が制限される */
+function isLineInAppBrowser(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent;
+  return /Line\//i.test(ua) || /\/IAB\b/i.test(ua);
+}
+
 function savedInputKey(userId: string): string {
   return `${SAVED_INPUT_KEY_PREFIX}-${userId}`;
 }
@@ -81,6 +91,8 @@ export default function Home() {
   const [sectionLabels, setSectionLabels] = useState<Record<string, string> | null>(null);
   const [showForm, setShowForm] = useState(true);
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+  const [isInLineBrowser, setIsInLineBrowser] = useState(false);
+  const [lineUrlCopied, setLineUrlCopied] = useState(false);
 
   const LOADING_MESSAGES = [
     '条件を分析しています...',
@@ -107,6 +119,10 @@ export default function Home() {
       document.body.style.overflow = '';
     };
   }, [customIsGenerating]);
+
+  useEffect(() => {
+    setIsInLineBrowser(isLineInAppBrowser());
+  }, []);
 
   // クイックメニュー用セクション順・ラベル（quick-settings.json）
   useEffect(() => {
@@ -433,6 +449,23 @@ export default function Home() {
     }
   };
 
+  /** PDFを別タブで開く（LINE内ブラウザ等でダウンロードが効かない場合のフォールバック） */
+  const handleOpenPDFInNewTab = async (captureId: string) => {
+    try {
+      const blob = await exportPDFBlob(captureId);
+      const url = URL.createObjectURL(blob);
+      const w = window.open(url, '_blank', 'noopener');
+      if (!w) {
+        alert('ポップアップがブロックされました。ブラウザの設定で許可するか、URLをコピーしてブラウザで開いてください。');
+        window.prompt('以下のURLをコピーしてブラウザで開いてください:', url);
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (e) {
+      console.error('PDF export error:', e);
+      alert('PDFの生成に失敗しました。もう一度お試しください。');
+    }
+  };
+
   const handleSharePDF = async (captureId: string) => {
     try {
       const blob = await exportPDFBlob(captureId);
@@ -468,12 +501,65 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-slate-50/95 to-slate-100 py-8 px-4">
       <div className="max-w-5xl mx-auto">
-        <header className="mb-10 text-center no-print">
+        <header className="mb-10 text-center no-print relative">
           <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2 tracking-tight">
             RT swim lab
           </h1>
           <p className="text-slate-600 text-base md:text-lg">立石諒と高城直基が監修の指導哲学に基づく練習メニュー</p>
+          <button
+            type="button"
+            onClick={async () => {
+              const base = typeof window !== 'undefined' && !window.location.origin.includes('localhost')
+                ? window.location.origin
+                : LINE_SHARE_BASE_URL;
+              const url = `${base}/?openExternalBrowser=1`;
+              try {
+                await navigator.clipboard.writeText(url);
+                setLineUrlCopied(true);
+                setTimeout(() => setLineUrlCopied(false), 3000);
+              } catch {
+                window.prompt('以下のURLをコピーしてLINEで送ってください:', url);
+              }
+            }}
+            className="mt-3 text-sm text-slate-500 hover:text-slate-700 underline underline-offset-2"
+            title="LINEで送る際はこのURLを使うと、外部ブラウザで開きPDF保存が確実になります"
+          >
+            {lineUrlCopied ? '✓ コピーしました' : 'LINEで共有する（URLコピー）'}
+          </button>
         </header>
+
+        {/* LINE内ブラウザ検出時：PDF保存・印刷が制限されるため案内 */}
+        {isInLineBrowser && (
+          <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 no-print">
+            <p className="font-medium text-amber-900 mb-2">
+              LINE内で表示中です。PDF保存・印刷を確実に行うには、ブラウザで開いてください。
+            </p>
+            <div className="flex flex-wrap gap-2 items-center">
+              <button
+                type="button"
+                onClick={async () => {
+                  const base = typeof window !== 'undefined' && !window.location.origin.includes('localhost')
+                    ? window.location.origin
+                    : LINE_SHARE_BASE_URL;
+                  const url = `${base}/?openExternalBrowser=1`;
+                  try {
+                    await navigator.clipboard.writeText(url);
+                    setLineUrlCopied(true);
+                    setTimeout(() => setLineUrlCopied(false), 3000);
+                  } catch {
+                    window.prompt('以下のURLをコピーしてLINEで送り、再度タップしてください:', url);
+                  }
+                }}
+                className="px-4 py-2 rounded-lg bg-amber-600 text-white font-medium text-sm hover:bg-amber-700 transition-colors"
+              >
+                {lineUrlCopied ? 'コピーしました' : 'ブラウザ用URLをコピー'}
+              </button>
+              <span className="text-sm text-amber-800">
+                または 右上の ⋮ → 「Safariで開く」「Chromeで開く」を選択
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* 入力（メニュー生成後は非表示） */}
         {showForm && (
@@ -803,6 +889,16 @@ export default function Home() {
                 >
                   {isExporting ? 'PDF生成中...' : 'PDFダウンロード'}
                 </button>
+                {isInLineBrowser && (
+                  <button
+                    onClick={() => handleOpenPDFInNewTab('menu-capture')}
+                    disabled={isExporting}
+                    className="px-4 py-2 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 disabled:opacity-50 font-medium text-sm shadow-sm transition-all"
+                    title="LINE内でダウンロードが効かない場合に使用"
+                  >
+                    {isExporting ? '...' : 'PDFを表示'}
+                  </button>
+                )}
                 <button
                   onClick={() => handleSharePDF('menu-capture')}
                   disabled={isExporting}

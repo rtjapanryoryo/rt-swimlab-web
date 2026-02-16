@@ -49,9 +49,10 @@ body {
     display: block !important;
   }
 
-  /* ページ余白 */
+  /* ページ余白（幅を活かして1Pに収める） */
   @page {
-    margin: 14mm;
+    margin: 8mm;
+    size: A4 landscape;
   }
 
   /* 画面背景を消す */
@@ -74,12 +75,13 @@ body {
     border-bottom: 1px solid #e5e7eb !important;
   }
 
-  /* 練習メニュー表の印刷用スタイル */
+  /* 練習メニュー表：読みやすさ優先 */
   .menu-sheet {
-    padding: 20px !important;
+    padding: 12px 14px !important;
     background: white !important;
     border-radius: 0 !important;
     box-shadow: none !important;
+    page-break-inside: avoid !important;
   }
 
   /* 印刷時はパネルをシンプルに */
@@ -89,17 +91,79 @@ body {
   }
 
   .menu-sheet table {
-    font-size: 10px !important;
+    font-size: 12px !important;
+    line-height: 1.4 !important;
   }
 
   .menu-sheet th,
   .menu-sheet td {
-    padding: 6px 4px !important;
+    padding: 5px 6px !important;
     border: 1px solid #e5e7eb !important;
   }
 
   .menu-sheet .print-only {
     display: block !important;
+  }
+
+  /* ロゴ・ヘッダー */
+  .menu-sheet .print-only img {
+    height: 40px !important;
+    max-width: 150px !important;
+  }
+  /* ヘッダーを4列にして高さを抑える */
+  .menu-sheet .border-b > .grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 4px 12px !important;
+    font-size: 11px !important;
+  }
+  .menu-sheet .mb-4 {
+    margin-bottom: 4px !important;
+  }
+  .menu-sheet .mb-6 {
+    margin-bottom: 6px !important;
+  }
+  .menu-sheet .border-b {
+    padding-bottom: 6px !important;
+    margin-bottom: 6px !important;
+  }
+  .menu-sheet .border-b + .mb-6 .grid {
+    gap: 6px 14px !important;
+  }
+  .menu-sheet .space-y-2 > div {
+    line-height: 1.4 !important;
+  }
+
+  /* 強度凡例 */
+  .menu-sheet .pt-4 {
+    padding-top: 4px !important;
+  }
+  .menu-sheet .border-t {
+    margin-top: 4px !important;
+    padding-top: 4px !important;
+  }
+  .menu-sheet .text-xs {
+    font-size: 11px !important;
+  }
+  .menu-sheet .text-xs .grid {
+    font-size: 11px !important;
+    gap: 4px 14px !important;
+  }
+
+  /* まとめ（総距離・狙い・ポイント・注意点） */
+  .menu-sheet .space-y-3 > div {
+    line-height: 1.4 !important;
+    font-size: 11px !important;
+  }
+  .menu-sheet .space-y-3 .font-semibold {
+    min-width: 76px !important;
+    font-size: 11px !important;
+  }
+
+  /* 1Pに収めるため軽くスケール */
+  #menu-capture {
+    transform: scale(0.96);
+    transform-origin: top left;
+    width: 104.2% !important;
   }
 }
 html, body {
