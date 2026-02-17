@@ -431,25 +431,7 @@ export default function Home() {
     }
   };
 
-  const handleDownloadPDF = async (captureId: string) => {
-    try {
-      const blob = await exportPDFBlob(captureId);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `RT-menu_${new Date().toISOString().slice(0, 10)}.pdf`;
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      if (a.parentNode) a.parentNode.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 100);
-    } catch (e) {
-      console.error('PDF export error:', e);
-      alert('PDFの生成に失敗しました。もう一度お試しください。');
-    }
-  };
-
-  /** PDFを別タブで開く（LINE内ブラウザ等でダウンロードが効かない場合のフォールバック） */
+  /** PDFを別タブで開く（開いた画面から保存可能） */
   const handleOpenPDFInNewTab = async (captureId: string) => {
     try {
       const blob = await exportPDFBlob(captureId);
@@ -485,13 +467,13 @@ export default function Home() {
           files: [file],
         });
       } else {
-        await handleDownloadPDF(captureId);
+        await handleOpenPDFInNewTab(captureId);
       }
     } catch (e) {
       if ((e as Error)?.name === 'AbortError') return; // ユーザーが共有をキャンセル
       console.error(e);
       try {
-        await handleDownloadPDF(captureId);
+        await handleOpenPDFInNewTab(captureId);
       } catch {
         alert('共有・PDF出力に失敗しました。もう一度お試しください。');
       }
@@ -883,22 +865,14 @@ export default function Home() {
                   印刷
                 </button>
                 <button
-                  onClick={() => handleDownloadPDF('menu-capture')}
+                  type="button"
+                  onClick={() => handleOpenPDFInNewTab('menu-capture')}
                   disabled={isExporting}
                   className="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-900 disabled:opacity-50 font-medium text-sm shadow-sm transition-all"
+                  title="PDFを開いて保存"
                 >
-                  {isExporting ? 'PDF生成中...' : 'PDFダウンロード'}
+                  {isExporting ? 'PDF生成中...' : 'PDFを表示'}
                 </button>
-                {isInLineBrowser && (
-                  <button
-                    onClick={() => handleOpenPDFInNewTab('menu-capture')}
-                    disabled={isExporting}
-                    className="px-4 py-2 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 disabled:opacity-50 font-medium text-sm shadow-sm transition-all"
-                    title="LINE内でダウンロードが効かない場合に使用"
-                  >
-                    {isExporting ? '...' : 'PDFを表示'}
-                  </button>
-                )}
                 <button
                   onClick={() => handleSharePDF('menu-capture')}
                   disabled={isExporting}
