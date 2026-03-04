@@ -45,14 +45,13 @@ const EMPTY_INPUT: TrainingInput = {
   purpose: '',
   condition: '',
   practiceTime: '',
-  volumeUp: '',
 };
 
 function isTrainingInput(obj: unknown): obj is TrainingInput {
   if (!obj || typeof obj !== 'object') return false;
   const keys: (keyof TrainingInput)[] = [
     'period', 'stroke', 'gender', 'age', 'distanceType',
-    'level', 'purpose', 'condition', 'practiceTime', 'volumeUp',
+    'level', 'purpose', 'condition', 'practiceTime',
   ];
   return keys.every((k) => typeof (obj as Record<string, unknown>)[k] === 'string');
 }
@@ -701,25 +700,6 @@ export default function Home() {
                 <option value="60">60分</option>
                 <option value="90">90分</option>
                 <option value="120">120分</option>
-              </select>
-            </div>
-
-            {/* 10. ボリュームアップ項目 */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                10. ボリュームアップ項目
-              </label>
-              <select
-                value={input.volumeUp}
-                onChange={(e) => handleInputChange('volumeUp', e.target.value)}
-                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40 focus:border-slate-300 transition-colors"
-              >
-                <option value="">選択してください</option>
-                <option value="Drill">Drill</option>
-                <option value="Kick">Kick</option>
-                <option value="Pull">Pull</option>
-                <option value="Pre-Main">Pre-Main</option>
-                <option value="Main">Main</option>
               </select>
             </div>
           </div>
