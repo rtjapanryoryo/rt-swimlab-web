@@ -683,7 +683,6 @@ export default function Home() {
                 <option value="120">120分</option>
               </select>
             </div>
-
           </div>
 
           {/* API未設定時のみ表示（利用可能のときは何も出さない） */}

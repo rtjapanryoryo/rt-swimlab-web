@@ -100,7 +100,7 @@ export async function getCommonContent(): Promise<string> {
  * カスタム作成時にシステムプロンプトの冒頭に注入。思想・ルールの唯一の正本。
  */
 export async function getProtocolContent(): Promise<string> {
-  const fullPath = path.join(PROJECT_ROOT, 'docs', 'RT_MENU_GENERATION_RULES_JA.md');
+  const fullPath = path.join(PROJECT_ROOT, 'docs', 'COACH_INTERVIEW_50_QA.md');
   return fs.readFile(fullPath, 'utf-8').catch(() => '');
 }
 

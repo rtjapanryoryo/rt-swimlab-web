@@ -843,7 +843,6 @@ export function generateTrainingMenu(
   const preMain = generatePreMain(distanceType, purposeType, ageGroup);
   const dive = generateDive(ageGroup, input.period);
   const rest = generateRest(input.condition, purposeType);
-  // volumeUpは将来的に使用予定（現在は互換性のため空文字列を使用）
   const main = generateMain(distanceType, effectivePurposeType, ageGroup, '', mainRule);
   const down = generateDown(input.practiceTime);
 
