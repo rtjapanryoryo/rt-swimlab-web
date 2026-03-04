@@ -14,10 +14,8 @@ export interface TrainingInput {
   age: string; // 年齢（数値）
   distanceType: string; // S, M, D
   level: string; // 全国大会入賞〜代表クラス, 上級, 中級, 初級, マスターズ各
-  purpose: string; // 目的（対乳酸、心肺、技術、スピードなど）
   condition: string; // 良好、軽疲労、筋疲労、疲労残り、月経期
   practiceTime: string; // 60, 90, 120
-  volumeUp: string; // ドリル、キック、プル、プレメイン、メイン
 }
 
 export interface TrainingResult {
@@ -39,7 +37,7 @@ export interface TrainingResult {
 }
 
 export type DistanceType = 'S' | 'M' | 'D';
-export type PurposeType = '対乳酸' | '心肺' | '技術' | 'スピード' | 'フォーム' | '持久力' | 'その他';
+export type PurposeType = '耐乳酸' | '心肺' | '技術' | 'スピード' | 'フォーム' | '持久力' | 'その他';
 export type AgeGroup = '小学生' | '中学生' | '高校生' | '大学生以上' | '成人・マスターズ';
 
 interface MainSetRule {
@@ -70,14 +68,28 @@ function getAgeGroup(age: string): AgeGroup {
 // ============================================================
 
 function getPurposeType(purpose: string): PurposeType {
-  if (purpose.includes('対乳酸') || purpose.includes('乳酸')) return '対乳酸';
+  if (purpose.includes('耐乳酸') || purpose.includes('乳酸')) return '耐乳酸';
   if (purpose.includes('持久力') || purpose.includes('持久')) return '持久力';
   if (purpose.includes('心肺')) return '心肺';
   if (purpose.includes('技術') || purpose.includes('フォーム')) return '技術';
   if (purpose.includes('スピード') || purpose.includes('速く')) return 'スピード';
-  if (purpose.includes('レースペース')) return '対乳酸'; // レースペースは対乳酸として扱う
+  if (purpose.includes('レースペース')) return '耐乳酸'; // レースペースは耐乳酸として扱う
   if (purpose.includes('回復')) return '心肺'; // 回復は心肺として扱う
   return 'その他';
+}
+
+/** 期から目的タイプを導出（7.目的削除に伴う） */
+function derivePurposeFromPeriod(period: string): PurposeType {
+  switch (period) {
+    case '1': return '心肺'; // リカバリー期
+    case '2': return '技術'; // 基礎形成期
+    case '3': return '技術'; // 発展形成期
+    case '4': return '心肺'; // 強化期(スピード持久力)
+    case '5': return '耐乳酸'; // 強化期(耐乳酸)
+    case '6': return 'スピード'; // 調整期
+    case '7': return 'スピード'; // テーパー期
+    default: return 'その他';
+  }
 }
 
 // ============================================================
@@ -90,7 +102,7 @@ const MAIN_SET_RULES: Record<DistanceType, Record<PurposeType, Record<AgeGroup, 
   // S（スプリント）
   // ============================================================
   S: {
-    対乳酸: {
+    耐乳酸: {
       小学生: { sets: 4, distance: 25, rest: '30秒', intensity: 'EN3', intensityNote: '10秒心拍29-30（年齢補正+2-3）' },
       中学生: { sets: 6, distance: 25, rest: '30秒', intensity: 'EN3', intensityNote: '10秒心拍29-30（年齢補正+1-2）' },
       高校生: { sets: 8, distance: 25, rest: '30秒', intensity: 'EN3', intensityNote: '10秒心拍29-30' },
@@ -145,7 +157,7 @@ const MAIN_SET_RULES: Record<DistanceType, Record<PurposeType, Record<AgeGroup, 
   // M（ミドル）
   // ============================================================
   M: {
-    対乳酸: {
+    耐乳酸: {
       小学生: { sets: 4, distance: 50, rest: '45秒', intensity: 'EN3', intensityNote: '10秒心拍29-30（年齢補正+2-3）' },
       中学生: { sets: 6, distance: 50, rest: '45秒', intensity: 'EN3', intensityNote: '10秒心拍29-30（年齢補正+1-2）' },
       高校生: { sets: 8, distance: 50, rest: '45秒', intensity: 'EN3', intensityNote: '10秒心拍29-30' },
@@ -200,7 +212,7 @@ const MAIN_SET_RULES: Record<DistanceType, Record<PurposeType, Record<AgeGroup, 
   // D（ディスタンス）
   // ============================================================
   D: {
-    対乳酸: {
+    耐乳酸: {
       小学生: { sets: 4, distance: 100, rest: '60秒', intensity: 'EN3', intensityNote: '10秒心拍29-30（年齢補正+2-3）' },
       中学生: { sets: 6, distance: 100, rest: '60秒', intensity: 'EN3', intensityNote: '10秒心拍29-30（年齢補正+1-2）' },
       高校生: { sets: 8, distance: 100, rest: '60秒', intensity: 'EN3', intensityNote: '10秒心拍29-30' },
@@ -261,20 +273,20 @@ const PERIOD_NAMES: Record<string, string> = {
   '2': '基礎形成期',
   '3': '発展形成期',
   '4': '強化期 (スピード持久力)',
-  '5': '強化期 (対乳酸)',
+  '5': '強化期 (耐乳酸)',
   '6': '調整期',
   '7': 'テーパー期',
 };
 
 /**
  * 期ごとのMain制御（カスタム専用）。
- * - リカバリー期: 対乳酸MAX不要。強度を落としフォーム再構築に集中。
- * - 基礎形成期: 対乳酸MAXは原則入れない。内容と強度を一致させる。
+ * - リカバリー期: 耐乳酸MAX不要。強度を落としフォーム再構築に集中。
+ * - 基礎形成期: 耐乳酸MAXは原則入れない。内容と強度を一致させる。
  * - 発展形成期: 変更なし。
- * - スピード持久期: 対乳酸MAXは入れない。スピード×持久までに留める。
- * - 対乳酸期: 現状維持。
+ * - スピード持久期: 耐乳酸MAXは入れない。スピード×持久までに留める。
+ * - 耐乳酸期: 現状維持。
  * - 調整期: 現状維持。
- * - テーパー期: 対乳酸セットは入れない。短いスピード・テンポ調整に。
+ * - テーパー期: 耐乳酸セットは入れない。短いスピード・テンポ調整に。
  */
 const DEFAULT_MAIN_RULE: MainSetRule = {
   sets: 6,
@@ -299,8 +311,8 @@ function getEffectiveMainRule(
     rules[p]?.[ageGroup] || rules['その他']?.[ageGroup] || DEFAULT_MAIN_RULE;
 
   switch (period) {
-    case '1': // リカバリー期: 強度を落とす。対乳酸→技術相当に。
-      if (purposeType === '対乳酸' || purposeType === 'スピード') {
+    case '1': // リカバリー期: 強度を落とす。耐乳酸→技術相当に。
+      if (purposeType === '耐乳酸' || purposeType === 'スピード') {
         return { mainRule: getRule('技術'), effectivePurposeType: '技術' };
       }
       const r1 = getRule(purposeType);
@@ -312,25 +324,25 @@ function getEffectiveMainRule(
       }
       return { mainRule: r1, effectivePurposeType: purposeType };
 
-    case '2': // 基礎形成期: 対乳酸MAXは原則入れない。
-      if (purposeType === '対乳酸') {
+    case '2': // 基礎形成期: 耐乳酸MAXは原則入れない。
+      if (purposeType === '耐乳酸') {
         return { mainRule: getRule('技術'), effectivePurposeType: '技術' };
       }
       return { mainRule: getRule(purposeType), effectivePurposeType: purposeType };
 
     case '3': // 発展形成期: 変更なし
-    case '5': // 対乳酸期: 現状維持
+    case '5': // 耐乳酸期: 現状維持
     case '6': // 調整期: 現状維持
       return { mainRule: getRule(purposeType), effectivePurposeType: purposeType };
 
-    case '4': // スピード持久期: 対乳酸MAXは入れない。スピード×持久まで。
-      if (purposeType === '対乳酸') {
+    case '4': // スピード持久期: 耐乳酸MAXは入れない。スピード×持久まで。
+      if (purposeType === '耐乳酸') {
         return { mainRule: getRule('持久力'), effectivePurposeType: '持久力' };
       }
       return { mainRule: getRule(purposeType), effectivePurposeType: purposeType };
 
-    case '7': // テーパー期: 対乳酸セットは入れない。短いスピード・テンポ調整に。
-      if (purposeType === '対乳酸') {
+    case '7': // テーパー期: 耐乳酸セットは入れない。短いスピード・テンポ調整に。
+      if (purposeType === '耐乳酸') {
         return { mainRule: getRule('スピード'), effectivePurposeType: 'スピード' };
       }
       return { mainRule: getRule(purposeType), effectivePurposeType: purposeType };
@@ -373,6 +385,7 @@ function generateWarmUp(ageGroup: AgeGroup, practiceTime: string): string {
   let distance = 200;
   if (time >= 120) distance = 300;
   else if (time >= 90) distance = 250;
+  else if (time >= 60) distance = 200;
   return `${distance}m（A1）`;
 }
 
@@ -432,7 +445,7 @@ function generateKick(
   }
 
   let intensity = 'EN1';
-  if (purposeType === '対乳酸') intensity = 'EN2';
+  if (purposeType === '耐乳酸') intensity = 'EN2';
 
   return `キック ${sets}×${distance}m（${intensity}）`;
 }
@@ -461,14 +474,14 @@ function generatePreMain(
   const sets = ageGroup === '小学生' ? 2 : 3;
 
   let intensity = 'EN1';
-  if (purposeType === '対乳酸') intensity = 'EN2';
+  if (purposeType === '耐乳酸') intensity = 'EN2';
   if (purposeType === '心肺') intensity = 'EN1';
 
   return `Pre-Main ${sets}×${distance}m（${intensity}）`;
 }
 
 function generateRest(condition: string, purposeType: PurposeType): string {
-  if (condition.includes('疲労') || purposeType === '対乳酸' || purposeType === 'スピード') {
+  if (condition.includes('疲労') || purposeType === '耐乳酸' || purposeType === 'スピード') {
     return 'Rest / Free time（5~10min）';
   }
   return '';
@@ -494,7 +507,7 @@ function generateDown(practiceTime: string): string {
 
 /**
  * Diveは調整期・テーパー期が中心。
- * リカバリー・基礎形成・発展形成・スピード持久・対乳酸期では入れない。
+ * リカバリー・基礎形成・発展形成・スピード持久・耐乳酸期では入れない。
  */
 function generateDive(ageGroup: AgeGroup, period: string): string {
   if (!['6', '7'].includes(period)) return '';
@@ -582,7 +595,7 @@ function generatePurposeText(
   _stroke: string
 ): string {
   const purposeTexts: Record<PurposeType, string> = {
-    対乳酸: 'フォーム維持を最優先にした対乳酸トレーニング',
+    耐乳酸: 'フォーム維持を最優先にした耐乳酸トレーニング',
     心肺: '心肺機能向上と持久力強化',
     技術: '技術精度向上とフォーム固め',
     スピード: 'スピード感覚の向上と反応速度の向上',
@@ -599,7 +612,7 @@ function generateIntention(
   _mainRule: MainSetRule
 ): string {
   const intentions: Record<PurposeType, string> = {
-    対乳酸: 'フォームを崩さずに乳酸耐性を向上させる',
+    耐乳酸: 'フォームを崩さずに乳酸耐性を向上させる',
     心肺: '心肺機能を高め、持久力を強化する',
     技術: '技術の精度を上げ、効率的な泳ぎを身につける',
     スピード: 'スピード感覚を養い、反応速度を向上させる',
@@ -636,7 +649,7 @@ function generateCaution(
   if (ageGroup === '成人・マスターズ') {
     return '無理をせず、体調に応じて調整する。';
   }
-  if (purposeType === '対乳酸' || purposeType === 'スピード') {
+  if (purposeType === '耐乳酸' || purposeType === 'スピード') {
     return 'フォームが崩れたら強度を下げる。';
   }
   return '体調に応じて調整する。';
@@ -647,7 +660,7 @@ function generateExpectedEffect(
   _distanceType: DistanceType
 ): string {
   const effects: Record<PurposeType, string> = {
-    対乳酸: 'レースペースでの持続力向上',
+    耐乳酸: 'レースペースでの持続力向上',
     心肺: '心肺機能の向上と持久力の強化',
     技術: '技術の精度向上と効率的な泳ぎの習得',
     スピード: 'スピード感覚の向上と反応速度の向上',
@@ -708,7 +721,7 @@ function scoreTemplateMatch(c: TrainingResult, input: TrainingInput): number {
     '2': ['基礎形成', 'フォーム固め', '水感覚', '正しい形', '低～中強度', '再現性'],
     '3': ['発展', '技術精度', 'スピード導入', '強度を上げ', '粘り', '神経系'],
     '4': ['心肺', 'ボリューム', '持久', '一定の強度', 'バランス'],
-    '5': ['対乳酸', 'レースペース', '乳酸', '耐性'],
+    '5': ['耐乳酸', 'レースペース', '乳酸', '耐性'],
     '6': ['調整', '疲労除去', 'スピード維持'],
     '7': ['テーパー', '神経', '仕上げ', '最大スピード', 'レース局面'],
   };
@@ -719,16 +732,17 @@ function scoreTemplateMatch(c: TrainingResult, input: TrainingInput): number {
     }
   }
 
-  // 目的（purpose）
+  // 目的（期から導出）
   const purposeKeywords: Record<string, string[]> = {
     技術: ['フォーム', '技術', '姿勢', '形', 'ドリル'],
     スピード: ['スピード', '爆発', '動きのキレ', '反応'],
-    対乳酸: ['対乳酸', 'レース', '粘り', '耐性'],
+    耐乳酸: ['耐乳酸', 'レース', '粘り', '耐性'],
     持久: ['持久', '距離', '省エネ', '効率'],
-    レースペース: ['レース', 'ペース', '本番'],
-    回復: ['回復', 'リラックス', '楽に', '解放'],
+    心肺: ['心肺', '回復', 'リラックス', '楽に', '解放'],
+    その他: ['フォーム', '技術', '泳力'],
   };
-  const purKw = purposeKeywords[input.purpose];
+  const derivedPurpose = derivePurposeFromPeriod(input.period);
+  const purKw = purposeKeywords[derivedPurpose];
   if (purKw) {
     for (const kw of purKw) {
       if (text.includes(kw)) score += 2;
@@ -788,7 +802,7 @@ function selectFrom9Templates(input: TrainingInput, templates: MenuTemplates9): 
   const topCandidates = scored.filter((s) => s.score === maxScore);
   const seed = [
     input.period, input.stroke, input.gender, input.age, input.distanceType,
-    input.level, input.purpose, input.condition, input.practiceTime, input.volumeUp,
+    input.level, input.condition, input.practiceTime,
   ].join('');
   const idx = pickIndex(seed, topCandidates.length);
   return topCandidates[idx]?.template ?? list[0];
@@ -810,10 +824,10 @@ export function generateTrainingMenu(
   }
 
   const ageGroup = getAgeGroup(input.age);
-  const purposeType = getPurposeType(input.purpose);
+  const purposeType = derivePurposeFromPeriod(input.period);
   const distanceType = input.distanceType as DistanceType;
 
-  // Main Set ルール取得（期ごとの制御を適用：対乳酸MAXは対乳酸期のみ等）
+  // Main Set ルール取得（期ごとの制御を適用：耐乳酸MAXは耐乳酸期のみ等）
   const { mainRule, effectivePurposeType } = getEffectiveMainRule(
     input.period,
     purposeType,

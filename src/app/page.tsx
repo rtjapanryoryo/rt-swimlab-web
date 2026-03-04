@@ -42,17 +42,15 @@ const EMPTY_INPUT: TrainingInput = {
   age: '',
   distanceType: '',
   level: '',
-  purpose: '',
   condition: '',
   practiceTime: '',
-  volumeUp: '',
 };
 
 function isTrainingInput(obj: unknown): obj is TrainingInput {
   if (!obj || typeof obj !== 'object') return false;
   const keys: (keyof TrainingInput)[] = [
     'period', 'stroke', 'gender', 'age', 'distanceType',
-    'level', 'purpose', 'condition', 'practiceTime', 'volumeUp',
+    'level', 'condition', 'practiceTime',
   ];
   return keys.every((k) => typeof (obj as Record<string, unknown>)[k] === 'string');
 }
@@ -553,9 +551,9 @@ export default function Home() {
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* 1. 期 */}
+            {/* 1. 目的 */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">1. 期</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">1. 目的</label>
               <select
                 value={input.period}
                 onChange={(e) => handleInputChange('period', e.target.value)}
@@ -566,7 +564,7 @@ export default function Home() {
                 <option value="2">② 基礎形成期</option>
                 <option value="3">③ 発展形成期</option>
                 <option value="4">④ 強化期 (スピード持久力)</option>
-                <option value="5">⑤ 強化期 (対乳酸)</option>
+                <option value="5">⑤ 強化期 (耐乳酸)</option>
                 <option value="6">⑥ 調整期</option>
                 <option value="7">⑦ テーパー期</option>
               </select>
@@ -654,27 +652,9 @@ export default function Home() {
               </select>
             </div>
 
-            {/* 7. 目的 */}
+            {/* 7. 状況 */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">7. 目的</label>
-              <select
-                value={input.purpose}
-                onChange={(e) => handleInputChange('purpose', e.target.value)}
-                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40 focus:border-slate-300 transition-colors"
-              >
-                <option value="">選択してください</option>
-                <option value="技術">技術</option>
-                <option value="スピード">スピード</option>
-                <option value="対乳酸">対乳酸</option>
-                <option value="持久">持久</option>
-                <option value="レースペース">レースペース</option>
-                <option value="回復">回復</option>
-              </select>
-            </div>
-
-            {/* 8. 状況 */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">8. 状況</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">7. 状況</label>
               <select
                 value={input.condition}
                 onChange={(e) => handleInputChange('condition', e.target.value)}
@@ -689,9 +669,9 @@ export default function Home() {
               </select>
             </div>
 
-            {/* 9. 練習時間 */}
+            {/* 8. 練習時間 */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">9. 練習時間</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">8. 練習時間</label>
               <select
                 value={input.practiceTime}
                 onChange={(e) => handleInputChange('practiceTime', e.target.value)}
@@ -704,24 +684,6 @@ export default function Home() {
               </select>
             </div>
 
-            {/* 10. ボリュームアップ項目 */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                10. ボリュームアップ項目
-              </label>
-              <select
-                value={input.volumeUp}
-                onChange={(e) => handleInputChange('volumeUp', e.target.value)}
-                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40 focus:border-slate-300 transition-colors"
-              >
-                <option value="">選択してください</option>
-                <option value="Drill">Drill</option>
-                <option value="Kick">Kick</option>
-                <option value="Pull">Pull</option>
-                <option value="Pre-Main">Pre-Main</option>
-                <option value="Main">Main</option>
-              </select>
-            </div>
           </div>
 
           {/* API未設定時のみ表示（利用可能のときは何も出さない） */}

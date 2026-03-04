@@ -64,21 +64,19 @@ const CORE_SYSTEM_PROMPT = `【出力指示】
 - W-up / Down: 種目は Cho 固定。warmUp と down の文字列に Fr/Fly/Ba/Br/IM を一切含めない。
 - Dive: 期が調整期・テーパー期のときのみ。それ以外の期では空文字。
 - Rest 以外は強度を ①〜⑦ に対応（A1/EN1/EN2 等）で書く。
-- **強度の天井**: 期ごとにメイン・非メインの上限がある。リカバリー③③、基礎形成④③、発展形成④④、スピード持久⑤④、対乳酸⑥④、調整⑤④、テーパー④③。これを超えないこと。
+- **強度の天井**: 期ごとにメイン・非メインの上限がある。リカバリー③③、基礎形成④③、発展形成④④、スピード持久⑤④、耐乳酸⑥④、調整⑤④、テーパー④③。これを超えないこと。
 - **W-down前の神経刺激**: 練習の最後（Down前）に 25m×2本 MAX（強度⑦）などを入れてもよい。量ではなく神経刺激が目的。`;
 
-/** 必須10項目のラベル（不足時レスポンス用） */
+/** 必須8項目のラベル（不足時レスポンス用） */
 const REQUIRED_KEYS: { key: string; label: string }[] = [
-  { key: 'period', label: '期' },
+  { key: 'period', label: '目的' },
   { key: 'stroke', label: '種目' },
   { key: 'gender', label: '性別' },
   { key: 'age', label: '年齢' },
   { key: 'distanceType', label: '距離タイプ(S/M/D)' },
   { key: 'level', label: 'レベル' },
-  { key: 'purpose', label: '目的' },
   { key: 'condition', label: '状況' },
   { key: 'practiceTime', label: '練習時間(60/90/120)' },
-  { key: 'volumeUp', label: 'ボリュームアップ項目' },
 ];
 
 /** 入力不足チェック。不足があれば不足項目のラベル配列を返す（なければ null） */
@@ -91,7 +89,7 @@ function getMissingInputLabels(body: Record<string, unknown>): string[] | null {
   return missing.map(({ label }) => label);
 }
 
-/** 10条件に応じたカスタマイズ指示を組み立てる。全10項目を必ず反映し、設計の根拠とする。 */
+/** 8条件に応じたカスタマイズ指示を組み立てる。全8項目を必ず反映し、設計の根拠とする。 */
 function buildConditionInstructions(
   period: string,
   stroke: string,
@@ -99,10 +97,8 @@ function buildConditionInstructions(
   age: string,
   distanceType: string,
   level: string,
-  purpose: string,
   condition: string,
-  practiceTime: string,
-  volumeUp: string
+  practiceTime: string
 ): string {
   const ageNum = parseInt(age, 10) || 20;
   const timeNum = parseInt(practiceTime, 10) || 90;
@@ -135,12 +131,12 @@ function buildConditionInstructions(
 
   const periodGuide: Record<string, string> = {
     '1': `①リカバリー期: 回復・感覚維持・姿勢安定。Diveなし。強度控えめ（メイン③・非メイン③まで）。フォーム再構築に集中。上級者は量を落としすぎない。${targetDist ? `目標距離: 約${targetDist}m` : ''}`,
-    '2': `②基礎形成期: 水感覚・姿勢・呼吸・フォーム固め。Diveなし。対乳酸MAXは入れない。メイン④・非メイン③まで。内容と強度表記を必ず一致させる。${targetDist ? `目標距離: 約${targetDist}m` : ''}`,
+    '2': `②基礎形成期: 水感覚・姿勢・呼吸・フォーム固め。Diveなし。耐乳酸MAXは入れない。メイン④・非メイン③まで。内容と強度表記を必ず一致させる。${targetDist ? `目標距離: 約${targetDist}m` : ''}`,
     '3': `③発展形成期: 技術精度向上・スピード導入。Diveなし。メイン④・非メイン④まで。技術×持久の積み上げに集中。${targetDist ? `目標距離: 約${targetDist}m` : ''}`,
-    '4': `④強化期 (スピード持久力): ボリュームと心肺土台。Diveなし。対乳酸MAXは入れない。メイン⑤・非メイン④まで。スピード×持久までに留める。${targetDist ? `目標距離: 約${targetDist}m` : ''}`,
-    '5': `⑤強化期 (対乳酸): 乳酸耐性・レースペース持続。メイン⑥・非メイン④まで。対乳酸MAXはこの期のみ。${targetDist ? `目標距離: 約${targetDist}m` : ''}`,
+    '4': `④強化期 (スピード持久力): ボリュームと心肺土台。Diveなし。耐乳酸MAXは入れない。メイン⑤・非メイン④まで。スピード×持久までに留める。${targetDist ? `目標距離: 約${targetDist}m` : ''}`,
+    '5': `⑤強化期 (耐乳酸): 乳酸耐性・レースペース持続。メイン⑥・非メイン④まで。耐乳酸MAXはこの期のみ。${targetDist ? `目標距離: 約${targetDist}m` : ''}`,
     '6': `⑥調整期: 疲労除去＋スピード維持。Diveを少しずつ導入可。メイン⑤・非メイン④まで。量より質。${targetDist ? `目標距離: 約${targetDist}m` : ''}`,
-    '7': `⑦テーパー期: 神経調整・反応・仕上げ。Diveでテンポアップ・レース動作の最終調整。対乳酸セットは入れない。メイン④・非メイン③まで。${targetDist ? `目標距離: 約${targetDist}m` : ''}`,
+    '7': `⑦テーパー期: 神経調整・反応・仕上げ。Diveでテンポアップ・レース動作の最終調整。耐乳酸セットは入れない。メイン④・非メイン③まで。${targetDist ? `目標距離: 約${targetDist}m` : ''}`,
   };
   const strokeGuide: Record<string, string> = {
     Fr: '自由形: W-upはFR・IM多め。Drillは片手・キャッチアップ等。Kick/PullはFR中心。',
@@ -150,14 +146,6 @@ function buildConditionInstructions(
     IM: 'メドレー: 4泳法のバランス。W-upでIM多め。ドリルは泳法別に分けてもよい。',
     S1: 'スタイル1: メイン種目に合わせたドリル・キック・プル。種目名はS1のままでよい。',
   };
-  const purposeGuide: Record<string, string> = {
-    技術: '目的=技術: Mainはフォーム維持が最優先。本数・レストは余裕を持たせ、ドリル的な要素をMain前後に。',
-    スピード: '目的=スピード: Pre-Mainで神経を起こす。Mainは短い距離・レスト長め・EN2〜EN3。',
-    対乳酸: '目的=対乳酸: Mainは中距離・レスト短め・EN1〜EN2。サークル記載を明確に。',
-    持久: '目的=持久: Mainは長めのインターバルまたは持続泳。EN1中心。',
-    レースペース: '目的=レースペース: Mainはレース距離・レースペース・レストは本番想定。',
-    回復: '目的=回復: 全体強度低め。Mainは短くA1〜A2。Down多め。',
-  };
   const conditionGuide: Record<string, string> = {
     良好: '状況=良好: 通常の強度・量で設計してよい。',
     軽疲労: '状況=軽疲労: MainやKickの強度を一段下げ、レストを長めに。',
@@ -165,16 +153,9 @@ function buildConditionInstructions(
     '疲労残り（メイン翌日）': '状況=疲労残り: リカバリー寄り。W-up/Drill/Down多め、Mainは軽め。休息を入れる。',
     月経期: '状況=月経期: 本人の希望を最優先。強度・量を下げ、休息・Downを多めに。',
   };
-  const volumeUpGuide: Record<string, string> = {
-    Drill: 'ボリュームUP=Drill: Drillの本数・種類を増やす。目的に合ったドリルを2〜3種類。',
-    Kick: 'ボリュームUP=Kick: Kickの本数・セットを増やす。種目に合ったキック。',
-    Pull: 'ボリュームUP=Pull: Pullの本数・距離を増やす。内容はDPS, Ac/CA, Des等から選ぶ。',
-    'Pre-Main': 'ボリュームUP=Pre-Main: Pre-Mainの本数・強度をしっかり。Mainへの導線を明確に。',
-    Main: 'ボリュームUP=Main: Mainの本数・距離を増やす。レストと強度のバランスを守る。',
-  };
   const distanceGuide: Record<string, string> = {
     S: '距離タイプ=S（スプリント）: Mainは25〜50m中心。レスト長め・スピード重視。',
-    M: '距離タイプ=M（ミドル）: Mainは50〜100m。レースペース・対乳酸の組み合わせ。',
+    M: '距離タイプ=M（ミドル）: Mainは50〜100m。レースペース・耐乳酸の組み合わせ。',
     D: '距離タイプ=D（ディスタンス）: Mainは100m以上も可。持久・レースペース持続。',
   };
   const levelGuide: Record<string, string> = {
@@ -195,18 +176,16 @@ function buildConditionInstructions(
   const ceilingNote = ceiling ? `強度の天井: メイン${ceiling.main}まで、非メイン${ceiling.nonMain}まで。` : '';
 
   const lines: string[] = [
-    '【必須】この10条件すべてから導いた練習設計にすること。全項目を反映した上でメニューを組み立てる。',
+    '【必須】この8条件すべてから導いた練習設計にすること。全項目を反映した上でメニューを組み立てる。',
     '',
-    `1. 期: ${periodGuide[period] || `期=${period}: 上記の期の定義に沿って重点を置く。`} ${ceilingNote}`,
+    `1. 目的（期）: ${periodGuide[period] || `期=${period}: 上記の期の定義に沿って重点を置く。`} ${ceilingNote}`,
     `2. 種目: ${strokeGuide[stroke] || `種目=${stroke}: その種目に合ったドリル・キック・プルにする。`}`,
     `3. 性別: ${genderGuide[gender] || `性別=${gender}`}`,
     `4. 年齢: 年齢=${age}歳。年齢補正を強度に反映。${ageNum < 13 ? 'Kick比率高め・説明を丁寧に。' : ageNum >= 40 ? '強度-2〜3、安全最優先。' : '高校・大学基準でよい。'}`,
     `5. 距離タイプ: ${distanceGuide[distanceType] || `距離タイプ=${distanceType}: Mainセットの距離・本数・レストをそれに合わせる。`}`,
     `6. レベル: ${levelGuide[level] || (isMasters ? levelGuide['マスターズ（記録狙い）'] : `レベル=${level}: 育成〜初級は技術・フォーム優先、全国〜代表は量・強度高め。`)}`,
-    `7. 目的: ${purposeGuide[purpose] || `目的=${purpose}: MainとPre-Mainをこの目的で一貫させる。`}`,
-    `8. 状況: ${conditionGuide[condition] || `状況=${condition}: 疲労・コンディションに合わせて強度・量・休息を調整する。`}`,
-    `9. 練習時間: ${timeNum}分。総距離は期×距離タイプの基準を時間比でスケール（120分基準）。${targetDist ? `本条件の目標: 約${targetDist}m。` : ''}レベルと状況で増減。`,
-    `10. ボリュームUP: ${volumeUpGuide[volumeUp] || `ボリュームUP=${volumeUp}: 該当ブロックの量を他より多めにし、内容を具体的に書く。`}`,
+    `7. 状況: ${conditionGuide[condition] || `状況=${condition}: 疲労・コンディションに合わせて強度・量・休息を調整する。`}`,
+    `8. 練習時間: ${timeNum}分。総距離は期×距離タイプの基準を時間比でスケール（120分基準）。${targetDist ? `本条件の目標: 約${targetDist}m。` : ''}レベルと状況で増減。`,
   ];
   return lines.join('\n');
 }
@@ -270,10 +249,8 @@ export async function POST(request: NextRequest) {
       age,
       distanceType,
       level,
-      purpose,
       condition,
       practiceTime,
-      volumeUp,
     } = body as Record<string, string>;
 
     const conditionInstructions = buildConditionInstructions(
@@ -283,33 +260,34 @@ export async function POST(request: NextRequest) {
       age,
       distanceType,
       level,
-      purpose,
       condition,
-      practiceTime,
-      volumeUp
+      practiceTime
     );
 
-    const userPrompt = `以下の「入力条件」と「反映ルール」に従い、この10条件から導いた水泳練習メニューを1つだけ生成してください。
-**必須**：10条件すべてを設計の根拠とし、どの条件からどう反映したか分かる設計にすること。出力は必ず指定のJSONのみ（説明文は不要）。
+    const periodLabels: Record<string, string> = {
+      '1': '① リカバリー期', '2': '② 基礎形成期', '3': '③ 発展形成期',
+      '4': '④ 強化期 (スピード持久力)', '5': '⑤ 強化期 (耐乳酸)', '6': '⑥ 調整期', '7': '⑦ テーパー期',
+    };
 
-【入力条件（10項目すべてを満たすこと）】
-1. 期: ${period}
+    const userPrompt = `以下の「入力条件」と「反映ルール」に従い、この8条件から導いた水泳練習メニューを1つだけ生成してください。
+**必須**：8条件すべてを設計の根拠とし、どの条件からどう反映したか分かる設計にすること。出力は必ず指定のJSONのみ（説明文は不要）。
+
+【入力条件（8項目すべてを満たすこと）】
+1. 目的（期）: ${periodLabels[period] || period}
 2. 種目: ${stroke}
 3. 性別: ${gender}
 4. 年齢: ${age}歳
 5. 距離タイプ: ${distanceType}
 6. レベル: ${level}
-7. 目的: ${purpose}
-8. 状況: ${condition}
-9. 練習時間: ${practiceTime}分
-10. ボリュームUP: ${volumeUp}
+7. 状況: ${condition}
+8. 練習時間: ${practiceTime}分
 
 【反映ルール】
 ${conditionInstructions}
 
 【出力形式】以下のキーをすべて含むJSONオブジェクト1つのみ。各値は文字列。順序・省略禁止。
-- main には必ずMainカテゴリを明記すること（ベースメイン／ベストアベレージ／ダイハード／対乳酸MAX／Standard Main のいずれか）。
-- intention / coachingPoint / caution は必ずこの10条件に合わせてカスタマイズすること。汎用表現のコピペ禁止。
+- main には必ずMainカテゴリを明記すること（ベースメイン／ベストアベレージ／ダイハード／耐乳酸MAX／Standard Main のいずれか）。
+- intention / coachingPoint / caution は必ずこの8条件に合わせてカスタマイズすること。汎用表現のコピペ禁止。
 【intention（今日の狙い）】期・目的・状況・距離タイプ・年齢を反映した2〜4行。このメニュー固有の狙いを具体的に書く。
 【coachingPoint（指導ポイント）】このメニューのブロック（Drill/Kick/Pull/Main等）に即した箇条書き3つ。このメニューで「どこを意識するか」を具体化する。
 【caution（注意点）】状況・年齢・疲労・性別・月経期等を反映した箇条書き3つ。この選手・この日に必要な注意を書く。

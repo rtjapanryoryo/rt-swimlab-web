@@ -299,7 +299,7 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
     '2': '② 基礎形成期',
     '3': '③ 発展形成期',
     '4': '④ 強化期 (スピード持久力)',
-    '5': '⑤ 強化期 (対乳酸)',
+    '5': '⑤ 強化期 (耐乳酸)',
     '6': '⑥ 調整期',
     '7': '⑦ テーパー期',
   };
@@ -319,6 +319,16 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
     S: 'S（スプリント）',
     M: 'M（ミドル）',
     D: 'D（ディスタンス）',
+  };
+  // 期（目的）の表示名
+  const periodLabels: Record<string, string> = {
+    '1': '① リカバリー期',
+    '2': '② 基礎形成期',
+    '3': '③ 発展形成期',
+    '4': '④ 強化期 (スピード持久力)',
+    '5': '⑤ 強化期 (耐乳酸)',
+    '6': '⑥ 調整期',
+    '7': '⑦ テーパー期',
   };
 
 
@@ -376,7 +386,7 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
             </div>
             <div className="flex">
               <span className="font-semibold text-gray-700 w-24">目的:</span>
-              <span className="text-gray-900">{input.purpose}</span>
+              <span className="text-gray-900">{periodLabels[input.period] || input.period || '-'}</span>
             </div>
             <div className="flex">
               <span className="font-semibold text-gray-700 w-24">状況:</span>
@@ -385,10 +395,6 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
             <div className="flex">
               <span className="font-semibold text-gray-700 w-24">練習時間:</span>
               <span className="text-gray-900">{input.practiceTime}分</span>
-            </div>
-            <div className="flex">
-              <span className="font-semibold text-gray-700 w-24">ボリュームUP:</span>
-              <span className="text-gray-900">{input.volumeUp || '-'}</span>
             </div>
             <div className="flex">
               <span className="font-semibold text-gray-700 w-24">器具:</span>
