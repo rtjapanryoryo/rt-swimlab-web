@@ -73,7 +73,7 @@ const CORE_SYSTEM_PROMPT = `【コーチ思想の核心（50問インタビュ�
 
 【出力指示】
 - 必ず指定のJSONオブジェクト1つのみ。説明文は不要。
-- 上記コーチ思想の構造・種目ルール・強度ルール・期ごとの制御を厳守すること。
+- 上記コーチ思想の種目ルール・強度ルール・期ごとの制御を厳守すること。
 - サークル等は資料・条件に基づく値のみ使用（捏造禁止）。
 
 【今日の狙い・指導ポイント・注意点の必須カスタマイズ】
@@ -101,7 +101,6 @@ const REQUIRED_KEYS: { key: string; label: string }[] = [
   { key: 'purpose', label: '目的' },
   { key: 'condition', label: '状況' },
   { key: 'practiceTime', label: '練習時間(60/90/120)' },
-  { key: 'volumeUp', label: 'ボリュームアップ項目' },
 ];
 
 /** 入力不足チェック。不足があれば不足項目のラベル配列を返す（なければ null） */
@@ -114,7 +113,7 @@ function getMissingInputLabels(body: Record<string, unknown>): string[] | null {
   return missing.map(({ label }) => label);
 }
 
-/** 10条件に応じたカスタマイズ指示を組み立てる。全10項目を必ず反映し、設計の根拠とする。 */
+/** 9条件に応じたカスタマイズ指示を組み立てる。全９項目を必ず反映し、設計の根拠とする。 */
 function buildConditionInstructions(
   period: string,
   stroke: string,
@@ -124,8 +123,7 @@ function buildConditionInstructions(
   level: string,
   purpose: string,
   condition: string,
-  practiceTime: string,
-  volumeUp: string
+  practiceTime: string
 ): string {
   const ageNum = parseInt(age, 10) || 20;
   const timeNum = parseInt(practiceTime, 10) || 90;
@@ -188,13 +186,6 @@ function buildConditionInstructions(
     '疲労残り（メイン翌日）': '状況=疲労残り: リカバリー寄り。W-up/Drill/Down多め、Mainは軽め。休息を入れる。',
     月経期: '状況=月経期: 本人の希望を最優先。強度・量を下げ、休息・Downを多めに。',
   };
-  const volumeUpGuide: Record<string, string> = {
-    Drill: 'ボリュームUP=Drill: Drillの本数・種類を増やす。目的に合ったドリルを2〜3種類。',
-    Kick: 'ボリュームUP=Kick: Kickの本数・セットを増やす。種目に合ったキック。',
-    Pull: 'ボリュームUP=Pull: Pullの本数・距離を増やす。内容はDPS, Ac/CA, Des等から選ぶ。',
-    'Pre-Main': 'ボリュームUP=Pre-Main: Pre-Mainの本数・強度をしっかり。Mainへの導線を明確に。',
-    Main: 'ボリュームUP=Main: Mainの本数・距離を増やす。レストと強度のバランスを守る。',
-  };
   const distanceGuide: Record<string, string> = {
     S: '距離タイプ=S（スプリント）: Mainは25〜50m中心。レスト長め・スピード重視。',
     M: '距離タイプ=M（ミドル）: Mainは50〜100m。レースペース・対乳酸の組み合わせ。',
@@ -229,7 +220,6 @@ function buildConditionInstructions(
     `7. 目的: ${purposeGuide[purpose] || `目的=${purpose}: MainとPre-Mainをこの目的で一貫させる。`}`,
     `8. 状況: ${conditionGuide[condition] || `状況=${condition}: 疲労・コンディションに合わせて強度・量・休息を調整する。`}`,
     `9. 練習時間: ${timeNum}分。総距離は期×距離タイプの基準を時間比でスケール（120分基準）。${targetDist ? `本条件の目標: 約${targetDist}m。` : ''}レベルと状況で増減。`,
-    `10. ボリュームUP: ${volumeUpGuide[volumeUp] || `ボリュームUP=${volumeUp}: 該当ブロックの量を他より多めにし、内容を具体的に書く。`}`,
   ];
   return lines.join('\n');
 }
@@ -296,7 +286,6 @@ export async function POST(request: NextRequest) {
       purpose,
       condition,
       practiceTime,
-      volumeUp,
     } = body as Record<string, string>;
 
     const conditionInstructions = buildConditionInstructions(
@@ -308,14 +297,13 @@ export async function POST(request: NextRequest) {
       level,
       purpose,
       condition,
-      practiceTime,
-      volumeUp
+      practiceTime
     );
 
-    const userPrompt = `以下の「入力条件」と「反映ルール」に従い、この10条件から導いた水泳練習メニューを1つだけ生成してください。
-**必須**：10条件すべてを設計の根拠とし、どの条件からどう反映したか分かる設計にすること。出力は必ず指定のJSONのみ（説明文は不要）。
+    const userPrompt = `以下の「入力条件」と「反映ルール」に従い、この9条件から導いた水泳練習メニューを1つだけ生成してください。
+**必須**：9条件すべてを設計の根拠とし、どの条件からどう反映したか分かる設計にすること。出力は必ず指定のJSONのみ（説明文は不要）。
 
-【入力条件（10項目すべてを満たすこと）】
+【入力条件（9項目すべてを満たすこと）】
 1. 期: ${period}
 2. 種目: ${stroke}
 3. 性別: ${gender}
@@ -325,14 +313,13 @@ export async function POST(request: NextRequest) {
 7. 目的: ${purpose}
 8. 状況: ${condition}
 9. 練習時間: ${practiceTime}分
-10. ボリュームUP: ${volumeUp}
 
 【反映ルール】
 ${conditionInstructions}
 
 【出力形式】以下のキーをすべて含むJSONオブジェクト1つのみ。各値は文字列。順序・省略禁止。
 - main には必ずMainカテゴリを明記すること（ベースメイン／ベストアベレージ／ダイハード／対乳酸MAX／Standard Main のいずれか）。
-- intention / coachingPoint / caution は必ずこの10条件に合わせてカスタマイズすること。汎用表現のコピペ禁止。
+- intention / coachingPoint / caution は必ずこの9条件に合わせてカスタマイズすること。汎用表現のコピペ禁止。
 【intention（今日の狙い）】期・目的・状況・距離タイプ・年齢を反映した2〜4行。このメニュー固有の狙いを具体的に書く。
 【coachingPoint（指導ポイント）】このメニューのブロック（Drill/Kick/Pull/Main等）に即した箇条書き3つ。このメニューで「どこを意識するか」を具体化する。
 【caution（注意点）】状況・年齢・疲労・性別・月経期等を反映した箇条書き3つ。この選手・この日に必要な注意を書く。

@@ -17,7 +17,6 @@ export interface TrainingInput {
   purpose: string; // 目的（対乳酸、心肺、技術、スピードなど）
   condition: string; // 良好、軽疲労、筋疲労、疲労残り、月経期
   practiceTime: string; // 60, 90, 120
-  volumeUp: string; // ドリル、キック、プル、プレメイン、メイン
 }
 
 export interface TrainingResult {
@@ -788,7 +787,7 @@ function selectFrom9Templates(input: TrainingInput, templates: MenuTemplates9): 
   const topCandidates = scored.filter((s) => s.score === maxScore);
   const seed = [
     input.period, input.stroke, input.gender, input.age, input.distanceType,
-    input.level, input.purpose, input.condition, input.practiceTime, input.volumeUp,
+    input.level, input.purpose, input.condition, input.practiceTime,
   ].join('');
   const idx = pickIndex(seed, topCandidates.length);
   return topCandidates[idx]?.template ?? list[0];
@@ -829,7 +828,6 @@ export function generateTrainingMenu(
   const preMain = generatePreMain(distanceType, purposeType, ageGroup);
   const dive = generateDive(ageGroup, input.period);
   const rest = generateRest(input.condition, purposeType);
-  // volumeUpは将来的に使用予定（現在は互換性のため空文字列を使用）
   const main = generateMain(distanceType, effectivePurposeType, ageGroup, '', mainRule);
   const down = generateDown(input.practiceTime);
 

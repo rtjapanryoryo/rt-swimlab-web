@@ -387,10 +387,6 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
               <span className="text-gray-900">{input.practiceTime}分</span>
             </div>
             <div className="flex">
-              <span className="font-semibold text-gray-700 w-24">ボリュームUP:</span>
-              <span className="text-gray-900">{input.volumeUp || '-'}</span>
-            </div>
-            <div className="flex">
               <span className="font-semibold text-gray-700 w-24">器具:</span>
               <span className="text-gray-900">フィン/パドルカスタム自由</span>
             </div>
