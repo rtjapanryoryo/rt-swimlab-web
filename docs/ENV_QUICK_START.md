@@ -2,6 +2,24 @@
 
 ## 1. テンプレートから作成
 
+### 対話式（ターミナルから入力）
+
+```bash
+npm run setup:env:interactive
+```
+
+各変数をターミナルで順に入力し、.env.ai に保存されます。
+
+### 引数で一括設定
+
+```bash
+npm run set:env -- NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+```
+
+複数の `KEY=value` を空白区切りで指定できます。
+
+### テンプレートコピー
+
 ```bash
 npm run setup:env
 ```
@@ -53,7 +71,14 @@ OPENAI_API_KEY=sk-proj-xxxx
 npm run dev
 ```
 
-## 5. 確認
+## 5. 確認・診断
 
-- http://localhost:3000/api/health で `authConfigured: true` になっていれば OK
-- /signup で登録を試す
+設定が正しく反映されているか確認:
+
+```bash
+npm run fix:supabase
+```
+
+- 4変数が設定されていれば OK と表示
+- 不足があれば追加手順を表示
+- その後 `npm run dev` で起動し、/signup で登録を試す

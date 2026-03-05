@@ -5,6 +5,9 @@
   "scripts": {
     "predev": "lsof -ti :3000 2>/dev/null | xargs kill -9 2>/dev/null; true",
     "setup:env": "test -f .env.ai || cp .env.ai.example .env.ai; echo '→ .env.ai を用意しました。未設定なら編集して Supabase の値を入れてください。'",
+    "setup:env:interactive": "node scripts/setup-env-interactive.mjs",
+    "set:env": "node scripts/set-env.mjs",
+    "fix:supabase": "node scripts/fix-supabase-env.mjs",
     "dev": "node scripts/load-env-and-dev.mjs",
     "dev:next": "next dev",
     "dev:3001": "next dev -p 3001",
