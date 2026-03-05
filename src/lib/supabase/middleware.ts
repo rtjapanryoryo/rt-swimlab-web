@@ -30,7 +30,10 @@ export async function updateSession(request: NextRequest) {
 
   // 保護対象パス: /, /mypage
   const isProtected = request.nextUrl.pathname === '/' || request.nextUrl.pathname.startsWith('/mypage');
-  const isAuthPage = request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup';
+  const isAuthPage = request.nextUrl.pathname === '/login'
+    || request.nextUrl.pathname === '/signup'
+    || request.nextUrl.pathname === '/forgot-password'
+    || request.nextUrl.pathname === '/update-password';
 
   if (isProtected && !user) {
     const loginUrl = new URL('/login', request.url);
