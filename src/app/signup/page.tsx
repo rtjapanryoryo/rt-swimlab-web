@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { createClient, isAuthConfigured } from '@/lib/supabase/client';
 import { WebViewOpenInBrowser } from '@/components/WebViewOpenInBrowser';
 
 function SignupContent() {
@@ -13,11 +13,25 @@ function SignupContent() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [authReady, setAuthReady] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetch('/api/health')
+      .then((r) => r.json())
+      .then((d) => setAuthReady(d.authConfigured === true))
+      .catch(() => setAuthReady(false));
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
+
+    if (!isAuthConfigured()) {
+      setError('認証サービスが設定されていません。管理者にお問い合わせください。');
+      setLoading(false);
+      return;
+    }
 
     try {
       const supabase = createClient();
@@ -31,8 +45,12 @@ function SignupContent() {
         },
       });
       if (err) {
-        if (err.message.includes('already registered')) {
+        if (err.message.includes('already registered') || err.message.includes('User already registered')) {
           setError('このメールアドレスは既に登録されています。ログインしてください。');
+        } else if (err.message.includes('Password should be')) {
+          setError('パスワードは6文字以上で入力してください。');
+        } else if (err.message.includes('Invalid email')) {
+          setError('有効なメールアドレスを入力してください。');
         } else {
           setError(err.message);
         }
@@ -43,10 +61,10 @@ function SignupContent() {
     } catch (e) {
       const msg = e instanceof Error ? e.message : '登録に失敗しました。';
       console.error('Signup error:', e);
-      if (msg.includes('NEXT_PUBLIC_SUPABASE') || msg.includes('.env.ai')) {
-        setError(msg);
+      if (msg.includes('NEXT_PUBLIC_SUPABASE')) {
+        setError('認証サービスが設定されていません。管理者にお問い合わせください。');
       } else {
-        setError(msg);
+        setError('登録に失敗しました。しばらくしてから再度お試しください。');
       }
     } finally {
       setLoading(false);
@@ -61,6 +79,16 @@ function SignupContent() {
           <p className="text-sm text-gray-600 mb-6">
             名前は匿名でもOK。メールアドレスとパスワードでアカウントを作成し、マイページでメニューを管理できます。
           </p>
+
+          {authReady === false && (
+            <div className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md p-4 mb-4">
+              <p className="font-semibold mb-1">認証サービスが未設定です</p>
+              <p className="text-xs">
+                Vercelの環境変数に <code className="bg-amber-100 px-1 rounded">NEXT_PUBLIC_SUPABASE_URL</code> と{' '}
+                <code className="bg-amber-100 px-1 rounded">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> を設定してください。
+              </p>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -115,10 +143,10 @@ function SignupContent() {
             )}
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || authReady === false}
               className="w-full px-4 py-3 bg-slate-800 text-white rounded-md hover:bg-slate-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? '登録中...' : '登録する'}
+              {loading ? '登録中...' : authReady === false ? '認証サービス未設定' : '登録する'}
             </button>
           </form>
 
