@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient, isAuthConfigured } from '@/lib/supabase/client';
@@ -13,14 +13,7 @@ function SignupContent() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [authReady, setAuthReady] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    fetch('/api/health')
-      .then((r) => r.json())
-      .then((d) => setAuthReady(d.authConfigured === true))
-      .catch(() => setAuthReady(false));
-  }, []);
+  const authConfigured = isAuthConfigured();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -80,12 +73,17 @@ function SignupContent() {
             名前は匿名でもOK。メールアドレスとパスワードでアカウントを作成し、マイページでメニューを管理できます。
           </p>
 
-          {authReady === false && (
+          {!authConfigured && (
             <div className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md p-4 mb-4">
               <p className="font-semibold mb-1">認証サービスが未設定です</p>
-              <p className="text-xs">
-                Vercelの環境変数に <code className="bg-amber-100 px-1 rounded">NEXT_PUBLIC_SUPABASE_URL</code> と{' '}
+              <p className="text-xs mt-1">
+                <code className="bg-amber-100 px-1 rounded">NEXT_PUBLIC_SUPABASE_URL</code> と{' '}
                 <code className="bg-amber-100 px-1 rounded">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> を設定してください。
+              </p>
+              <p className="text-xs mt-2 text-amber-700">
+                {typeof window !== 'undefined' && window.location.hostname === 'localhost'
+                  ? 'ローカル: .env.ai に追記し、npm run dev を再起動'
+                  : '本番: Vercel ダッシュボード → Settings → Environment Variables で設定後、Redeploy'}
               </p>
             </div>
           )}
@@ -143,10 +141,10 @@ function SignupContent() {
             )}
             <button
               type="submit"
-              disabled={loading || authReady === false}
+              disabled={loading || !authConfigured}
               className="w-full px-4 py-3 bg-slate-800 text-white rounded-md hover:bg-slate-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? '登録中...' : authReady === false ? '認証サービス未設定' : '登録する'}
+              {loading ? '登録中...' : !authConfigured ? '認証サービス未設定' : '登録する'}
             </button>
           </form>
 
