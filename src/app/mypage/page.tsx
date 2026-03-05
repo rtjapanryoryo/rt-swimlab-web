@@ -24,7 +24,7 @@ export default function MyPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (status !== 'authenticated') return;
+    if (status || !user) return;
     const params = new URLSearchParams();
     if (from) params.set('from', from);
     if (to) params.set('to', to);
