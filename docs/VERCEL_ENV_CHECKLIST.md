@@ -39,4 +39,11 @@ GitHub 連携で Vercel にデプロイしている場合、以下を Vercel ダ
 
 - `https://あなたのサイト/api/health` を開く
 - `authConfigured: true` になっていれば OK
+- `/login` および `/signup` に「Google でログイン/登録」が表示されること
 - `/signup` で登録ができるか試す
+
+## Google が出ない場合
+
+- Vercel の **Settings → Environment Variables** で `NEXT_PUBLIC_SUPABASE_URL` と `NEXT_PUBLIC_SUPABASE_ANON_KEY` が設定されているか確認
+- 変数は **Production / Preview / Development** のいずれかで有効であること（必要な環境にチェック）
+- 設定後は **Redeploy** を実行（環境変数を変更しただけでは反映されない）
