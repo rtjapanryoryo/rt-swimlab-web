@@ -43,8 +43,8 @@ function SignupContent() {
     } catch (e) {
       const msg = e instanceof Error ? e.message : '登録に失敗しました。';
       console.error('Signup error:', e);
-      if (msg.includes('NEXT_PUBLIC_SUPABASE')) {
-        setError('認証の設定ができていません。開発者に.env.aiの設定を確認してください。');
+      if (msg.includes('NEXT_PUBLIC_SUPABASE') || msg.includes('.env.ai')) {
+        setError(msg);
       } else {
         setError(msg);
       }
