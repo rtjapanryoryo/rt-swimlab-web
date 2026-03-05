@@ -1,12 +1,16 @@
-import { withAuth } from 'next-auth/middleware';
+import { type NextRequest } from 'next/server';
+import { updateSession } from '@/lib/supabase/middleware';
 
-export default withAuth({
-  pages: {
-    signIn: '/login',
-  },
-});
+export async function middleware(request: NextRequest) {
+  return await updateSession(request);
+}
 
 export const config = {
-  // / のみ保護。/login と /api/* は除外
-  matcher: ['/'],
+  matcher: [
+    '/',
+    '/login',
+    '/signup',
+    '/mypage',
+    '/mypage/:path*',
+  ],
 };

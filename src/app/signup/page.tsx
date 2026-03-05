@@ -1,17 +1,14 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
-import { Suspense, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { WebViewOpenInBrowser } from '@/components/WebViewOpenInBrowser';
 
-function LoginContent() {
+function SignupContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const redirect = searchParams.get('redirect') ?? '/';
-
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -24,33 +21,65 @@ function LoginContent() {
 
     try {
       const supabase = createClient();
-      const { error: err } = await supabase.auth.signInWithPassword({ email, password });
+      const { error: err } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: name.trim() || undefined,
+          },
+        },
+      });
       if (err) {
-        setError(err.message === 'Invalid login credentials' ? 'メールアドレスまたはパスワードが正しくありません。' : err.message);
+        if (err.message.includes('already registered')) {
+          setError('このメールアドレスは既に登録されています。ログインしてください。');
+        } else {
+          setError(err.message);
+        }
         return;
       }
-      router.push(redirect);
+      router.push('/');
       router.refresh();
-    } catch {
-      setError('ログインに失敗しました。');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '登録に失敗しました。';
+      console.error('Signup error:', e);
+      if (msg.includes('NEXT_PUBLIC_SUPABASE')) {
+        setError('認証の設定ができていません。開発者に.env.aiの設定を確認してください。');
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <WebViewOpenInBrowser path="/login">
+    <WebViewOpenInBrowser path="/signup">
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="bg-white rounded-lg shadow-md p-8 max-w-md w-full">
-          <h1 className="text-xl font-bold text-gray-900 mb-2">RT swim lab</h1>
+          <h1 className="text-xl font-bold text-gray-900 mb-2">新規登録</h1>
           <p className="text-sm text-gray-600 mb-6">
-            立石諒・高城直基監修の指導哲学に基づく練習メニューを、あなた用に作成します。
+            名前は匿名でもOK。メールアドレスとパスワードでアカウントを作成し、マイページでメニューを管理できます。
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                表示名（任意・匿名OK）
+              </label>
+              <input
+                id="name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                autoComplete="name"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-slate-500 focus:border-slate-500"
+                placeholder="例: 匿名スイマー、またはお名前"
+              />
+            </div>
+            <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                メールアドレス
+                メールアドレス <span className="text-red-500">*</span>
               </label>
               <input
                 id="email"
@@ -65,7 +94,7 @@ function LoginContent() {
             </div>
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                パスワード
+                パスワード <span className="text-red-500">*</span>
               </label>
               <input
                 id="password"
@@ -73,8 +102,10 @@ function LoginContent() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                autoComplete="current-password"
+                minLength={6}
+                autoComplete="new-password"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-slate-500 focus:border-slate-500"
+                placeholder="6文字以上"
               />
             </div>
             {error && (
@@ -87,14 +118,14 @@ function LoginContent() {
               disabled={loading}
               className="w-full px-4 py-3 bg-slate-800 text-white rounded-md hover:bg-slate-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'ログイン中...' : 'ログイン'}
+              {loading ? '登録中...' : '登録する'}
             </button>
           </form>
 
           <p className="mt-6 text-center text-sm text-gray-600">
-            アカウントをお持ちでない方は{' '}
-            <Link href="/signup" className="text-slate-700 font-medium underline underline-offset-2 hover:text-slate-900">
-              新規登録
+            すでにアカウントをお持ちの方は{' '}
+            <Link href="/login" className="text-slate-700 font-medium underline underline-offset-2 hover:text-slate-900">
+              ログイン
             </Link>
           </p>
         </div>
@@ -103,10 +134,6 @@ function LoginContent() {
   );
 }
 
-export default function LoginPage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">読み込み中...</div>}>
-      <LoginContent />
-    </Suspense>
-  );
+export default function SignupPage() {
+  return <SignupContent />;
 }

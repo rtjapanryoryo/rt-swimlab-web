@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { SplashScreenProvider } from "@/components/SplashScreen";
-import { SessionProvider } from "@/components/SessionProvider";
+import { AuthProvider } from "@/components/AuthProvider";
 import { UserNav } from "@/components/UserNav";
 
 export const metadata: Metadata = {
@@ -23,14 +23,14 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body className="antialiased font-sans">
-        <SessionProvider>
+        <AuthProvider>
           <div className="fixed top-0 right-0 z-50 p-4 no-print">
             <UserNav />
           </div>
           <div className="w-full min-w-0 pt-2 pr-3 sm:pr-20 md:pr-40">
             <SplashScreenProvider>{children}</SplashScreenProvider>
           </div>
-        </SessionProvider>
+        </AuthProvider>
       </body>
     </html>
   );

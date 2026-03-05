@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "predev": "lsof -i :3000 2>/dev/null && (echo 'Port 3000 in use. Killing...'; npx kill-port 3000) || true",
+    "predev": "lsof -ti :3000 2>/dev/null | xargs kill -9 2>/dev/null; true",
     "dev": "next dev",
     "dev:3001": "next dev -p 3001",
     "dev:daemon": "pm2 start ecosystem.config.cjs",
@@ -14,10 +14,11 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.9.0",
+    "@supabase/supabase-js": "^2.98.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.0.0",
     "next": "^15.4.3",
-    "next-auth": "^4.24.13",
     "openai": "^6.17.0",
     "pdf-parse": "^2.4.5",
     "react": "19.2.3",

@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
+import { getUser } from '@/lib/supabase/server';
 import { getAllContent } from '@/lib/rt/content';
 
 /**
@@ -8,11 +8,8 @@ import { getAllContent } from '@/lib/rt/content';
  * ログイン済みユーザーのみ。クイック作成時にクライアントから利用。
  */
 export async function GET(request: NextRequest) {
-  const token = await getToken({
-    req: request,
-    secret: process.env.NEXTAUTH_SECRET,
-  });
-  if (!token) {
+  const user = await getUser();
+  if (!user) {
     return NextResponse.json({ error: 'ログインが必要です。' }, { status: 401 });
   }
 

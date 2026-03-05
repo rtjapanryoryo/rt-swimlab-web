@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '@/components/AuthProvider';
 import {
   generateTrainingMenu,
   type TrainingInput,
@@ -10,7 +10,7 @@ import {
 import { menuTemplates9Fallback } from '@/lib/rt/menu-templates-9-fallback';
 import { useViewMode } from './viewMode';
 import { MenuSheet } from '@/components/MenuSheet';
-import { GoogleSignInButton } from '@/components/GoogleSignInButton';
+import Link from 'next/link';
 
 /** クイック用テンプレ（API不要・常にメニュー生成可能） */
 const QUICK_TEMPLATES = {
@@ -69,7 +69,7 @@ function loadSavedInput(key: string): TrainingInput {
 }
 
 export default function Home() {
-  const { data: session, status: sessionStatus } = useSession();
+  const { user, loading: sessionStatus } = useAuth();
   const { viewMode, setViewMode } = useViewMode();
 
   const [input, setInput] = useState<TrainingInput>(EMPTY_INPUT);
@@ -91,6 +91,8 @@ export default function Home() {
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   const [isInLineBrowser, setIsInLineBrowser] = useState(false);
   const [lineUrlCopied, setLineUrlCopied] = useState(false);
+  const [isSavingMenu, setIsSavingMenu] = useState(false);
+  const [menuSavedAt, setMenuSavedAt] = useState<Date | null>(null);
 
   const LOADING_MESSAGES = [
     '条件を分析しています...',
@@ -122,6 +124,10 @@ export default function Home() {
     setIsInLineBrowser(isLineInAppBrowser());
   }, []);
 
+  useEffect(() => {
+    setMenuSavedAt(null);
+  }, [result, apiMenuText]);
+
   // クイックメニュー用セクション順・ラベル（quick-settings.json）
   useEffect(() => {
     fetch('/api/quick-settings', { credentials: 'include' })
@@ -149,10 +155,9 @@ export default function Home() {
   }, []);
 
   // ログインユーザーごとに前回入力を復元（個々の形・2回目以降）
-  const user = session?.user as { email?: string | null; id?: string | null } | undefined;
   const userKey = user?.email ?? user?.id ?? '';
   useEffect(() => {
-    if (sessionStatus !== 'authenticated' || !userKey) return;
+    if (sessionStatus || !userKey) return;
     const key = savedInputKey(userKey);
     const saved = loadSavedInput(key);
     setInput(saved);
@@ -429,6 +434,37 @@ export default function Home() {
     }
   };
 
+  /** メニューをDBに保存（ログイン時のみ） */
+  const handleSaveMenu = async () => {
+    if (!result && !apiMenuText) return;
+    setIsSavingMenu(true);
+    setMenuSavedAt(null);
+    try {
+      const res = await fetch('/api/menus', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          input: { ...input },
+          result: result ? { ...result } : { rawText: apiMenuText },
+          source: resultSource ?? (apiMenuText ? 'custom' : 'quick'),
+        }),
+        credentials: 'include',
+      });
+      const data = (await res.json()) as { id?: string; created_at?: string; error?: string; message?: string };
+      if (!res.ok) {
+        if (res.status === 401) alert('ログインが必要です。');
+        else alert(data.message ?? '保存に失敗しました。');
+        return;
+      }
+      setMenuSavedAt(data.created_at ? new Date(data.created_at) : new Date());
+    } catch (e) {
+      console.error('[handleSaveMenu]', e);
+      alert('保存に失敗しました。');
+    } finally {
+      setIsSavingMenu(false);
+    }
+  };
+
   /** PDFを別タブで開く（開いた画面から保存可能） */
   const handleOpenPDFInNewTab = async (captureId: string) => {
     try {
@@ -690,7 +726,7 @@ export default function Home() {
             <p className="mt-2 text-sm text-amber-700">
               OpenAI API: 未設定（
               {(openaiReason === 'placeholder' && 'OPENAI_API_KEY を本物のキーに差し替えてください') ||
-                (openaiReason === 'missing' && '.env.local に OPENAI_API_KEY=あなたのキー を追加してください') ||
+                (openaiReason === 'missing' && '.env.ai に OPENAI_API_KEY=あなたのキー を追加してください') ||
                 'OPENAI_API_KEY を設定してください'}
               ）。設定後は必ず開発サーバーを再起動（npm run dev のやり直し）してください。キーはクォートで囲まないでください。
             </p>
@@ -772,7 +808,9 @@ export default function Home() {
           <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 mb-4 space-y-3">
             <p>{apiError}</p>
             {apiErrorKind === 'login_required' && (
-              <GoogleSignInButton callbackUrl={typeof window !== 'undefined' ? window.location.href : '/'} variant="secondary" />
+              <Link href="/login" className="inline-block px-4 py-2 bg-white border border-gray-300 rounded-md font-medium text-gray-700 hover:bg-gray-50">
+                ログイン
+              </Link>
             )}
             {apiErrorKind === 'retry' && (
               <button
@@ -841,6 +879,17 @@ export default function Home() {
                 >
                   {isExporting ? '共有準備中...' : '共有'}
                 </button>
+                {!sessionStatus && user && (
+                  <button
+                    type="button"
+                    onClick={handleSaveMenu}
+                    disabled={isSavingMenu}
+                    className="px-4 py-2 rounded-xl border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 disabled:opacity-50 font-medium text-sm shadow-sm transition-all"
+                    title="マイページで後から確認できます"
+                  >
+                    {menuSavedAt ? '✓ 保存済み' : isSavingMenu ? '保存中...' : '保存'}
+                  </button>
+                )}
               </div>
             </div>
             <div id="menu-capture" className="space-y-4">

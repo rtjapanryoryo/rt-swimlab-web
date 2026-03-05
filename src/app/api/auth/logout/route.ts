@@ -1,0 +1,16 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+
+/**
+ * ログアウト API（クッキーをクリアするためサーバー側で実行）
+ */
+export async function POST(request: NextRequest) {
+  const supabase = await createClient();
+  if (supabase) {
+    await supabase.auth.signOut();
+  }
+  const origin = new URL(request.url).origin;
+  return NextResponse.redirect(new URL('/login', origin), {
+    status: 302,
+  });
+}

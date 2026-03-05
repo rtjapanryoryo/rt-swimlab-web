@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
+import { getSupabaseClient } from '@/lib/supabase';
 
 /**
- * サーバー側の env のみで OpenAI 設定状態を返す。
- * 認証不要。APIキーは返さず、設定有無のみ。
+ * サーバー側の env と各種サービス接続状態を返す。認証不要。
  */
 export async function GET() {
   const key = (process.env.OPENAI_API_KEY || '').trim();
@@ -13,12 +13,22 @@ export async function GET() {
       ? 'placeholder'
       : 'missing';
 
-  // 原因特定用ログ（キー本文は出さない）
-  console.log('[health] OPENAI_API_KEY exists:', !!key);
-  console.log('[health] OPENAI_API_KEY head:', key ? key.slice(0, 7) + '...' : '(empty)');
+  // Supabase 接続確認
+  let supabaseOk = false;
+  const sb = getSupabaseClient();
+  if (sb) {
+    try {
+      const { error } = await sb.from('menus').select('id').limit(1);
+      supabaseOk = !error;
+    } catch {
+      supabaseOk = false;
+    }
+  }
 
   return NextResponse.json({
     openaiConfigured,
     openaiReason,
+    supabaseConfigured: !!sb,
+    supabaseConnected: supabaseOk,
   });
 }

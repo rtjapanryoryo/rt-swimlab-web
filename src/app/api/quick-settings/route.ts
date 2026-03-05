@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
+import { getUser } from '@/lib/supabase/server';
 import { getQuickSettings } from '@/lib/rt/content';
 
 /**
@@ -8,11 +8,8 @@ import { getQuickSettings } from '@/lib/rt/content';
  */
 export async function GET(request: NextRequest) {
   try {
-    const token = await getToken({
-      req: request,
-      secret: process.env.NEXTAUTH_SECRET,
-    });
-    if (!token) {
+    const user = await getUser();
+    if (!user) {
       return NextResponse.json(
         { error: 'login_required', message: 'ログインが必要です' },
         { status: 401, headers: { 'Content-Type': 'application/json; charset=utf-8' } }

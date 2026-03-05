@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import path from 'path';
 import { config as loadEnv } from 'dotenv';
-import { getToken } from 'next-auth/jwt';
+import { getUser } from '@/lib/supabase/server';
 import OpenAI from 'openai';
 import { getCommonContent, getProtocolContent, getPromptContent } from '@/lib/rt/content';
 
@@ -23,14 +23,11 @@ function getOpenAIStatus(): { configured: boolean; reason?: 'missing' | 'placeho
 /** GET: ログイン済みユーザー向けに OpenAI API が利用可能か返す。診断用の keyExists も返す */
 export async function GET(request: NextRequest) {
   try {
-    const token = await getToken({
-      req: request,
-      secret: process.env.NEXTAUTH_SECRET,
-    });
+    const user = await getUser();
     const keyExists = (process.env.OPENAI_API_KEY || '').trim().length > 0;
     const status = getOpenAIStatus();
     console.log('[custom-menu] GET: OPENAI_API_KEY exists:', keyExists, 'configured:', status.configured, 'reason:', status.reason ?? 'ok');
-    if (!token) {
+    if (!user) {
       return NextResponse.json({ openaiConfigured: false, keyExists }, { status: 200 });
     }
     return NextResponse.json({
@@ -220,17 +217,14 @@ export async function POST(request: NextRequest) {
     NextResponse.json(INTERNAL_ERROR_JSON, { status: 500, headers: { 'Content-Type': 'application/json; charset=utf-8' } });
 
   try {
-    let token: unknown = null;
+    let user = null;
     try {
-      token = await getToken({
-        req: request,
-        secret: process.env.NEXTAUTH_SECRET,
-      });
+      user = await getUser();
     } catch (authErr) {
-      console.error('[custom-menu] getToken error:', authErr);
+      console.error('[custom-menu] getUser error:', authErr);
       return ensureJson500();
     }
-    if (!token) {
+    if (!user) {
       return NextResponse.json(
         { error: 'login_required', message: 'ログインが必要です' },
         { status: 401, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
@@ -444,7 +438,7 @@ ${conditionInstructions}
     } else if (isOpenAIError) {
       errorText = `メニュー生成エラー: ${message}`;
     } else {
-      errorText = `サーバーエラー(500): ${message}. .env.ai の OPENAI_API_KEY と NEXTAUTH_SECRET、ターミナルログを確認してください。`;
+      errorText = `サーバーエラー(500): ${message}. .env.ai の OPENAI_API_KEY と Supabase 設定、ターミナルログを確認してください。`;
     }
     console.error('[custom-menu] Error detail:', errorText);
     return ensureJson500();
