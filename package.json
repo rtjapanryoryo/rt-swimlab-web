@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "predev": "lsof -ti :3000 2>/dev/null | xargs kill -9 2>/dev/null; true",
+    "setup:env": "test -f .env.ai || cp .env.ai.example .env.ai; echo '→ .env.ai を用意しました。未設定なら編集して Supabase の値を入れてください。'",
     "dev": "next dev",
     "dev:3001": "next dev -p 3001",
     "dev:daemon": "pm2 start ecosystem.config.cjs",
