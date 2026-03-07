@@ -26,7 +26,7 @@ export default function GeneticPage() {
     } catch {
       const msg = text || '不明なエラー';
       if (/request entity too large|payload too large/i.test(msg)) {
-        return { error: 'ファイルが大きすぎます。10MB以下のPDFを選択してください。' };
+        return { error: 'ファイルが大きすぎます。50MB以下のPDFを選択してください。' };
       }
       return { error: msg };
     }
@@ -56,8 +56,8 @@ export default function GeneticPage() {
       setError('PDFファイルのみアップロードできます');
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      setError('ファイルサイズは10MBまでです');
+    if (file.size > 50 * 1024 * 1024) {
+      setError('ファイルサイズは50MBまでです');
       return;
     }
     setUploading(true);
@@ -149,7 +149,7 @@ export default function GeneticPage() {
       <section className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
         <div className="px-6 py-5 border-b border-slate-100">
           <h2 className="text-sm font-semibold text-slate-800">PDFを追加</h2>
-          <p className="text-xs text-slate-500 mt-0.5">遺伝子情報PDFをアップロード（10MBまで）</p>
+          <p className="text-xs text-slate-500 mt-0.5">遺伝子情報PDFをアップロード（50MBまで）</p>
         </div>
         <div className="p-6">
           <input

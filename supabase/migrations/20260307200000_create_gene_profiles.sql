@@ -15,7 +15,8 @@ CREATE INDEX IF NOT EXISTS idx_gene_profiles_user_created ON public.gene_profile
 
 ALTER TABLE public.gene_profiles ENABLE ROW LEVEL SECURITY;
 
--- RLS: 自分の行のみ
+-- RLS: 自分の行のみ（既存ポリシーがあれば削除して再作成）
+DROP POLICY IF EXISTS "Users can manage own gene profiles" ON public.gene_profiles;
 CREATE POLICY "Users can manage own gene profiles" ON public.gene_profiles
   FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 

@@ -42,6 +42,49 @@ Supabase Dashboard で取得:
   process.exit(1);
 }
 
+/** 直接接続(db.xxx:5432)を Pooler 接続に変換。EHOSTUNREACH 対策 */
+function toPoolerUrls(url) {
+  const m = url.match(/postgresql:\/\/([^:]+):([^@]+)@db\.([a-z0-9]+)\.supabase\.co:5432\/(.+)/);
+  if (!m) return [];
+  const [, , password, projectRef, db] = m;
+  const regions = ['ap-northeast-1', 'us-east-1', 'eu-west-1'];
+  return regions.map(
+    (r) => `postgresql://postgres.${projectRef}:${encodeURIComponent(password)}@aws-0-${r}.pooler.supabase.com:6543/${db}`
+  );
+}
+
+/** Pooler URL のリージョン別バリエーション（Tenant or user not found 対策） */
+function getPoolerRegionVariants(url) {
+  const m = url.match(/postgresql:\/\/([^:]+):([^@]+)@(aws-0-[a-z0-9-]+\.pooler\.supabase\.com:6543\/(.+))/);
+  if (!m) return [];
+  const [, user, password, hostAndDb] = m;
+  const regions = ['ap-northeast-1', 'us-east-1', 'eu-west-1', 'ap-southeast-1'];
+  const variants = [];
+  for (const r of regions) {
+    const host = `aws-0-${r}.pooler.supabase.com:6543`;
+    const db = hostAndDb.split('/').pop();
+    variants.push(`postgresql://${user}:${password}@${host}/${db}`);
+    // パスワードが [xxx] 形式（プレースホルダー）の場合、括弧なしも試す
+    if (/^\[.+\]$/.test(password)) {
+      const bare = password.slice(1, -1);
+      variants.push(`postgresql://${user}:${encodeURIComponent(bare)}@${host}/${db}`);
+    }
+  }
+  return variants;
+}
+
+/** パスワードの [ ] を除去したURL（プレースホルダー誤り対策） */
+function getUrlWithoutBracketPlaceholder(url) {
+  const m = url.match(/postgresql:\/\/([^:]+):([^@]+)@(.+)/);
+  if (!m) return null;
+  const [, user, password, rest] = m;
+  if (password.startsWith('[') && password.endsWith(']')) {
+    const clean = password.slice(1, -1);
+    return `postgresql://${user}:${encodeURIComponent(clean)}@${rest}`;
+  }
+  return null;
+}
+
 async function run() {
   let pg;
   try {
@@ -57,10 +100,78 @@ async function run() {
     .filter((f) => f.endsWith('.sql'))
     .sort();
 
+  const poolerUrls = toPoolerUrls(DATABASE_URL);
+
+  const poolerVariants = getPoolerRegionVariants(DATABASE_URL);
+
   const client = new pg.default.Client({ connectionString: DATABASE_URL });
   try {
     await client.connect();
+  } catch (connectErr) {
+    const isTenant = connectErr.message?.includes('Tenant or user not found');
+    const isUnreachable = connectErr.message?.includes('EHOSTUNREACH') || connectErr.code === 'EHOSTUNREACH';
 
+    if (isTenant && poolerVariants.length > 1) {
+      console.log('→ リージョンが合わない可能性があるため、別リージョンを試します...');
+      try {
+        await client.end();
+      } catch {}
+      let lastErr;
+      for (const url of poolerVariants) {
+        if (url === DATABASE_URL) continue;
+        const c = new pg.default.Client({ connectionString: url });
+        try {
+          await c.connect();
+          await runMigrations(c, files, migrationsDir, readdirSync, readFileSync);
+          return;
+        } catch (e2) {
+          lastErr = e2;
+          try {
+            await c.end();
+          } catch {}
+        }
+      }
+      console.error('❌ 別リージョンも失敗:', lastErr?.message);
+    } else if (isUnreachable && poolerUrls.length > 0) {
+      console.log('→ 直接接続が失敗したため、Pooler 接続に切り替えます...');
+      try {
+        await client.end();
+      } catch {}
+      let lastErr;
+      for (const poolerUrl of poolerUrls) {
+        const c = new pg.default.Client({ connectionString: poolerUrl });
+        try {
+          await c.connect();
+          await runMigrations(c, files, migrationsDir, readdirSync, readFileSync);
+          return;
+        } catch (e2) {
+          lastErr = e2;
+          try {
+            await c.end();
+          } catch {}
+        }
+      }
+      console.error('❌ Pooler 接続も失敗:', lastErr?.message);
+    }
+
+    if (isTenant || lastErr?.message?.includes('Tenant or user not found')) {
+      console.error(`
+💡 ヒント: パスワードを確認してください。
+   - [YOUR-PASSWORD] はプレースホルダーです。実際のDBパスワードに置き換えてください。
+   - Supabase Dashboard → Settings → Database → Reset database password で再設定可能
+   - Connection string で「Transaction」を選択し、表示されたURIをそのままコピー
+`);
+    }
+    console.error('❌ エラー:', connectErr.message);
+    process.exit(1);
+  }
+
+  await runMigrations(client, files, migrationsDir, readdirSync, readFileSync);
+}
+
+async function runMigrations(client, files, migrationsDir, readdirSync, readFileSync) {
+
+  try {
     for (const f of files) {
       const sqlPath = resolve(migrationsDir, f);
       const sql = readFileSync(sqlPath, 'utf-8');
