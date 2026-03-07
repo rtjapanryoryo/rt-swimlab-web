@@ -88,7 +88,7 @@ export default function MyPageLayout({
       >
         <div className="px-4 py-3">
           <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">My Page</p>
-          <p className="text-sm font-semibold text-slate-800 mt-0.5 truncate">
+          <p className="text-base font-semibold text-slate-800 mt-0.5 truncate">
             {displayName ? `${displayName}様` : 'マイページ'}
           </p>
         </div>
@@ -160,7 +160,7 @@ export default function MyPageLayout({
               <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">
                 My Page
               </p>
-              <p className="text-sm font-semibold text-slate-800 mt-0.5 truncate" title={displayName ? `${displayName}様` : undefined}>
+              <p className="text-lg font-semibold text-slate-800 mt-0.5 truncate" title={displayName ? `${displayName}様` : undefined}>
                 {displayName ? `${displayName}様` : 'マイページ'}
               </p>
             </div>
@@ -173,7 +173,7 @@ export default function MyPageLayout({
                       ? pathname === '/mypage' || pathname === '/mypage/'
                       : pathname === item.href || pathname.startsWith(item.href + '/');
                 const baseClass =
-                  'flex items-center gap-3 w-full px-5 py-3 text-left text-sm font-medium transition-colors';
+                  'flex items-center gap-3 w-full px-5 py-3 text-left text-base font-medium transition-colors';
                 const activeClass = isActive
                   ? 'bg-blue-50 text-blue-800 border-l-2 border-blue-500'
                   : 'text-slate-600 hover:bg-slate-50/80 hover:text-slate-900';
@@ -217,7 +217,7 @@ export default function MyPageLayout({
               <form action="/api/auth/logout" method="post">
                 <button
                   type="submit"
-                  className="flex items-center gap-2 w-full text-left text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors py-2 -ml-1"
+                  className="flex items-center gap-2 w-full text-left text-base font-medium text-slate-600 hover:text-slate-900 transition-colors py-2 -ml-1"
                 >
                   <LogoutIcon />
                   ログアウト
@@ -228,7 +228,7 @@ export default function MyPageLayout({
         </aside>
 
         {/* メインコンテンツ（PC: サイドバー分の余白＋パディング。本面は広めに） */}
-        <main className="flex-1 min-w-0 order-1 lg:order-2 py-6 sm:py-8 px-4 sm:px-6 lg:pl-[20rem] lg:pr-6 lg:py-8 lg:max-w-[calc(100%-20rem-1.5rem)]">
+        <main className="flex-1 min-w-0 order-1 lg:order-2 py-6 sm:py-8 px-4 sm:px-6 lg:pl-[20rem] lg:pr-4 lg:py-8 lg:max-w-[calc(100%-20rem-1rem)]">
           {children}
         </main>
       </div>
