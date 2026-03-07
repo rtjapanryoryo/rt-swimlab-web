@@ -37,26 +37,26 @@ export function UserNav() {
   const email = user.email ?? '';
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-5">
       <Link
         href="/"
-        className="text-xs md:text-sm text-slate-600 hover:text-slate-900 underline underline-offset-2"
+        className="text-sm font-medium text-slate-800/90 hover:text-slate-900 transition-colors py-2 px-3 rounded-lg hover:bg-slate-100/80"
       >
         練習メニュー
       </Link>
       <Link
         href="/mypage"
-        className="text-xs md:text-sm text-slate-600 hover:text-slate-900 underline underline-offset-2"
+        className="text-sm font-medium text-slate-800/90 hover:text-slate-900 transition-colors py-2 px-3 rounded-lg hover:bg-slate-100/80"
       >
         マイページ
       </Link>
-      <span className="text-xs md:text-sm text-gray-700 truncate max-w-[100px] md:max-w-[180px]">
+      <span className="text-xs text-slate-500 border-l border-slate-200 pl-4 ml-1 truncate max-w-[120px] md:max-w-[160px]">
         {displayName ?? email ?? 'ログイン中'}
       </span>
       <form action="/api/auth/logout" method="post">
         <button
           type="submit"
-          className="text-sm px-3 py-1.5 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-gray-700"
+          className="text-sm px-3 py-1.5 rounded-lg border border-slate-200/80 bg-white/80 hover:bg-slate-50 text-slate-600 hover:text-slate-800 transition-colors backdrop-blur-sm"
         >
           ログアウト
         </button>

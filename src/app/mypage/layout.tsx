@@ -12,8 +12,8 @@ const navItems = [
   { href: '/mypage/menus', label: 'メニューログ', icon: '▸' },
   { href: '/mypage/genetic', label: 'RT GENE PROFILE', icon: '◇' },
   { href: '/mypage/subscription', label: '有料プラン', icon: '◆' },
-  ...(LINE_URL ? [{ href: LINE_URL, label: 'RT公式LINE', icon: '●', external: true }] : []),
-  ...(COMMUNITY_URL ? [{ href: COMMUNITY_URL, label: 'コミュニティ', icon: '○', external: true }] : []),
+  { href: LINE_URL || '#', label: 'RT公式LINE', icon: '●', external: true, disabled: !LINE_URL },
+  { href: COMMUNITY_URL || '#', label: 'RTコミュニティ', icon: '○', external: true, disabled: !COMMUNITY_URL },
   { href: '/mypage/settings', label: '設定', icon: '⚙' },
 ];
 
@@ -78,16 +78,23 @@ export default function MyPageLayout({
                   </>
                 );
                 if ('external' in item && item.external) {
+                  const isDisabled = 'disabled' in item && item.disabled;
                   return (
-                    <li key={item.href}>
-                      <a
-                        href={item.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`${baseClass} ${activeClass}`}
-                      >
-                        {content}
-                      </a>
+                    <li key={item.label}>
+                      {isDisabled ? (
+                        <span className={`${baseClass} text-slate-400 cursor-default`} title="URL未設定">
+                          {content}
+                        </span>
+                      ) : (
+                        <a
+                          href={item.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`${baseClass} ${activeClass}`}
+                        >
+                          {content}
+                        </a>
+                      )}
                     </li>
                   );
                 }

@@ -25,8 +25,10 @@ export default function RootLayout({
     <html lang="ja">
       <body className="antialiased font-sans flex flex-col min-h-screen">
         <AuthProvider>
-          <div className="fixed top-0 right-0 z-50 p-4 no-print">
-            <UserNav />
+          <div className="fixed top-0 right-0 z-50 p-4 md:p-5 no-print">
+            <nav className="flex items-center gap-4 px-4 py-2.5 rounded-2xl bg-white/90 backdrop-blur-md border border-slate-200/60 shadow-sm">
+              <UserNav />
+            </nav>
           </div>
           <div className="flex-1 w-full min-w-0 pt-2 pr-3 sm:pr-20 md:pr-40">
             <SplashScreenProvider>{children}</SplashScreenProvider>

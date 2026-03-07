@@ -51,6 +51,13 @@ export default function GeneticPage() {
     fetchProfiles();
   }, []);
 
+  // 1件のみなので格納済みなら自動表示
+  useEffect(() => {
+    if (profiles.length > 0 && !viewUrl && !viewingId) {
+      handleView(profiles[0].id);
+    }
+  }, [profiles]);
+
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -126,15 +133,6 @@ export default function GeneticPage() {
     }
   }
 
-  const formatDate = (s: string) =>
-    new Date(s).toLocaleString('ja-JP', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-
   return (
     <div className="space-y-8">
       <header>
@@ -180,17 +178,8 @@ export default function GeneticPage() {
         </div>
       </section>
 
-      {/* 格納一覧 */}
+      {/* PDF表示（右側ビジュアルのみ・全幅） */}
       <section className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
-        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-semibold text-slate-800">格納済みPDF</h2>
-            <p className="text-xs text-slate-500 mt-0.5">いつでも確認・ダウンロードできます</p>
-          </div>
-          {profiles.length > 0 && (
-            <span className="text-xs text-slate-400 tabular-nums">1件まで（削除・差し替え可）</span>
-          )}
-        </div>
         <div className="p-4 sm:p-6">
           {loading ? (
             <div className="py-12 text-center text-slate-500 text-sm">読み込み中...</div>
@@ -203,65 +192,34 @@ export default function GeneticPage() {
               <p className="text-slate-400 text-sm mt-1">上のボタンからアップロードしてください</p>
             </div>
           ) : (
-            <div className="flex flex-col lg:flex-row gap-6">
-              {/* 一覧（コンパクト） */}
-              <div className="lg:w-64 shrink-0">
-                <div className="space-y-2">
-                  {profiles.map((p) => (
-                    <div
-                      key={p.id}
-                      className={`p-3 rounded-xl border transition-all ${
-                        viewingId === p.id
-                          ? 'border-teal-200 bg-teal-50/80'
-                          : 'border-slate-100 hover:bg-slate-50/80'
-                      }`}
-                    >
-                      <p className="text-sm font-medium text-slate-800 truncate" title={p.display_name}>
-                        {p.display_name}
-                      </p>
-                      <p className="text-xs text-slate-400 mt-0.5 tabular-nums">
-                        {formatDate(p.created_at)}
-                      </p>
-                      <div className="flex gap-2 mt-2">
-                        <button
-                          type="button"
-                          onClick={() => handleView(p.id)}
-                          disabled={viewingId === p.id}
-                          className="px-2.5 py-1 text-xs font-medium bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50"
-                        >
-                          表示
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(p.id)}
-                          disabled={deletingId === p.id}
-                          className="px-2.5 py-1 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50"
-                        >
-                          {deletingId === p.id ? '削除中...' : '削除'}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            <div className="flex flex-col">
+              {/* ファイル名＋削除（スリムバー） */}
+              <div className="flex items-center justify-between gap-4 py-2 px-1 border-b border-slate-100 mb-4">
+                <p className="text-sm font-medium text-slate-800 truncate" title={profiles[0]?.display_name}>
+                  {profiles[0]?.display_name}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => profiles[0] && handleDelete(profiles[0].id)}
+                  disabled={deletingId === profiles[0]?.id}
+                  className="shrink-0 px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  {deletingId === profiles[0]?.id ? '削除中...' : '削除'}
+                </button>
               </div>
-              {/* PDFプレビュー（1ページずつスクロールで表示） */}
-              <div className="flex-1 min-w-0 bg-slate-50 rounded-xl border border-slate-200 overflow-auto flex flex-col min-h-[max(560px,calc(100vh-220px))]">
+              {/* PDFビューア（全幅・スクロール可） */}
+              <div className="bg-slate-50 rounded-xl border border-slate-200 overflow-auto min-h-[max(560px,calc(100vh-280px))]">
                 {viewUrl ? (
                   <iframe
                     src={viewUrl}
                     title="PDFプレビュー"
-                    className="w-full flex-1 min-h-[max(560px,calc(100vh-220px))] border-0"
+                    className="w-full min-h-[max(560px,calc(100vh-280px))] border-0"
                   />
                 ) : viewingId ? (
                   <div className="flex items-center justify-center min-h-[400px] text-slate-500 text-sm">
                     読み込み中...
                   </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center min-h-[400px] text-slate-400 text-sm">
-                    <span className="text-2xl mb-2">◇</span>
-                    左の「表示」をクリックしてPDFを表示
-                  </div>
-                )}
+                ) : null}
               </div>
             </div>
           )}

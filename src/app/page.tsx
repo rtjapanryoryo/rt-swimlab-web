@@ -128,6 +128,33 @@ export default function Home() {
     setMenuSavedAt(null);
   }, [result, apiMenuText]);
 
+  // ログイン時はメニュー生成後に自動で生成ログに保存
+  const lastSavedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!user || (!result && !apiMenuText)) return;
+    const key = JSON.stringify({ r: result ? 'r' : '', a: apiMenuText ? 'a' : '' });
+    if (lastSavedRef.current === key) return;
+    lastSavedRef.current = key;
+    (async () => {
+      try {
+        const res = await fetch('/api/menus', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            input: { ...input },
+            result: result ? { ...result } : { rawText: apiMenuText },
+            source: resultSource ?? (apiMenuText ? 'custom' : 'quick'),
+          }),
+          credentials: 'include',
+        });
+        const data = (await res.json()) as { created_at?: string };
+        if (res.ok && data.created_at) setMenuSavedAt(new Date(data.created_at));
+      } catch {
+        lastSavedRef.current = null;
+      }
+    })();
+  }, [user, result, apiMenuText, input, resultSource]);
+
   // クイックメニュー用セクション順・ラベル（quick-settings.json）
   useEffect(() => {
     fetch('/api/quick-settings', { credentials: 'include' })
@@ -858,13 +885,6 @@ export default function Home() {
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={() => window.print()}
-                  className="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-900 font-medium text-sm shadow-sm transition-all"
-                >
-                  印刷
-                </button>
-                <button
-                  type="button"
                   onClick={() => handleOpenPDFInNewTab('menu-capture')}
                   disabled={isExporting}
                   className="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-900 disabled:opacity-50 font-medium text-sm shadow-sm transition-all"
@@ -879,17 +899,6 @@ export default function Home() {
                 >
                   {isExporting ? '共有準備中...' : '共有'}
                 </button>
-                {!sessionStatus && user && (
-                  <button
-                    type="button"
-                    onClick={handleSaveMenu}
-                    disabled={isSavingMenu}
-                    className="px-4 py-2 rounded-xl border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 disabled:opacity-50 font-medium text-sm shadow-sm transition-all"
-                    title="マイページで後から確認できます"
-                  >
-                    {menuSavedAt ? '✓ 保存済み' : isSavingMenu ? '保存中...' : '保存'}
-                  </button>
-                )}
               </div>
             </div>
             <div id="menu-capture" className="space-y-4">
