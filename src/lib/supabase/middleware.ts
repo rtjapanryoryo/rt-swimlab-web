@@ -54,8 +54,13 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  // ログイン済みで / にアクセス → マイページへ
+  if (request.nextUrl.pathname === '/' && effectiveLoggedIn) {
+    return NextResponse.redirect(new URL('/mypage', request.url));
+  }
+
   if (isAuthPage && effectiveLoggedIn) {
-    return NextResponse.redirect(new URL('/', request.url));
+    return NextResponse.redirect(new URL('/mypage', request.url));
   }
 
   return response;

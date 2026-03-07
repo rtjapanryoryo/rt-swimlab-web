@@ -12,7 +12,7 @@ try {
 } catch {
   // .env.ai が無くても続行
 }
-import { getEffectiveUser } from '@/lib/supabase/server';
+import { createClient, getEffectiveUser } from '@/lib/supabase/server';
 import { getSupabaseAdmin, getSupabaseServiceRole, isSupabaseConfigured } from '@/lib/supabase/admin';
 
 export async function POST(request: NextRequest) {
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const sb = user.isBypass ? getSupabaseServiceRole() : getSupabaseAdmin();
+  const sb = user.isBypass ? getSupabaseServiceRole() : (await createClient());
   if (!sb) {
     return NextResponse.json(
       { error: 'not_configured', message: user.isBypass ? 'バイパス時は SUPABASE_SERVICE_ROLE_KEY が必要です。' : 'メニュー保存は未設定です。' },
@@ -63,6 +63,21 @@ export async function POST(request: NextRequest) {
         { error: 'insert_failed', message: '保存に失敗しました。' },
         { status: 500 }
       );
+    }
+
+    // 累計生成回数 +1 と generation_logs に追加（ダッシュボード連携）
+    const logLabel = source === 'custom' ? 'メニュー生成（カスタム）' : 'メニュー生成（クイック）';
+    try {
+      const { data: profile } = await sb
+        .from('profiles')
+        .select('total_usage_count')
+        .eq('id', user_id)
+        .single();
+      const nextCount = (profile?.total_usage_count ?? 0) + 1;
+      await sb.from('profiles').update({ total_usage_count: nextCount, updated_at: new Date().toISOString() }).eq('id', user_id);
+      await sb.from('generation_logs').insert({ user_id, content_details: logLabel });
+    } catch (e) {
+      console.warn('[menus] profile/log update failed (non-fatal):', e);
     }
 
     return NextResponse.json({ id: data.id, created_at: data.created_at });

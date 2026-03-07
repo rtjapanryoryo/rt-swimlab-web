@@ -27,7 +27,7 @@ export default function MyPageLayout({
 
   if (loading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
+      <div className="min-h-screen flex items-center justify-center bg-[#faf9f7]">
         {loading ? (
           <div className="flex flex-col items-center gap-4">
             <div className="w-8 h-8 border-2 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" />
@@ -49,7 +49,7 @@ export default function MyPageLayout({
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc]">
+    <div className="min-h-screen bg-[#faf9f7]">
       <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-8 py-8 px-4 sm:px-6">
         {/* サイドナビ */}
         <aside className="lg:w-56 flex-shrink-0">
@@ -109,10 +109,10 @@ export default function MyPageLayout({
             </ul>
             <div className="px-5 py-3 border-t border-slate-100">
               <Link
-                href="/"
+                href="/mypage"
                 className="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-700 transition-colors"
               >
-                ← トップへ戻る
+                ← ダッシュボードへ
               </Link>
             </div>
           </nav>

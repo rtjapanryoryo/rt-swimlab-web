@@ -23,13 +23,13 @@ function LoginFormInner({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get('redirect') ?? '/';
+  const redirect = searchParams.get('redirect') ?? '/mypage';
 
   function handleDevBypass() {
     const userId = process.env.NEXT_PUBLIC_DEV_BYPASS_USER_ID;
     if (!userId) return;
     setBypassCookie(userId);
-    window.location.href = redirect || '/';
+    window.location.href = redirect || '/mypage';
   }
 
   const [email, setEmail] = useState('');
@@ -75,7 +75,7 @@ function LoginFormInner({
         setError(err.message === 'Invalid login credentials' ? 'メールアドレスまたはパスワードが正しくありません。' : err.message);
         return;
       }
-      let target = redirect || '/';
+      let target = redirect || '/mypage';
       try {
         const res = await fetch('/api/profile', { credentials: 'include' });
         const json = await res.json().catch(() => ({}));

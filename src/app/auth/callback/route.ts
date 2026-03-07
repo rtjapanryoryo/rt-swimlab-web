@@ -29,8 +29,8 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get('code');
   const tokenHash = searchParams.get('token_hash');
   const type = searchParams.get('type') as EmailOtpType | null;
-  let next = searchParams.get('next') ?? '';
-  if (!next.startsWith('/')) next = '';
+  let next = searchParams.get('next') ?? '/mypage';
+  if (!next.startsWith('/')) next = '/mypage';
 
   const supabase = await createClient();
   if (!supabase) {
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
   if (code) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error && data.user) {
-      const redirect = next || (await getRedirectForUser(supabase, data.user.id, '/'));
+      const redirect = next || (await getRedirectForUser(supabase, data.user.id, '/mypage'));
       return NextResponse.redirect(`${origin}${redirect}`);
     }
     if (!error) return NextResponse.redirect(`${origin}${next || '/'}`);
