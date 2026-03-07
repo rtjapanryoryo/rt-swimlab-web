@@ -77,5 +77,15 @@ export async function uploadGeneProfile(formData: FormData): Promise<UploadResul
     return { error: insertError.message };
   }
 
+  // 基本ログにアップロードを記録
+  try {
+    await supabase.from('generation_logs').insert({
+      user_id: user.id,
+      content_details: 'GENE PROFILE アップロード',
+    });
+  } catch (e) {
+    console.warn('[gene-profiles] generation_logs insert failed (non-fatal):', e);
+  }
+
   return { profile: inserted };
 }

@@ -65,8 +65,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 累計生成回数 +1（profile 未存在時は service_role で upsert）
-    const logLabel = source === 'custom' ? 'メニュー生成（カスタム）' : 'メニュー生成（クイック）';
+    // 累計生成回数 +1（profile 未存在時は service_role で upsert）+ 基本ログ
     try {
       const { data: profile } = await sb.from('profiles').select('total_usage_count').eq('id', user_id).single();
       const nextCount = (profile?.total_usage_count ?? 0) + 1;
@@ -88,6 +87,10 @@ export async function POST(request: NextRequest) {
           );
         }
       }
+      const logLabel =
+        source === 'custom'
+          ? `メニュー生成（カスタム） 累計${nextCount}回目`
+          : `メニュー生成（クイック） 累計${nextCount}回目`;
       await sb.from('generation_logs').insert({ user_id, content_details: logLabel });
     } catch (e) {
       console.warn('[menus] profile/log update failed (non-fatal):', e);
