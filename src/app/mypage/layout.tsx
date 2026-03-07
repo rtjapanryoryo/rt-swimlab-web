@@ -4,6 +4,16 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/components/AuthProvider';
 
+function LogoutIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </svg>
+  );
+}
+
 const LINE_URL = process.env.NEXT_PUBLIC_LINE_URL || '';
 const COMMUNITY_URL = process.env.NEXT_PUBLIC_COMMUNITY_URL || '';
 
@@ -51,10 +61,10 @@ export default function MyPageLayout({
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#faf9f7] via-[#f8f7f5] to-[#f5f4f2]">
-      <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-8 py-8 px-4 sm:px-6">
+      <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-6 lg:gap-8 py-6 sm:py-8 px-4 sm:px-6">
         {/* サイドナビ */}
-        <aside className="lg:w-56 flex-shrink-0">
-          <nav className="dashboard-card overflow-hidden sticky top-8">
+        <aside className="lg:w-56 flex-shrink-0 order-2 lg:order-1">
+          <nav className="dashboard-card overflow-hidden lg:sticky lg:top-8">
             <div className="px-5 py-4 border-b border-slate-100">
               <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">
                 My Page
@@ -108,7 +118,7 @@ export default function MyPageLayout({
                 );
               })}
             </ul>
-            <div className="px-5 py-3 border-t border-slate-100">
+            <div className="px-5 py-3 border-t border-slate-100 space-y-2">
               {LINE_URL ? (
                 <a
                   href={LINE_URL}
@@ -123,12 +133,21 @@ export default function MyPageLayout({
                   お問い合わせ
                 </span>
               )}
+              <form action="/api/auth/logout" method="post" className="pt-1">
+                <button
+                  type="submit"
+                  className="flex items-center gap-2 w-full text-left text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors py-2 -ml-1"
+                >
+                  <LogoutIcon />
+                  ログアウト
+                </button>
+              </form>
             </div>
           </nav>
         </aside>
 
         {/* メインコンテンツ */}
-        <main className="flex-1 min-w-0">{children}</main>
+        <main className="flex-1 min-w-0 order-1 lg:order-2">{children}</main>
       </div>
     </div>
   );

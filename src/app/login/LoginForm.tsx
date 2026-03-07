@@ -5,6 +5,7 @@ import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { AuthLayout } from '@/components/AuthLayout';
 import { WebViewOpenInBrowser } from '@/components/WebViewOpenInBrowser';
 
 const BYPASS_COOKIE = 'dev-bypass-user-id';
@@ -94,12 +95,7 @@ function LoginFormInner({
 
   return (
     <WebViewOpenInBrowser path="/login">
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="bg-white rounded-lg shadow-md p-8 max-w-md w-full">
-          <h1 className="text-xl font-bold text-gray-900 mb-2">RT swim lab</h1>
-          <p className="text-sm text-gray-600 mb-6">
-            立石諒・高城直基監修の指導哲学に基づく練習メニューを、あなた用に作成します。
-          </p>
+      <AuthLayout activeTab="login">
 
           {/* Google ログイン - NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=true のときのみ表示 */}
           {process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === 'true' && (
@@ -141,7 +137,7 @@ function LoginFormInner({
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-slate-500 focus:border-slate-500"
+                className="w-full px-3 py-2.5 sm:py-2 border border-gray-300 rounded-md focus:ring-slate-500 focus:border-slate-500 min-h-[44px] sm:min-h-0"
                 placeholder="example@email.com"
               />
             </div>
@@ -156,7 +152,7 @@ function LoginFormInner({
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-slate-500 focus:border-slate-500"
+                className="w-full px-3 py-2.5 sm:py-2 border border-gray-300 rounded-md focus:ring-slate-500 focus:border-slate-500 min-h-[44px] sm:min-h-0"
               />
               <Link
                 href="/forgot-password"
@@ -173,18 +169,11 @@ function LoginFormInner({
             <button
               type="submit"
               disabled={loading}
-              className="w-full px-4 py-3 bg-slate-800 text-white rounded-md hover:bg-slate-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full px-4 py-3.5 sm:py-3 bg-slate-800 text-white rounded-md hover:bg-slate-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px] touch-manipulation"
             >
               {loading ? 'ログイン中...' : 'ログイン'}
             </button>
           </form>
-
-          <p className="mt-6 text-center text-sm text-gray-600">
-            アカウントをお持ちでない方は{' '}
-            <Link href="/signup" className="text-slate-700 font-medium underline underline-offset-2 hover:text-slate-900">
-              新規登録
-            </Link>
-          </p>
 
           {devBypassEnabled && (
             <div className="mt-4 pt-4 border-t border-gray-200">
@@ -197,8 +186,7 @@ function LoginFormInner({
               </button>
             </div>
           )}
-        </div>
-      </div>
+      </AuthLayout>
     </WebViewOpenInBrowser>
   );
 }

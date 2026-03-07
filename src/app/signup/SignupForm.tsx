@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { AuthLayout } from '@/components/AuthLayout';
 import { WebViewOpenInBrowser } from '@/components/WebViewOpenInBrowser';
 
 export function SignupForm({ authConfigured }: { authConfigured: boolean }) {
@@ -94,13 +95,7 @@ export function SignupForm({ authConfigured }: { authConfigured: boolean }) {
 
   return (
     <WebViewOpenInBrowser path="/signup">
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="bg-white rounded-lg shadow-md p-8 max-w-md w-full">
-          <h1 className="text-xl font-bold text-gray-900 mb-2">新規登録</h1>
-          <p className="text-sm text-gray-600 mb-6">
-            名前は匿名でもOK。メールアドレスとパスワードでアカウントを作成し、マイページでメニューを管理できます。
-          </p>
-
+      <AuthLayout activeTab="signup">
           {/* Google 登録 - NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=true のときのみ表示 */}
           {process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === 'true' && (
             <>
@@ -155,7 +150,7 @@ export function SignupForm({ authConfigured }: { authConfigured: boolean }) {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 autoComplete="name"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-slate-500 focus:border-slate-500"
+                className="w-full px-3 py-2.5 sm:py-2 border border-gray-300 rounded-md focus:ring-slate-500 focus:border-slate-500 min-h-[44px] sm:min-h-0"
                 placeholder="例: 匿名スイマー、またはお名前"
               />
             </div>
@@ -170,7 +165,7 @@ export function SignupForm({ authConfigured }: { authConfigured: boolean }) {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-slate-500 focus:border-slate-500"
+                className="w-full px-3 py-2.5 sm:py-2 border border-gray-300 rounded-md focus:ring-slate-500 focus:border-slate-500 min-h-[44px] sm:min-h-0"
                 placeholder="example@email.com"
               />
             </div>
@@ -186,7 +181,7 @@ export function SignupForm({ authConfigured }: { authConfigured: boolean }) {
                 required
                 minLength={6}
                 autoComplete="new-password"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-slate-500 focus:border-slate-500"
+                className="w-full px-3 py-2.5 sm:py-2 border border-gray-300 rounded-md focus:ring-slate-500 focus:border-slate-500 min-h-[44px] sm:min-h-0"
                 placeholder="6文字以上"
               />
             </div>
@@ -198,20 +193,12 @@ export function SignupForm({ authConfigured }: { authConfigured: boolean }) {
             <button
               type="submit"
               disabled={loading || !authConfigured}
-              className="w-full px-4 py-3 bg-slate-800 text-white rounded-md hover:bg-slate-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full px-4 py-3.5 sm:py-3 bg-slate-800 text-white rounded-md hover:bg-slate-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px] touch-manipulation"
             >
               {loading ? '登録中...' : !authConfigured ? '認証サービス未設定' : '登録する'}
             </button>
           </form>
-
-          <p className="mt-6 text-center text-sm text-gray-600">
-            すでにアカウントをお持ちの方は{' '}
-            <Link href="/login" className="text-slate-700 font-medium underline underline-offset-2 hover:text-slate-900">
-              ログイン
-            </Link>
-          </p>
-        </div>
-      </div>
+      </AuthLayout>
     </WebViewOpenInBrowser>
   );
 }

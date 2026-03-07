@@ -48,15 +48,19 @@ export default function MyPageDashboard() {
     return () => document.removeEventListener('visibilitychange', handler);
   }, []);
 
+  const displayNameWithSama = profile?.display_name
+    ? `${profile.display_name}様`
+    : '（未設定）';
+
   return (
     <div className="space-y-8">
-      {/* ヘッダー */}
+      {/* ウェルカム（AZACLI風：〇〇様） */}
       <header>
-        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
-          ダッシュボード
+        <h1 className="text-xl sm:text-2xl font-semibold text-teal-700 tracking-tight">
+          {displayNameWithSama}
         </h1>
         <p className="text-slate-500 mt-1 text-sm">
-          プロフィールと設定
+          サマリーと最新のお知らせをご確認ください。
         </p>
       </header>
 
@@ -86,7 +90,7 @@ export default function MyPageDashboard() {
                     表示名
                   </p>
                   <p className="text-lg font-medium text-slate-900">
-                    {profile?.display_name || '（未設定）'}
+                    {displayNameWithSama}
                   </p>
                 </div>
                 <div>
