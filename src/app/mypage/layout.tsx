@@ -4,26 +4,24 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/components/AuthProvider';
-
-function LogoutIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-      <polyline points="16 17 21 12 16 7" />
-      <line x1="21" y1="12" x2="9" y2="12" />
-    </svg>
-  );
-}
+import {
+  AccountIcon,
+  CommunityIcon,
+  DashboardIcon,
+  GeneProfileIcon,
+  LogoutIcon,
+  SwimLabIcon,
+} from '@/components/icons/MypageNavIcons';
 
 const LINE_URL = process.env.NEXT_PUBLIC_LINE_URL || '';
 const COMMUNITY_URL = process.env.NEXT_PUBLIC_COMMUNITY_URL || '';
 
 const navItems = [
-  { href: '/mypage', label: 'ダッシュボード', icon: '○' },
-  { href: '/mypage/menu', label: 'RT swim lab', icon: '◆' },
-  { href: '/mypage/genetic', label: 'RT GENE PROFILE', icon: '◇' },
-  { href: COMMUNITY_URL || '#', label: 'RTコミュニティ', icon: '○', external: true, disabled: !COMMUNITY_URL },
-  { href: '/mypage/settings', label: 'アカウント情報', icon: '⚙' },
+  { href: '/mypage', label: 'ダッシュボード', Icon: DashboardIcon },
+  { href: '/mypage/menu', label: 'RT swim lab', Icon: SwimLabIcon },
+  { href: '/mypage/genetic', label: 'RT GENE PROFILE', Icon: GeneProfileIcon },
+  { href: COMMUNITY_URL || '#', label: 'RTコミュニティ', Icon: CommunityIcon, external: true, disabled: !COMMUNITY_URL },
+  { href: '/mypage/settings', label: 'アカウント情報', Icon: AccountIcon },
 ];
 
 export default function MyPageLayout({
@@ -105,9 +103,10 @@ export default function MyPageLayout({
               const activeClass = isActive
                 ? 'bg-blue-100 text-blue-800'
                 : 'text-slate-600 hover:bg-slate-100';
+              const IconComponent = item.Icon;
               const content = (
                 <>
-                  <span className="text-xs opacity-70">{item.icon}</span>
+                  <IconComponent />
                   {item.label}
                 </>
               );
@@ -153,7 +152,7 @@ export default function MyPageLayout({
 
       <div className="flex flex-col lg:flex-row min-h-screen">
         {/* サイドナビ（PC: 左端固定。モバイルではヘッダーカルーセルで表示） */}
-        <aside className="hidden lg:flex lg:fixed lg:inset-y-0 lg:left-0 lg:w-72 lg:z-40 lg:flex-shrink-0">
+        <aside className="hidden lg:flex lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 lg:z-40 lg:flex-shrink-0">
           <nav className="w-full h-full overflow-y-auto bg-gradient-to-b from-white via-[#fafbff] to-[#f8fafc] border-r border-slate-200/80 shadow-sm">
             <div className="px-5 py-4 border-b border-slate-100">
               <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">
@@ -176,9 +175,10 @@ export default function MyPageLayout({
                 const activeClass = isActive
                   ? 'bg-blue-50 text-blue-800 border-l-2 border-blue-500'
                   : 'text-slate-600 hover:bg-slate-50/80 hover:text-slate-900';
+                const IconComponent = item.Icon;
                 const content = (
                   <>
-                    <span className={`text-xs opacity-70 ${isActive ? 'text-blue-600' : ''}`}>{item.icon}</span>
+                    <IconComponent />
                     {item.label}
                   </>
                 );
@@ -227,7 +227,7 @@ export default function MyPageLayout({
         </aside>
 
         {/* メインコンテンツ（PC: サイドバー分の余白＋パディング。本面は広めに） */}
-        <main className="flex-1 min-w-0 order-1 lg:order-2 py-6 sm:py-8 px-4 sm:px-6 lg:pl-[20rem] lg:pr-4 lg:py-8 lg:max-w-[calc(100%-20rem-1rem)]">
+        <main className="flex-1 min-w-0 order-1 lg:order-2 py-6 sm:py-8 px-4 sm:px-6 lg:pl-64 lg:pr-0 lg:py-8 lg:max-w-[calc(100%-16rem)]">
           {children}
         </main>
       </div>

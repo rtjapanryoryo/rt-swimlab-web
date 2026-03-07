@@ -169,10 +169,10 @@ export default function GeneticPage() {
 
       {/* PDFを追加 */}
       <section className="bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-100">
+        <div className="px-4 py-1 border-b border-slate-100">
           <h2 className="text-sm font-semibold text-slate-800">PDFを追加</h2>
         </div>
-        <div className="p-4">
+        <div className="px-4 py-2">
           <input
             ref={fileInputRef}
             type="file"
@@ -185,7 +185,7 @@ export default function GeneticPage() {
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading || profiles.length >= 1}
-            className="w-full py-5 px-4 border-2 border-dashed border-slate-200 rounded-lg hover:border-blue-300 hover:bg-blue-50/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+            className="w-full py-1 px-3 border border-dashed border-slate-200 rounded-lg hover:border-slate-300 hover:bg-slate-50/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm text-slate-600"
           >
             {uploading ? (
               <span className="text-slate-500">圧縮・アップロード中...</span>

@@ -14,7 +14,7 @@ const menuItems: Array<{
   disabled?: boolean;
 }> = [
   { href: '/mypage/menu', label: 'RT swim lab', description: '練習メニューをクイック作成・カスタム作成で生成' },
-  { href: '/mypage/genetic', label: 'RT GENE PROFILE', description: '遺伝子検査結果を確認' },
+  { href: '/mypage/genetic', label: 'RT GENE PROFILE', description: '遺伝子検査結果PDFを確認・アップロード' },
   { href: COMMUNITY_URL || '#', label: 'RTコミュニティ', description: 'RT公式コミュニティに参加', external: true, disabled: !COMMUNITY_URL },
   { href: '/mypage/settings', label: 'アカウント情報', description: '表示名・パスワード・有料プラン・アカウント連携を変更' },
 ];
@@ -109,13 +109,6 @@ export default function MyPageDashboard() {
                   </p>
                 </div>
               </div>
-              <Link
-                href="/mypage/settings"
-                className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
-              >
-                アカウント情報で名前を変更する
-                <span className="text-blue-500">→</span>
-              </Link>
             </>
           )}
         </div>
