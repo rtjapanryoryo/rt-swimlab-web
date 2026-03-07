@@ -38,7 +38,7 @@ export default function UpdatePasswordPage() {
       }
       setDone(true);
       setTimeout(() => {
-        router.push('/');
+        router.push('/mypage');
         router.refresh();
       }, 2000);
     } catch {
@@ -55,13 +55,13 @@ export default function UpdatePasswordPage() {
           <div className="bg-white rounded-lg shadow-md p-8 max-w-md w-full">
             <h1 className="text-xl font-bold text-gray-900 mb-4 text-green-700">パスワードを更新しました</h1>
             <p className="text-sm text-gray-600 mb-6">
-              新しいパスワードでログインできるようになりました。トップページへ移動します。
+              新しいパスワードでログインできるようになりました。マイページへ移動します。
             </p>
             <Link
-              href="/"
+              href="/mypage"
               className="block w-full text-center px-4 py-3 bg-slate-800 text-white rounded-md hover:bg-slate-900 font-medium"
             >
-              トップへ
+              マイページへ
             </Link>
           </div>
         </div>

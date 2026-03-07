@@ -2,12 +2,19 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
 
 export default function SettingsPage() {
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  // パスワード変更
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/profile', { credentials: 'include' })
@@ -36,6 +43,35 @@ export default function SettingsPage() {
       setMessage(e instanceof Error ? e.message : '更新に失敗しました');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault();
+    setPasswordMessage(null);
+    if (newPassword.length < 6) {
+      setPasswordMessage('パスワードは6文字以上で入力してください');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordMessage('パスワードが一致しません');
+      return;
+    }
+    setPasswordSaving(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) {
+        setPasswordMessage(error.message);
+        return;
+      }
+      setPasswordMessage('パスワードを変更しました');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch {
+      setPasswordMessage('パスワードの変更に失敗しました');
+    } finally {
+      setPasswordSaving(false);
     }
   }
 
@@ -101,15 +137,64 @@ export default function SettingsPage() {
       <section className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
         <div className="px-6 py-5 border-b border-slate-100">
           <h2 className="text-sm font-semibold text-slate-800">パスワード</h2>
-          <p className="text-xs text-slate-500 mt-0.5">忘れた場合や変更したい場合</p>
+          <p className="text-xs text-slate-500 mt-0.5">ログイン中に変更するか、忘れた場合はメールでリセット</p>
         </div>
-        <div className="p-6">
-          <Link
-            href="/forgot-password"
-            className="inline-flex items-center px-5 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-colors"
-          >
-            パスワードをリセットする
-          </Link>
+        <div className="p-6 space-y-6">
+          <form onSubmit={handleChangePassword} className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end flex-wrap">
+              <div className="flex-1 min-w-[200px]">
+                <label htmlFor="new_password" className="block text-xs font-medium text-slate-500 mb-1.5">
+                  新しいパスワード
+                </label>
+                <input
+                  id="new_password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  minLength={6}
+                  autoComplete="new-password"
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none"
+                  placeholder="6文字以上"
+                />
+              </div>
+              <div className="flex-1 min-w-[200px]">
+                <label htmlFor="confirm_password" className="block text-xs font-medium text-slate-500 mb-1.5">
+                  確認
+                </label>
+                <input
+                  id="confirm_password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  minLength={6}
+                  autoComplete="new-password"
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none"
+                  placeholder="もう一度入力"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={passwordSaving}
+                className="px-6 py-2.5 bg-teal-600 text-white font-medium rounded-xl hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+              >
+                {passwordSaving ? '変更中...' : 'パスワードを変更'}
+              </button>
+            </div>
+            {passwordMessage && (
+              <p className={`text-sm ${passwordMessage.includes('失敗') || passwordMessage.includes('一致') ? 'text-amber-600' : 'text-teal-600'}`}>
+                {passwordMessage}
+              </p>
+            )}
+          </form>
+          <div className="pt-2 border-t border-slate-100">
+            <p className="text-xs text-slate-500 mb-2">パスワードを忘れた場合は、登録メール宛にリセットリンクを送信できます。</p>
+            <Link
+              href="/forgot-password"
+              className="inline-flex items-center px-5 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+            >
+              パスワードをリセットする（メール送信）
+            </Link>
+          </div>
         </div>
       </section>
 
