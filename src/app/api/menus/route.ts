@@ -65,16 +65,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 累計生成回数 +1 と generation_logs に追加（ダッシュボード連携）
+    // 累計生成回数 +1（profile 未存在時は service_role で upsert）
     const logLabel = source === 'custom' ? 'メニュー生成（カスタム）' : 'メニュー生成（クイック）';
     try {
-      const { data: profile } = await sb
-        .from('profiles')
-        .select('total_usage_count')
-        .eq('id', user_id)
-        .single();
+      const { data: profile } = await sb.from('profiles').select('total_usage_count').eq('id', user_id).single();
       const nextCount = (profile?.total_usage_count ?? 0) + 1;
-      await sb.from('profiles').update({ total_usage_count: nextCount, updated_at: new Date().toISOString() }).eq('id', user_id);
+      if (profile) {
+        await sb.from('profiles').update({ total_usage_count: nextCount, updated_at: new Date().toISOString() }).eq('id', user_id);
+      } else {
+        const admin = getSupabaseServiceRole();
+        if (admin) {
+          const authUser = user as { user_metadata?: { full_name?: string } };
+          await admin.from('profiles').upsert(
+            {
+              id: user_id,
+              role: 'user',
+              display_name: authUser?.user_metadata?.full_name ?? user_email || null,
+              total_usage_count: nextCount,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: 'id' }
+          );
+        }
+      }
       await sb.from('generation_logs').insert({ user_id, content_details: logLabel });
     } catch (e) {
       console.warn('[menus] profile/log update failed (non-fatal):', e);

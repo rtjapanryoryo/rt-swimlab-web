@@ -133,6 +133,8 @@ export default function GeneticPage() {
     }
   }
 
+  const GENE_PROFILE_LP_URL = 'https://rt-japan.jp/lp/rt-gene-profile/';
+
   return (
     <div className="space-y-8">
       <header>
@@ -141,6 +143,22 @@ export default function GeneticPage() {
           遺伝子情報PDFを格納し、いつでも確認できます
         </p>
       </header>
+
+      {/* 公式LPへの導線 */}
+      <section className="rounded-2xl border border-teal-200/80 bg-gradient-to-br from-teal-50/80 to-white p-6">
+        <p className="text-slate-700 text-sm leading-relaxed mb-4">
+          遺伝子は限界を決めません。遺伝子は攻略法を教えます。RT GENE PROFILEは、あなたが最短ルートで伸びるための前提条件を可視化するツールです。
+        </p>
+        <a
+          href={GENE_PROFILE_LP_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white text-sm font-medium rounded-xl hover:bg-teal-700 transition-colors"
+        >
+          詳しく見る・お申し込み
+          <span className="text-teal-200">→</span>
+        </a>
+      </section>
 
       {error && (
         <div className="p-4 bg-amber-50/80 border border-amber-200/80 rounded-xl text-amber-800 text-sm">

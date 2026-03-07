@@ -12,7 +12,7 @@ const navItems = [
   { href: '/mypage/menus', label: 'メニューログ', icon: '▸' },
   { href: '/mypage/genetic', label: 'RT GENE PROFILE', icon: '◇' },
   { href: '/mypage/subscription', label: '有料プラン', icon: '◆' },
-  { href: LINE_URL || '#', label: 'RT公式LINE', icon: '●', external: true, disabled: !LINE_URL },
+  { href: LINE_URL || '#', label: 'お問い合わせ', icon: '●', external: true, disabled: !LINE_URL },
   { href: COMMUNITY_URL || '#', label: 'RTコミュニティ', icon: '○', external: true, disabled: !COMMUNITY_URL },
   { href: '/mypage/settings', label: '設定', icon: '⚙' },
 ];
@@ -49,11 +49,11 @@ export default function MyPageLayout({
   }
 
   return (
-    <div className="min-h-screen bg-[#faf9f7]">
+    <div className="min-h-screen bg-gradient-to-b from-[#faf9f7] via-[#f8f7f5] to-[#f5f4f2]">
       <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-8 py-8 px-4 sm:px-6">
         {/* サイドナビ */}
         <aside className="lg:w-56 flex-shrink-0">
-          <nav className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden sticky top-8">
+          <nav className="dashboard-card overflow-hidden sticky top-8">
             <div className="px-5 py-4 border-b border-slate-100">
               <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">
                 My Page
@@ -82,7 +82,7 @@ export default function MyPageLayout({
                   return (
                     <li key={item.label}>
                       {isDisabled ? (
-                        <span className={`${baseClass} text-slate-400 cursor-default`} title="URL未設定">
+                        <span className={`${baseClass} text-slate-400 cursor-default`} title="NEXT_PUBLIC_LINE_URL を設定するとRT公式LINEへリンクします">
                           {content}
                         </span>
                       ) : (

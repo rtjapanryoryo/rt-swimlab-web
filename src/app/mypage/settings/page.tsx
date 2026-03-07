@@ -38,7 +38,15 @@ export default function SettingsPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? '失敗しました');
+      // auth.user_metadata も同期（UserNav 等で表示名を即反映）
+      try {
+        const supabase = createClient();
+        await supabase.auth.updateUser({ data: { full_name: displayName.trim() || undefined } });
+      } catch {
+        /* 非致命的：profiles は更新済み */
+      }
       setMessage('表示名を更新しました');
+      window.dispatchEvent(new Event('profile-updated'));
     } catch (e) {
       setMessage(e instanceof Error ? e.message : '更新に失敗しました');
     } finally {
@@ -68,6 +76,7 @@ export default function SettingsPage() {
       setPasswordMessage('パスワードを変更しました');
       setNewPassword('');
       setConfirmPassword('');
+      window.dispatchEvent(new Event('profile-updated'));
     } catch {
       setPasswordMessage('パスワードの変更に失敗しました');
     } finally {

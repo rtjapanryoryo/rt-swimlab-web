@@ -26,10 +26,13 @@ export async function GET() {
     try {
       const admin = getSupabaseAdmin() ?? getSupabaseServiceRole();
       if (admin) {
+        const initialName = user.isBypass
+          ? '開発用バイパス'
+          : ((user as { user_metadata?: { full_name?: string } })?.user_metadata?.full_name ?? user.email ?? null);
         await admin.from('profiles').upsert({
           id: user.id,
           role: 'user',
-          display_name: user.isBypass ? '開発用バイパス' : (user.email ?? null),
+          display_name: initialName,
           total_usage_count: 0,
         }, { onConflict: 'id' });
         const r = await admin.from('profiles').select().eq('id', user.id).single();
@@ -43,7 +46,17 @@ export async function GET() {
     return NextResponse.json({ profile: null });
   }
 
-  return NextResponse.json({ profile: data });
+  // 表示名が空のときは登録時の名前（user_metadata.full_name）またはメールをフォールバック
+  const authUser = user as { user_metadata?: { full_name?: string }; email?: string | null };
+  const displayName =
+    (data?.display_name?.trim() && data.display_name) ||
+    authUser?.user_metadata?.full_name ||
+    authUser?.email ||
+    null;
+
+  return NextResponse.json({
+    profile: data ? { ...data, display_name: displayName ?? data.display_name } : null,
+  });
 }
 
 export async function PATCH(request: NextRequest) {
