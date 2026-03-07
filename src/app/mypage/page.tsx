@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { MenuLogSection } from '@/components/MenuLogSection';
 
 type Profile = {
   id: string;
@@ -134,6 +135,9 @@ export default function MyPageDashboard() {
           </Link>
         </div>
       </section>
+
+      {/* メニューログ（ダッシュボード内） */}
+      <MenuLogSection />
     </div>
   );
 }

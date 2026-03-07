@@ -20,7 +20,6 @@ const COMMUNITY_URL = process.env.NEXT_PUBLIC_COMMUNITY_URL || '';
 const navItems = [
   { href: '/mypage', label: 'ダッシュボード', icon: '○' },
   { href: '/mypage/menu', label: 'RT swim lab', icon: '◆' },
-  { href: '/mypage/menus', label: 'メニューログ', icon: '▸' },
   { href: '/mypage/genetic', label: 'RT GENE PROFILE', icon: '◇' },
   { href: '/mypage/subscription', label: '有料プラン', icon: '◇' },
   { href: COMMUNITY_URL || '#', label: 'RTコミュニティ', icon: '○', external: true, disabled: !COMMUNITY_URL },
