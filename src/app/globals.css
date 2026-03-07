@@ -362,39 +362,50 @@ body {
   to { opacity: 0; transform: translateY(-6px) scale(0.99); }
 }
 
-/* カスタム生成ローディング */
-@keyframes generateShimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-@keyframes generateWave {
-  0%, 100% { transform: translateX(0) scaleY(1); opacity: 0.6; }
-  50% { transform: translateX(4px) scaleY(1.1); opacity: 1; }
-}
-@keyframes generatePulse {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 1; }
-}
+/* カスタム生成ローディング（高級感・プロフェッショナル） */
 @keyframes generateLoadingIn {
-  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  from { opacity: 0; transform: translateY(8px) scale(0.99); }
   to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes generateRingRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes generateOrbBreathe {
+  0%, 100% { transform: scale(0.92); opacity: 0.4; }
+  50% { transform: scale(1.08); opacity: 0.7; }
+}
+@keyframes generateRingDash {
+  0% { stroke-dashoffset: 22; }
+  50% { stroke-dashoffset: 110; }
+  100% { stroke-dashoffset: 22; }
 }
 @keyframes generateProgressSlide {
   0% { transform: translateX(-100%); }
-  100% { transform: translateX(200%); }
+  100% { transform: translateX(400%); }
 }
-.generate-loading-shimmer {
-  animation: generateShimmer 2.5s ease-in-out infinite;
+@keyframes generateLoadingPill {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
 }
-.generate-loading-wave {
-  animation: generateWave 1.2s ease-in-out infinite;
+.generate-loading-ring {
+  animation: generateRingRotate 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
-.generate-loading-pulse {
-  animation: generatePulse 2s ease-in-out infinite;
+.generate-loading-ring-dash {
+  animation: generateRingDash 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+.generate-loading-orb {
+  animation: generateOrbBreathe 2.2s ease-in-out infinite;
+}
+.generate-loading-dot {
+  animation: generateDotPulse 1.2s ease-in-out infinite;
 }
 .generate-loading-in {
-  animation: generateLoadingIn 0.4s ease-out forwards;
+  animation: generateLoadingIn 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 .generate-loading-progress {
-  animation: generateProgressSlide 2s ease-in-out infinite;
+  animation: generateProgressSlide 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+.generate-loading-pill {
+  animation: generateLoadingPill 2.5s ease-in-out infinite;
 }

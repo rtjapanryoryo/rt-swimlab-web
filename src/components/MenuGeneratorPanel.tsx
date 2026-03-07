@@ -789,50 +789,47 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
         </>
         )}
 
-        {/* カスタム生成中：全画面アニメーション */}
+        {/* カスタム生成中：全画面アニメーション（高級感・プロフェッショナル） */}
         {customIsGenerating && (
-          <div className="generate-loading-in fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-[#f1f5f9] via-white to-[#e0f2fe]/80">
-            <div className="generate-loading-shimmer absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.5)_50%,transparent_100%)] bg-[length:200%_100%]" />
-            <div className="relative flex flex-col items-center gap-8 px-6">
-              {/* 波アイコン（大きく） */}
-              <div className="flex items-center justify-center gap-4">
-                <svg className="h-12 w-12 text-sky-500/80 md:h-14 md:w-14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M2 12c2-2 4-4 6-4s4 2 6 4 4 4 6 4" />
-                  <path d="M2 16c2-2 4-4 6-4s4 2 6 4 4 4 6 4" />
-                  <path d="M2 8c2-2 4-4 6-4s4 2 6 4 4 4 6 4" className="generate-loading-pulse" style={{ animationDelay: '0s' }} />
+          <div className="generate-loading-in fixed inset-0 z-50 flex items-center justify-center bg-[#f8fafc]">
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_40%,rgba(14,165,233,0.04),transparent)]" aria-hidden />
+            <div className="relative flex flex-col items-center gap-12 px-6">
+              {/* 回転リング + 内側の呼吸オーブ */}
+              <div className="relative flex items-center justify-center">
+                <svg className="generate-loading-ring h-24 w-24 md:h-28 md:w-28 text-slate-300/90" viewBox="0 0 64 64" fill="none">
+                  <circle
+                    cx="32"
+                    cy="32"
+                    r="28"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeDasharray="132 44"
+                    className="generate-loading-ring-dash"
+                  />
                 </svg>
-                <div className="flex gap-2">
-                  {[0, 1, 2].map((i) => (
-                    <div
-                      key={i}
-                      className="generate-loading-wave h-3 w-3 rounded-full bg-slate-500 md:h-4 md:w-4"
-                      style={{ animationDelay: `${i * 0.15}s` }}
-                    />
-                  ))}
-                </div>
-                <svg className="h-12 w-12 text-sky-500/80 md:h-14 md:w-14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M2 12c2-2 4-4 6-4s4 2 6 4 4 4 6 4" />
-                  <path d="M2 16c2-2 4-4 6-4s4 2 6 4 4 4 6 4" />
-                  <path d="M2 8c2-2 4-4 6-4s4 2 6 4 4 4 6 4" className="generate-loading-pulse" style={{ animationDelay: '0.3s' }} />
-                </svg>
+                <div className="generate-loading-orb absolute h-5 w-5 md:h-6 md:w-6 rounded-full bg-gradient-to-br from-slate-300/50 to-slate-400/40 shadow-inner" />
               </div>
-              <p className="text-slate-700 font-medium tracking-wide text-lg md:text-xl">
-                {LOADING_MESSAGES[loadingMessageIndex]}
-              </p>
-              <div className="flex flex-wrap justify-center gap-3">
+              <div className="text-center space-y-1">
+                <p className="text-slate-600 font-medium tracking-wide text-base md:text-lg">
+                  {LOADING_MESSAGES[loadingMessageIndex]}
+                </p>
+                <p className="text-slate-400 text-xs md:text-sm">しばらくお待ちください</p>
+              </div>
+              <div className="flex flex-wrap justify-center gap-2">
                 {['W-up', 'Drill', 'Kick', 'Main'].map((label, i) => (
                   <span
                     key={label}
-                    className="generate-loading-pulse rounded-xl bg-slate-100/90 px-4 py-2 text-sm font-medium text-slate-600 md:px-5 md:py-2.5 md:text-base"
-                    style={{ animationDelay: `${i * 0.2}s` }}
+                    className="generate-loading-pill rounded-full border border-slate-200/80 bg-white/80 px-4 py-1.5 text-xs font-medium text-slate-500 backdrop-blur-sm md:px-5 md:py-2 md:text-sm"
+                    style={{ animationDelay: `${i * 0.12}s` }}
                   >
                     {label}
                   </span>
                 ))}
               </div>
-              {/* プログレスバー風アニメーション */}
-              <div className="w-full max-w-sm h-2 rounded-full bg-slate-200/80 overflow-hidden relative">
-                <div className="generate-loading-progress absolute inset-y-0 w-1/3 rounded-full bg-gradient-to-r from-blue-300/50 to-blue-500/70" />
+              {/* シンプルなインディケータバー */}
+              <div className="w-full max-w-[280px] h-px overflow-hidden rounded-full bg-slate-200/50">
+                <div className="generate-loading-progress h-full w-1/4 rounded-full bg-gradient-to-r from-transparent via-sky-400/60 to-transparent" />
               </div>
             </div>
           </div>
