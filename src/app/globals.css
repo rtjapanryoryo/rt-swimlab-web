@@ -292,6 +292,15 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* 横スクロールカルーセル用：スクロールバー非表示 */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* カード（メニューセクション用）※文字が切れないよう overflow は visible */
 .app-card {
   border-radius: 16px;

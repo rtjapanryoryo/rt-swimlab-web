@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { SplashScreenProvider } from "@/components/SplashScreen";
 import { AuthProvider } from "@/components/AuthProvider";
-import { TopNav } from "@/components/TopNav";
 import { MainContent } from "@/components/MainContent";
 import { SiteFooter } from "@/components/SiteFooter";
 
@@ -26,7 +25,6 @@ export default function RootLayout({
     <html lang="ja">
       <body className="antialiased font-sans flex flex-col min-h-screen">
         <AuthProvider>
-          <TopNav />
           <MainContent>
             <SplashScreenProvider>{children}</SplashScreenProvider>
           </MainContent>

@@ -38,7 +38,7 @@ export default function SettingsPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? '失敗しました');
-      // auth.user_metadata も同期（UserNav 等で表示名を即反映）
+      // auth.user_metadata も同期（プロフィール表示を即反映）
       try {
         const supabase = createClient();
         await supabase.auth.updateUser({ data: { full_name: displayName.trim() || undefined } });

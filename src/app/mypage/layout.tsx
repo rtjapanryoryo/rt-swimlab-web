@@ -60,7 +60,7 @@ export default function MyPageLayout({
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#faf9f7] via-[#f8f7f5] to-[#f5f4f2]">
       <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-6 lg:gap-8 py-6 sm:py-8 px-4 sm:px-6">
-        {/* サイドナビ（モバイルでは非表示・ヘッダーのTopNavでナビ） */}
+        {/* サイドナビ（PCのみ。モバイルでは下部フッターカルーセルで表示） */}
         <aside className="hidden lg:block lg:w-56 flex-shrink-0 order-2 lg:order-1">
           <nav className="dashboard-card overflow-hidden lg:sticky lg:top-8">
             <div className="px-5 py-4 border-b border-slate-100">
@@ -133,8 +133,73 @@ export default function MyPageLayout({
         </aside>
 
         {/* メインコンテンツ */}
-        <main className="flex-1 min-w-0 order-1 lg:order-2">{children}</main>
+        <main className="flex-1 min-w-0 order-1 lg:order-2 pb-20 lg:pb-0">{children}</main>
       </div>
+
+      {/* モバイル用フッターカルーセル（PCでは非表示） */}
+      <nav
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-slate-200/80 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] no-print"
+        aria-label="マイページナビゲーション"
+      >
+        <div className="overflow-x-auto scrollbar-hide scroll-smooth">
+          <div className="flex gap-1 px-4 min-w-max">
+            {navItems.map((item) => {
+              const isActive =
+                'external' in item
+                  ? false
+                  : item.href === '/mypage'
+                    ? pathname === '/mypage' || pathname === '/mypage/'
+                    : pathname === item.href || pathname.startsWith(item.href + '/');
+              const baseClass =
+                'flex items-center gap-1.5 shrink-0 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap';
+              const activeClass = isActive
+                ? 'bg-teal-100 text-teal-800'
+                : 'text-slate-600 hover:bg-slate-100';
+              const content = (
+                <>
+                  <span className="text-xs opacity-70">{item.icon}</span>
+                  {item.label}
+                </>
+              );
+              if ('external' in item && item.external) {
+                const isDisabled = 'disabled' in item && item.disabled;
+                return (
+                  <span key={item.label}>
+                    {isDisabled ? (
+                      <span className={`${baseClass} text-slate-400 cursor-default`} title="NEXT_PUBLIC_COMMUNITY_URL を設定するとRTコミュニティへリンクします">
+                        {content}
+                      </span>
+                    ) : (
+                      <a
+                        href={item.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`${baseClass} ${activeClass}`}
+                      >
+                        {content}
+                      </a>
+                    )}
+                  </span>
+                );
+              }
+              return (
+                <Link key={item.href} href={item.href} className={`${baseClass} ${activeClass}`}>
+                  {content}
+                </Link>
+              );
+            })}
+            <form action="/api/auth/logout" method="post" className="shrink-0">
+              <button
+                type="submit"
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors whitespace-nowrap"
+              >
+                <LogoutIcon />
+                ログアウト
+              </button>
+            </form>
+          </div>
+        </div>
+      </nav>
     </div>
   );
 }
