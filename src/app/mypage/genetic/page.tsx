@@ -147,7 +147,9 @@ export default function GeneticPage() {
       {/* 公式LPへの導線 */}
       <section className="rounded-2xl border border-teal-200/80 bg-gradient-to-br from-teal-50/80 to-white p-6">
         <p className="text-slate-700 text-sm leading-relaxed mb-4">
-          遺伝子は限界を決めません。遺伝子は攻略法を教えます。RT GENE PROFILEは、あなたが最短ルートで伸びるための前提条件を可視化するツールです。
+          才能を決める検査ではありません。
+          限られた時間の中で、あなたが最短距離を進むための
+          身体の設計図（前提条件）を可視化するツールです。
         </p>
         <a
           href={GENE_PROFILE_LP_URL}
@@ -170,7 +172,6 @@ export default function GeneticPage() {
       <section className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
         <div className="px-6 py-5 border-b border-slate-100">
           <h2 className="text-sm font-semibold text-slate-800">PDFを追加</h2>
-          <p className="text-xs text-slate-500 mt-0.5">遺伝子情報PDFを1件まで格納。自動圧縮で確実にアップロード</p>
         </div>
         <div className="p-6">
           <input

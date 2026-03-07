@@ -54,9 +54,9 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // ログイン済みで / にアクセス → マイページへ
+  // ログイン済みで / にアクセス → RT swim lab（練習メニュー）へ
   if (request.nextUrl.pathname === '/' && effectiveLoggedIn) {
-    return NextResponse.redirect(new URL('/mypage', request.url));
+    return NextResponse.redirect(new URL('/mypage/menu', request.url));
   }
 
   if (isAuthPage && effectiveLoggedIn) {

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import MenuGeneratorPanel from '@/components/MenuGeneratorPanel';
 
 type Profile = {
   id: string;
@@ -57,7 +56,7 @@ export default function MyPageDashboard() {
           ダッシュボード
         </h1>
         <p className="text-slate-500 mt-1 text-sm">
-          プロフィールと練習メニュー
+          プロフィールと設定
         </p>
       </header>
 
@@ -112,8 +111,25 @@ export default function MyPageDashboard() {
         </div>
       </section>
 
-      {/* 練習メニュー生成 */}
-      <MenuGeneratorPanel embedded onSaved={fetchData} />
+      {/* RT swim lab への導線 */}
+      <section className="dashboard-card overflow-hidden">
+        <div className="px-6 py-5 border-b border-slate-100/80 flex items-center gap-2">
+          <span className="w-1 h-5 rounded-full bg-teal-500/70" />
+          <h2 className="text-sm font-semibold text-slate-800">練習メニュー</h2>
+        </div>
+        <div className="p-6">
+          <p className="text-slate-600 text-sm mb-4">
+            クイック作成やカスタム作成で、あなた専用の練習メニューを生成できます。
+          </p>
+          <Link
+            href="/mypage/menu"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white text-sm font-medium rounded-xl hover:bg-teal-700 transition-colors"
+          >
+            RT swim lab を開く
+            <span className="text-teal-200">→</span>
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }

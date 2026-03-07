@@ -45,13 +45,10 @@ export function UserNav() {
     );
   }
 
-  const displayName = user.user_metadata?.full_name as string | undefined;
-  const email = user.email ?? '';
-
   return (
     <div className="flex items-center gap-5">
       <Link
-        href="/"
+        href="/mypage/menu"
         className="text-sm font-medium text-slate-800/90 hover:text-slate-900 transition-colors py-2 px-3 rounded-lg hover:bg-slate-100/80"
       >
         練習メニュー
@@ -72,9 +69,6 @@ export function UserNav() {
           お問い合わせ
         </a>
       )}
-      <span className="text-xs text-slate-500 border-l border-slate-200 pl-4 ml-1 truncate max-w-[120px] md:max-w-[160px]">
-        {displayName ?? email ?? 'ログイン中'}
-      </span>
       <form action="/api/auth/logout" method="post">
         <button
           type="submit"
