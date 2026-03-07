@@ -203,61 +203,63 @@ export default function GeneticPage() {
               <p className="text-slate-400 text-sm mt-1">上のボタンからアップロードしてください</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* 一覧 */}
-              <div className="space-y-3 max-h-[400px] overflow-y-auto">
-                {profiles.map((p) => (
-                  <div
-                    key={p.id}
-                    className={`p-4 rounded-xl border transition-all ${
-                      viewingId === p.id
-                        ? 'border-teal-200 bg-teal-50/80'
-                        : 'border-slate-100 hover:bg-slate-50/80'
-                    }`}
-                  >
-                    <p className="text-sm font-medium text-slate-800 truncate" title={p.display_name}>
-                      {p.display_name}
-                    </p>
-                    <p className="text-xs text-slate-400 mt-0.5 tabular-nums">
-                      {formatDate(p.created_at)}
-                    </p>
-                    <div className="flex gap-2 mt-3">
-                      <button
-                        type="button"
-                        onClick={() => handleView(p.id)}
-                        disabled={viewingId === p.id}
-                        className="px-3 py-1.5 text-xs font-medium bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50"
-                      >
-                        表示
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(p.id)}
-                        disabled={deletingId === p.id}
-                        className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50"
-                      >
-                        {deletingId === p.id ? '削除中...' : '削除'}
-                      </button>
+            <div className="flex flex-col lg:flex-row gap-6">
+              {/* 一覧（コンパクト） */}
+              <div className="lg:w-64 shrink-0">
+                <div className="space-y-2">
+                  {profiles.map((p) => (
+                    <div
+                      key={p.id}
+                      className={`p-3 rounded-xl border transition-all ${
+                        viewingId === p.id
+                          ? 'border-teal-200 bg-teal-50/80'
+                          : 'border-slate-100 hover:bg-slate-50/80'
+                      }`}
+                    >
+                      <p className="text-sm font-medium text-slate-800 truncate" title={p.display_name}>
+                        {p.display_name}
+                      </p>
+                      <p className="text-xs text-slate-400 mt-0.5 tabular-nums">
+                        {formatDate(p.created_at)}
+                      </p>
+                      <div className="flex gap-2 mt-2">
+                        <button
+                          type="button"
+                          onClick={() => handleView(p.id)}
+                          disabled={viewingId === p.id}
+                          className="px-2.5 py-1 text-xs font-medium bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50"
+                        >
+                          表示
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(p.id)}
+                          disabled={deletingId === p.id}
+                          className="px-2.5 py-1 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                        >
+                          {deletingId === p.id ? '削除中...' : '削除'}
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-              {/* プレビュー */}
-              <div className="bg-slate-50 rounded-xl border border-slate-200 min-h-[400px] overflow-hidden">
+              {/* PDFプレビュー（メイン・大きく表示） */}
+              <div className="flex-1 min-w-0 bg-slate-50 rounded-xl border border-slate-200 overflow-hidden flex flex-col min-h-[max(560px,calc(100vh-220px))]">
                 {viewUrl ? (
                   <iframe
                     src={viewUrl}
                     title="PDFプレビュー"
-                    className="w-full h-[480px] border-0"
+                    className="w-full flex-1 min-h-[max(560px,calc(100vh-220px))] border-0"
                   />
                 ) : viewingId ? (
-                  <div className="flex items-center justify-center h-[400px] text-slate-500 text-sm">
+                  <div className="flex items-center justify-center min-h-[400px] text-slate-500 text-sm">
                     読み込み中...
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-[400px] text-slate-400 text-sm">
+                  <div className="flex flex-col items-center justify-center min-h-[400px] text-slate-400 text-sm">
                     <span className="text-2xl mb-2">◇</span>
-                    左のリストから「表示」をクリック
+                    左の「表示」をクリックしてPDFを表示
                   </div>
                 )}
               </div>

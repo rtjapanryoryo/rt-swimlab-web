@@ -3,8 +3,8 @@
  * 10MB超のファイルを確実にアップロードできるよう圧縮する
  */
 const COMPRESS_THRESHOLD = 2 * 1024 * 1024; // 2MB 超で圧縮を試行
-const TARGET_DPI = 120;
-const TARGET_QUALITY = 0.65;
+const TARGET_DPI = 100; // 格納用はやや小さめで十分
+const TARGET_QUALITY = 0.6;
 
 export async function compressPdfIfNeeded(file: File): Promise<File> {
   if (file.size <= COMPRESS_THRESHOLD) return file;
