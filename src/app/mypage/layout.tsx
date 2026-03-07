@@ -78,80 +78,8 @@ export default function MyPageLayout({
 
   return (
     <div className="min-h-screen rt-atmosphere">
-      {/* モバイル用ヘッダーカルーセル（PCでは非表示。PCは添付イメージ通りサイドバーのみ） */}
-      <header
-        className="lg:hidden sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 no-print"
-        aria-label="マイページナビゲーション"
-      >
-        <div className="px-4 py-3">
-          <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">My Page</p>
-          <p className="text-base font-semibold text-slate-800 mt-0.5 truncate">
-            {displayName ? `${displayName}様` : 'マイページ'}
-          </p>
-        </div>
-        <nav className="overflow-x-auto scrollbar-hide scroll-smooth border-t border-slate-100">
-          <div className="flex gap-1 px-4 py-2 min-w-max">
-            {navItems.map((item) => {
-              const isActive =
-                'external' in item
-                  ? false
-                  : item.href === '/mypage'
-                    ? pathname === '/mypage' || pathname === '/mypage/'
-                    : item.href === pathname || pathname.startsWith(item.href + '/');
-              const baseClass =
-                'flex items-center gap-1.5 shrink-0 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap';
-              const activeClass = isActive
-                ? 'bg-blue-100 text-blue-800'
-                : 'text-slate-600 hover:bg-slate-100';
-              const IconComponent = item.Icon;
-              const content = (
-                <>
-                  <IconComponent />
-                  {item.label}
-                </>
-              );
-              if ('external' in item && item.external) {
-                const isDisabled = 'disabled' in item && item.disabled;
-                return (
-                  <span key={item.label}>
-                    {isDisabled ? (
-                      <span className={`${baseClass} text-slate-400 cursor-default`} title="NEXT_PUBLIC_COMMUNITY_URL を設定するとRTコミュニティへリンクします">
-                        {content}
-                      </span>
-                    ) : (
-                      <a
-                        href={item.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`${baseClass} ${activeClass}`}
-                      >
-                        {content}
-                      </a>
-                    )}
-                  </span>
-                );
-              }
-              return (
-                <Link key={item.href} href={item.href} className={`${baseClass} ${activeClass}`}>
-                  {content}
-                </Link>
-              );
-            })}
-            <form action="/api/auth/logout" method="post" className="shrink-0">
-              <button
-                type="submit"
-                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors whitespace-nowrap"
-              >
-                <LogoutIcon />
-                ログアウト
-              </button>
-            </form>
-          </div>
-        </nav>
-      </header>
-
       <div className="flex flex-col lg:flex-row min-h-screen">
-        {/* サイドナビ（PC: 左端固定。モバイルではヘッダーカルーセルで表示） */}
+        {/* サイドナビ（PC: 左端固定。モバイルではフッターカルーセルで表示） */}
         <aside className="hidden lg:flex lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 lg:z-40 lg:flex-shrink-0">
           <nav className="w-full h-full overflow-y-auto bg-gradient-to-b from-white via-[#fafbff] to-[#f8fafc] border-r border-slate-200/80 shadow-sm">
             <div className="px-5 py-4 border-b border-slate-100">
@@ -226,11 +154,77 @@ export default function MyPageLayout({
           </nav>
         </aside>
 
-        {/* メインコンテンツ（PC: サイドバー＋余白＋パディング。本面は広めに） */}
-        <main className="flex-1 min-w-0 order-1 lg:order-2 py-6 sm:py-8 px-4 sm:px-6 lg:pl-[21rem] lg:pr-0 lg:py-8 lg:max-w-[calc(100%-20rem)]">
+        {/* メインコンテンツ（PC: サイドバー＋余白＋パディング。モバイル: フッター分の余白） */}
+        <main className="flex-1 min-w-0 order-1 lg:order-2 py-6 sm:py-8 px-4 sm:px-6 lg:pl-[21rem] lg:pr-0 lg:py-8 lg:max-w-[calc(100%-20rem)] pb-24 lg:pb-8">
           {children}
         </main>
       </div>
+
+      {/* モバイル用フッターカルーセル（PCでは非表示） */}
+      <footer
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-slate-200/80 no-print"
+        aria-label="マイページナビゲーション"
+      >
+        <nav className="overflow-x-auto scrollbar-hide scroll-smooth">
+          <div className="flex gap-1 px-4 py-3 min-w-max">
+            {navItems.map((item) => {
+              const isActive =
+                'external' in item
+                  ? false
+                  : item.href === '/mypage'
+                    ? pathname === '/mypage' || pathname === '/mypage/'
+                    : item.href === pathname || pathname.startsWith(item.href + '/');
+              const baseClass =
+                'flex items-center gap-1.5 shrink-0 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap';
+              const activeClass = isActive
+                ? 'bg-blue-100 text-blue-800'
+                : 'text-slate-600 hover:bg-slate-100';
+              const IconComponent = item.Icon;
+              const content = (
+                <>
+                  <IconComponent />
+                  {item.label}
+                </>
+              );
+              if ('external' in item && item.external) {
+                const isDisabled = 'disabled' in item && item.disabled;
+                return (
+                  <span key={item.label}>
+                    {isDisabled ? (
+                      <span className={`${baseClass} text-slate-400 cursor-default`} title="NEXT_PUBLIC_COMMUNITY_URL を設定するとRTコミュニティへリンクします">
+                        {content}
+                      </span>
+                    ) : (
+                      <a
+                        href={item.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`${baseClass} ${activeClass}`}
+                      >
+                        {content}
+                      </a>
+                    )}
+                  </span>
+                );
+              }
+              return (
+                <Link key={item.href} href={item.href} className={`${baseClass} ${activeClass}`}>
+                  {content}
+                </Link>
+              );
+            })}
+            <form action="/api/auth/logout" method="post" className="shrink-0">
+              <button
+                type="submit"
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors whitespace-nowrap"
+              >
+                <LogoutIcon />
+                ログアウト
+              </button>
+            </form>
+          </div>
+        </nav>
+      </footer>
     </div>
   );
 }

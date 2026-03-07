@@ -362,7 +362,7 @@ const STROKE_NAMES: Record<string, string> = {
   Ba: 'Ba（背泳）',
   Br: 'Br（平泳）',
   Fly: 'Fly（バタフライ）',
-  IM: 'メドレー',
+  IM: '個人メドレー',
   S1: 'S1（スタイル1）',
 };
 

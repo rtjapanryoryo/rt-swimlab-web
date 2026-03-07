@@ -655,7 +655,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                 <option value="Ba">Ba（背泳ぎ）</option>
                 <option value="Br">Br（平泳ぎ）</option>
                 <option value="Fly">Fly（バタフライ）</option>
-                <option value="IM">メドレー</option>
+                <option value="IM">個人メドレー</option>
               </select>
             </div>
 

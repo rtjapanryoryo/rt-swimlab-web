@@ -163,7 +163,7 @@ function buildConditionInstructions(
     Ba: '背泳ぎ: 専門種目をW-upで少なめに。Ba専門のドリル・キック・プルを入れる。',
     Br: '平泳ぎ: Brは専門Pullを多め。キックはBrキックの目的を明示。',
     Fly: 'バタフライ: Fly専門ドリル・キック。強度はフォームを崩さない範囲で。',
-    IM: 'メドレー: 4泳法のバランス。W-upでIM多め。ドリルは泳法別に分けてもよい。',
+    IM: '個人メドレー: 4泳法のバランス。W-upでIM多め。ドリルは泳法別に分けてもよい。',
     S1: 'スタイル1: メイン種目に合わせたドリル・キック・プル。種目名はS1のままでよい。',
   };
   const conditionGuide: Record<string, string> = {

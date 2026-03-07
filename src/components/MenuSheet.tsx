@@ -310,7 +310,7 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
     Ba: 'Ba（背泳ぎ）',
     Br: 'Br（平泳ぎ）',
     Fly: 'Fly（バタフライ）',
-    IM: 'メドレー',
+    IM: '個人メドレー',
     S1: 'S1（スタイル1）',
   };
 
