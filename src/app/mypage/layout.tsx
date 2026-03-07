@@ -58,7 +58,7 @@ export default function MyPageLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#f8fafc] via-[#f1f5f9] to-[#e0f2fe]">
+    <div className="min-h-screen rt-atmosphere">
       {/* モバイル用ヘッダーカルーセル（PCでは非表示。PCは添付イメージ通りサイドバーのみ） */}
       <header
         className="lg:hidden sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 no-print"
@@ -201,8 +201,8 @@ export default function MyPageLayout({
           </nav>
         </aside>
 
-        {/* メインコンテンツ（PC: サイドバー分の余白＋パディング。モバイルはヘッダーカルーセルのみ） */}
-        <main className="flex-1 min-w-0 order-1 lg:order-2 py-6 sm:py-8 px-4 sm:px-6 lg:pl-[20rem] lg:pr-8 lg:py-8 lg:max-w-3xl">
+        {/* メインコンテンツ（PC: サイドバー分の余白＋パディング。本面は広めに） */}
+        <main className="flex-1 min-w-0 order-1 lg:order-2 py-6 sm:py-8 px-4 sm:px-6 lg:pl-[20rem] lg:pr-8 lg:py-8 lg:max-w-6xl">
           {children}
         </main>
       </div>

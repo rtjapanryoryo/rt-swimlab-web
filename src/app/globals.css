@@ -327,6 +327,14 @@ body {
   border: 1px solid rgba(148, 163, 184, 0.2);
 }
 
+/* RT雰囲気：薄い幾何学パターン（rt-japan.jp ヘッダー風・明るい版） */
+.rt-atmosphere {
+  background-image:
+    repeating-linear-gradient(90deg, transparent 0, transparent 48px, rgba(148, 163, 184, 0.035) 48px, rgba(148, 163, 184, 0.035) 49px),
+    repeating-linear-gradient(0deg, transparent 0, transparent 48px, rgba(148, 163, 184, 0.035) 48px, rgba(148, 163, 184, 0.035) 49px),
+    linear-gradient(180deg, #fafbfc 0%, #f8fafc 40%, #f1f5f9 75%, #eef6ff 100%);
+}
+
 /* ダッシュボードカード（RT世界観・青みの白） */
 .dashboard-card {
   border-radius: 20px;
