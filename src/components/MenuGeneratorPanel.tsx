@@ -548,7 +548,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
   };
 
   return (
-    <div className={embedded ? 'py-4' : 'min-h-screen bg-gradient-to-b from-slate-50 via-slate-50/95 to-slate-100 py-8 px-4'}>
+    <div className={embedded ? 'py-4' : 'min-h-screen bg-gradient-to-b from-[#f8fafc] via-[#f1f5f9] to-[#e0f2fe] py-8 px-4'}>
       <div className="max-w-5xl mx-auto">
         {!embedded && (
         <header className="mb-10 text-center no-print relative">
@@ -791,7 +791,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
 
         {/* カスタム生成中：全画面アニメーション */}
         {customIsGenerating && (
-          <div className="generate-loading-in fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-slate-100 via-white to-sky-50/80">
+          <div className="generate-loading-in fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-[#f1f5f9] via-white to-[#e0f2fe]/80">
             <div className="generate-loading-shimmer absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.5)_50%,transparent_100%)] bg-[length:200%_100%]" />
             <div className="relative flex flex-col items-center gap-8 px-6">
               {/* 波アイコン（大きく） */}
@@ -832,7 +832,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
               </div>
               {/* プログレスバー風アニメーション */}
               <div className="w-full max-w-sm h-2 rounded-full bg-slate-200/80 overflow-hidden relative">
-                <div className="generate-loading-progress absolute inset-y-0 w-1/3 rounded-full bg-gradient-to-r from-sky-300/50 to-sky-500/70" />
+                <div className="generate-loading-progress absolute inset-y-0 w-1/3 rounded-full bg-gradient-to-r from-blue-300/50 to-blue-500/70" />
               </div>
             </div>
           </div>

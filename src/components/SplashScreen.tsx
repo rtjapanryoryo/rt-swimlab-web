@@ -12,7 +12,7 @@ function SplashContent({ durationMs }: { durationMs: number }) {
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-white"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-gradient-to-b from-[#f8fafc] via-white to-[#e0f2fe]"
       style={{
         willChange: 'opacity, transform',
         animation: `splashFadeIn ${FADE_IN_MS}ms cubic-bezier(.2,.8,.2,1) 0ms forwards, splashFadeOut ${FADE_OUT_MS}ms cubic-bezier(.2,.8,.2,1) ${FADE_IN_MS + holdMs}ms forwards`,

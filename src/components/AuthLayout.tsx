@@ -12,7 +12,7 @@ type AuthLayoutProps = {
  */
 export function AuthLayout({ activeTab, children }: AuthLayoutProps) {
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#f5f7fa] py-6 sm:py-8 px-4 sm:px-6">
+    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-gradient-to-b from-[#f8fafc] via-[#f1f5f9] to-[#e0f2fe] py-6 sm:py-8 px-4 sm:px-6">
       {/* ヘッダー: ロゴ + タイトル + サブタイトル */}
       <div className="text-center mb-8">
         <div className="flex justify-center mb-4">

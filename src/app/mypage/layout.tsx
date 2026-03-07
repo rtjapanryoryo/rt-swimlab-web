@@ -36,7 +36,7 @@ export default function MyPageLayout({
 
   if (loading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#fafbfc]">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f8fafc] via-[#f1f5f9] to-[#e0f2fe]">
         {loading ? (
           <div className="flex flex-col items-center gap-4">
             <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-600 rounded-full animate-spin" />
@@ -58,7 +58,7 @@ export default function MyPageLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#fafbfc] via-[#f5f7fa] to-[#f0f4f8]">
+    <div className="min-h-screen bg-gradient-to-b from-[#f8fafc] via-[#f1f5f9] to-[#e0f2fe]">
       {/* モバイル用ヘッダーカルーセル（PCでは非表示。PCは添付イメージ通りサイドバーのみ） */}
       <header
         className="lg:hidden sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 no-print"
@@ -130,8 +130,8 @@ export default function MyPageLayout({
 
       <div className="flex flex-col lg:flex-row min-h-screen">
         {/* サイドナビ（PC: 左端固定。モバイルではヘッダーカルーセルで表示） */}
-        <aside className="hidden lg:flex lg:fixed lg:inset-y-0 lg:left-0 lg:w-56 lg:z-40 lg:flex-shrink-0">
-          <nav className="w-full h-full overflow-y-auto bg-white border-r border-slate-200/80 shadow-sm">
+        <aside className="hidden lg:flex lg:fixed lg:inset-y-0 lg:left-0 lg:w-72 lg:z-40 lg:flex-shrink-0">
+          <nav className="w-full h-full overflow-y-auto bg-gradient-to-b from-white via-[#fafbff] to-[#f8fafc] border-r border-slate-200/80 shadow-sm">
             <div className="px-5 py-4 border-b border-slate-100">
               <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">
                 My Page
@@ -202,7 +202,7 @@ export default function MyPageLayout({
         </aside>
 
         {/* メインコンテンツ（PC: サイドバー分の余白＋パディング。モバイルはヘッダーカルーセルのみ） */}
-        <main className="flex-1 min-w-0 order-1 lg:order-2 py-6 sm:py-8 px-4 sm:px-6 lg:pl-[14rem] lg:pr-8 lg:py-8">
+        <main className="flex-1 min-w-0 order-1 lg:order-2 py-6 sm:py-8 px-4 sm:px-6 lg:pl-[20rem] lg:pr-8 lg:py-8 lg:max-w-3xl">
           {children}
         </main>
       </div>
