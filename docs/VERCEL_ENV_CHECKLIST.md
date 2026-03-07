@@ -9,13 +9,6 @@ GitHub 連携で Vercel にデプロイしている場合、以下を Vercel ダ
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Settings → API → Project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Settings → API → anon (public) key |
 
-## 必須（メニュー保存・マイページ）
-
-| 変数名 | 値の取得元 |
-|--------|------------|
-| `SUPABASE_URL` | 同上（Project URL） |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API → service_role key |
-
 ## 任意（カスタム作成）
 
 | 変数名 | 用途 |

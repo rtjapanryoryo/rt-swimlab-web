@@ -28,8 +28,11 @@ export async function updateSession(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  // 保護対象パス: /, /mypage
-  const isProtected = request.nextUrl.pathname === '/' || request.nextUrl.pathname.startsWith('/mypage');
+  // 保護対象パス: /, /mypage, /admin
+  const isProtected =
+    request.nextUrl.pathname === '/' ||
+    request.nextUrl.pathname.startsWith('/mypage') ||
+    request.nextUrl.pathname.startsWith('/admin');
   const isAuthPage = request.nextUrl.pathname === '/login'
     || request.nextUrl.pathname === '/signup'
     || request.nextUrl.pathname === '/forgot-password'

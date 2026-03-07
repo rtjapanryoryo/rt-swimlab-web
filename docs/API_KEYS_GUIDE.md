@@ -78,15 +78,14 @@ OPENAI_API_KEY=sk-proj-xxxxxxxxxxxxx
 2. プロジェクトを作成（または既存プロジェクトを選択）
 3. 左メニュー **Settings**（歯車）→ **API**
 4. 以下をコピー:
-   - **Project URL** → `SUPABASE_URL`
-   - **Project API keys** の **service_role** 行で **Reveal** をクリック → 表示されたキー → `SUPABASE_SERVICE_ROLE_KEY`
-     - ⚠️ `anon` ではなく **service_role** を使用すること
+   - **Project URL** → `NEXT_PUBLIC_SUPABASE_URL`
+   - **anon (public)** キー → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
 ### .env.ai に設定
 
 ```
-SUPABASE_URL=https://xxxxxxxx.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.xxxxx
+NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.xxxxx
 ```
 
 ### 補足
@@ -114,7 +113,7 @@ Vercel にデプロイする場合:
 | GOOGLE_CLIENT_SECRET | ログイン | ○ |
 | NEXTAUTH_SECRET | ログイン | ○ |
 | OPENAI_API_KEY | カスタム作成（AI） | △ |
-| SUPABASE_URL | メニュー保存・マイページ | △ |
-| SUPABASE_SERVICE_ROLE_KEY | メニュー保存・マイページ | △ |
+| NEXT_PUBLIC_SUPABASE_URL | 認証・メニュー保存・マイページ | ○ |
+| NEXT_PUBLIC_SUPABASE_ANON_KEY | 認証・メニュー保存・マイページ | ○ |
 
 設定後は `npm run dev` を再起動してください。

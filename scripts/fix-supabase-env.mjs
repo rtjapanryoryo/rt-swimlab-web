@@ -14,8 +14,6 @@ const envPath = path.join(root, '.env.ai');
 const REQUIRED = [
   'NEXT_PUBLIC_SUPABASE_URL',
   'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-  'SUPABASE_URL',
-  'SUPABASE_SERVICE_ROLE_KEY',
 ];
 
 function parseEnv(content) {
@@ -54,9 +52,7 @@ function main() {
     console.log('  npm run setup:env:interactive\n');
     console.log('または引数で設定:\n');
     console.log('  npm run set:env -- NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co \\');
-    console.log('    NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ... \\');
-    console.log('    SUPABASE_URL=https://xxx.supabase.co \\');
-    console.log('    SUPABASE_SERVICE_ROLE_KEY=eyJ...\n');
+    console.log('    NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...\n');
     process.exit(1);
   }
 

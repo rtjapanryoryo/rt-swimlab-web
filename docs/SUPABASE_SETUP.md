@@ -46,15 +46,14 @@ CREATE INDEX IF NOT EXISTS idx_menus_user_created ON menus (user_id, created_at 
 
 Supabase ダッシュボードの **Settings** → **API** で以下を確認します。
 
-- **Project URL** → `SUPABASE_URL`
-- **service_role** の Secret key → `SUPABASE_SERVICE_ROLE_KEY`
-  - ※ `anon` ではなく `service_role` を使用（サーバー側で NextAuth の user_id と紐付けするため）
+- **Project URL** → `NEXT_PUBLIC_SUPABASE_URL`
+- **anon (public)** キー → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
 `.env.ai` に以下を追加してください。
 
 ```
-SUPABASE_URL=https://xxxxx.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
 ### 4. 開発サーバー再起動

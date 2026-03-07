@@ -9,9 +9,8 @@ RT swim lab を動かすために必要な設定の一覧です。
 1. [supabase.com](https://supabase.com) にログイン
 2. **New project** でプロジェクト作成
 3. ダッシュボード → **Settings** → **API** で以下をコピー:
-   - Project URL → `NEXT_PUBLIC_SUPABASE_URL` と `SUPABASE_URL`
+   - Project URL → `NEXT_PUBLIC_SUPABASE_URL`
    - anon (public) key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - service_role key → `SUPABASE_SERVICE_ROLE_KEY`
 4. **Authentication** → **Providers** → **Email** を有効化
 5. **Confirm email** をオフにすると、登録後すぐログイン可能
 
@@ -32,10 +31,8 @@ npx supabase db push
 
 | 変数 | 用途 |
 |------|------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase の URL（必須・認証） |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon key（必須・認証） |
-| `SUPABASE_URL` | 同上（サーバー用） |
-| `SUPABASE_SERVICE_ROLE_KEY` | service_role key（メニュー保存用） |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase の URL（必須） |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon key（必須・認証・メニュー保存） |
 | `OPENAI_API_KEY` | カスタム作成用（**任意**。クイック作成は不要） |
 
 **注意:** 以前 `.env.local` に書いていたキーは読み込まれません。`.env.ai` に移してください。

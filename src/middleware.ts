@@ -5,7 +5,7 @@ export async function middleware(request: NextRequest) {
   return await updateSession(request);
 }
 
-export const config = {
+export   const config = {
   matcher: [
     '/',
     '/login',
@@ -15,5 +15,7 @@ export const config = {
     '/auth/callback',
     '/mypage',
     '/mypage/:path*',
+    '/admin',
+    '/admin/:path*',
   ],
 };

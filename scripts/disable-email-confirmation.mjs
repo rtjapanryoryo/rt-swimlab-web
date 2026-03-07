@@ -16,7 +16,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 config({ path: path.resolve(__dirname, '..', '.env.ai') });
 
 const token = process.env.SUPABASE_ACCESS_TOKEN?.trim();
-const ref = process.env.PROJECT_REF?.trim() || extractRefFromUrl(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL);
+const ref = process.env.PROJECT_REF?.trim() || extractRefFromUrl(process.env.NEXT_PUBLIC_SUPABASE_URL);
 
 function extractRefFromUrl(url) {
   if (!url) return null;
@@ -33,7 +33,7 @@ async function main() {
   }
   if (!ref) {
     console.error('❌ PROJECT_REF が未設定です。');
-    console.error('   SUPABASE_URL を設定するか、PROJECT_REF=jxhjxbmnzoqnoaehkbwh のように指定してください。\n');
+    console.error('   NEXT_PUBLIC_SUPABASE_URL を設定するか、PROJECT_REF=xxxxx のように指定してください。\n');
     process.exit(1);
   }
 

@@ -42,13 +42,13 @@ CREATE INDEX IF NOT EXISTS idx_menus_user_created ON menus (user_id, created_at 
 
 1. Supabase ダッシュボードで **Settings**（歯車アイコン）→ **API** を開く
 2. 以下をコピー：
-   - **Project URL** → `.env.ai` の `SUPABASE_URL`
-   - **Project API keys** の **service_role** の **Reveal** をクリック → 表示されたキーを `SUPABASE_SERVICE_ROLE_KEY`
+   - **Project URL** → `NEXT_PUBLIC_SUPABASE_URL`
+   - **anon (public)** キー → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 3. `.env.ai` に追記：
 
 ```
-SUPABASE_URL=https://xxxxxxxx.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.xxxxx
+NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.xxxxx
 ```
 
 4. 開発サーバーを再起動：`npm run dev`

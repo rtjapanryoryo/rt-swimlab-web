@@ -26,8 +26,6 @@ RT swim lab では **Supabase Auth** を使用し、名前（匿名OK）・メ�
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIs...
-SUPABASE_URL=https://xxxxx.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIs...
 ```
 
 - **anon key**: Settings → API → Project API keys の **anon**（public）

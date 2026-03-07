@@ -40,8 +40,6 @@ cp .env.ai.example .env.ai
 |----|--------|----------|
 | 1 | `NEXT_PUBLIC_SUPABASE_URL` | `https://xxxxx.supabase.co`（Project URL） |
 | 2 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon (public) キー（長い JWT 文字列） |
-| 3 | `SUPABASE_URL` | 1 と同様 |
-| 4 | `SUPABASE_SERVICE_ROLE_KEY` | service_role キー |
 
 **取得先:** supabase.com → プロジェクト → Settings → API
 
@@ -54,12 +52,12 @@ cp .env.ai.example .env.ai
 ## 3. 記入例
 
 ```
-NEXT_PUBLIC_SUPABASE_URL=https://jxhjxbmnzoqxxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.xxxx
-SUPABASE_URL=https://jxhjxbmnzoqxxxx.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.xxxx
 OPENAI_API_KEY=sk-proj-xxxx
 ```
+
+※ Supabase は上記 2 つのみ。`SUPABASE_URL` と `SUPABASE_SERVICE_ROLE_KEY` は不要。
 
 - クォート不要
 - `=` の前後にスペースを入れない

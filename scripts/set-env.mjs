@@ -18,8 +18,6 @@ const envPath = path.join(root, '.env.ai');
 const knownKeys = [
   'NEXT_PUBLIC_SUPABASE_URL',
   'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-  'SUPABASE_URL',
-  'SUPABASE_SERVICE_ROLE_KEY',
   'OPENAI_API_KEY',
 ];
 
@@ -44,8 +42,6 @@ function serializeEnv(values) {
     supabase: [
       'NEXT_PUBLIC_SUPABASE_URL',
       'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-      'SUPABASE_URL',
-      'SUPABASE_SERVICE_ROLE_KEY',
     ],
     openai: ['OPENAI_API_KEY'],
   };

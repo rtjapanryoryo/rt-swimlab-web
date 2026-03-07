@@ -26,18 +26,6 @@ const vars = [
     required: true,
   },
   {
-    key: 'SUPABASE_URL',
-    label: 'SUPABASE_URL (Project URL と同じ)',
-    hint: '同上',
-    required: true,
-  },
-  {
-    key: 'SUPABASE_SERVICE_ROLE_KEY',
-    label: 'SUPABASE_SERVICE_ROLE_KEY (service_role キー)',
-    hint: 'eyJhbGciOi... で始まる長い文字列',
-    required: true,
-  },
-  {
     key: 'OPENAI_API_KEY',
     label: 'OPENAI_API_KEY (任意・カスタム作成のみ)',
     hint: 'sk-proj-... または Enter でスキップ',
@@ -119,8 +107,6 @@ async function main() {
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=${values.NEXT_PUBLIC_SUPABASE_URL || ''}
 NEXT_PUBLIC_SUPABASE_ANON_KEY=${values.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''}
-SUPABASE_URL=${values.SUPABASE_URL || ''}
-SUPABASE_SERVICE_ROLE_KEY=${values.SUPABASE_SERVICE_ROLE_KEY || ''}
 
 # OpenAI（任意）
 OPENAI_API_KEY=${values.OPENAI_API_KEY || ''}
