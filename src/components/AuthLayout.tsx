@@ -15,19 +15,21 @@ export function AuthLayout({ activeTab, children }: AuthLayoutProps) {
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#f5f5f4] py-6 sm:py-8 px-4 sm:px-6">
       {/* ヘッダー: ロゴ + タイトル + サブタイトル */}
       <div className="text-center mb-8">
-        <div className="flex justify-center mb-3">
-          <img
-            src="/RT-japan_Logo.svg"
-            alt="RTjapan"
-            className="h-14 w-auto"
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = 'none';
-              const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
-              if (fallback) fallback.classList.remove('hidden');
-            }}
-          />
-          <div className="hidden h-14 w-14 rounded-xl bg-slate-800 flex items-center justify-center text-white font-bold text-lg">
-            RT
+        <div className="flex justify-center mb-4">
+          <div className="inline-flex items-center justify-center p-4 rounded-2xl border-2 border-slate-200/80 bg-white shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
+            <img
+              src="/RT-japan_Logo.svg"
+              alt="RTjapan"
+              className="h-20 sm:h-24 w-auto"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+                const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
+                if (fallback) fallback.classList.remove('hidden');
+              }}
+            />
+            <div className="hidden h-20 w-20 sm:h-24 sm:w-24 rounded-xl bg-slate-800 flex items-center justify-center text-white font-bold text-xl sm:text-2xl">
+              RT
+            </div>
           </div>
         </div>
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900">RTjapan</h1>
@@ -67,7 +69,7 @@ export function AuthLayout({ activeTab, children }: AuthLayoutProps) {
       </div>
 
       {/* 著作権 */}
-      <p className="mt-8 text-xs text-slate-400">© 2026 RTjapan. All rights reserved.</p>
+      <p className="mt-10 text-xs text-slate-400 tracking-wide">© 2026 RT-japan.</p>
     </div>
   );
 }

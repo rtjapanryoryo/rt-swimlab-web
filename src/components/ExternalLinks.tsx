@@ -38,13 +38,13 @@ export function ExternalLinks({ variant = 'inline' }: { variant?: Variant }) {
 
   if (variant === 'compact') {
     return (
-      <div className="flex flex-wrap gap-4 text-sm">
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm">
         {LINE_URL && (
           <a
             href={LINE_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-teal-600 hover:text-teal-700 font-medium"
+            className="text-slate-600 hover:text-teal-700 font-medium transition-colors"
           >
             RT公式LINE
           </a>
@@ -54,7 +54,7 @@ export function ExternalLinks({ variant = 'inline' }: { variant?: Variant }) {
             href={COMMUNITY_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-slate-600 hover:text-slate-900"
+            className="text-slate-600 hover:text-teal-700 transition-colors"
           >
             コミュニティ
           </a>
