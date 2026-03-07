@@ -160,13 +160,13 @@ export default function MyPageLayout({
         </main>
       </div>
 
-      {/* モバイル用フッターカルーセル（PCでは非表示） */}
+      {/* モバイル用フッター（PCでは非表示。アイコン上・ラベル下） */}
       <footer
         className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-slate-200/80 no-print"
         aria-label="マイページナビゲーション"
       >
         <nav className="overflow-x-auto scrollbar-hide scroll-smooth">
-          <div className="flex gap-1 px-4 py-3 min-w-max">
+          <div className="flex gap-0 min-w-max px-2 py-2">
             {navItems.map((item) => {
               const isActive =
                 'external' in item
@@ -175,15 +175,17 @@ export default function MyPageLayout({
                     ? pathname === '/mypage' || pathname === '/mypage/'
                     : item.href === pathname || pathname.startsWith(item.href + '/');
               const baseClass =
-                'flex items-center gap-1.5 shrink-0 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap';
+                'flex flex-col items-center justify-center gap-0.5 shrink-0 min-w-[64px] py-2 px-2 rounded-lg text-[10px] font-medium transition-colors';
               const activeClass = isActive
-                ? 'bg-blue-100 text-blue-800'
-                : 'text-slate-600 hover:bg-slate-100';
+                ? 'text-blue-600'
+                : 'text-slate-600 hover:text-slate-800 hover:bg-slate-50';
               const IconComponent = item.Icon;
               const content = (
                 <>
-                  <IconComponent />
-                  {item.label}
+                  <span className="flex justify-center [&>svg]:w-5 [&>svg]:h-5">
+                    <IconComponent />
+                  </span>
+                  <span className="leading-tight text-center">{item.label}</span>
                 </>
               );
               if ('external' in item && item.external) {
@@ -216,10 +218,12 @@ export default function MyPageLayout({
             <form action="/api/auth/logout" method="post" className="shrink-0">
               <button
                 type="submit"
-                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors whitespace-nowrap"
+                className="flex flex-col items-center justify-center gap-0.5 shrink-0 min-w-[64px] py-2 px-2 rounded-lg text-[10px] font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-50 transition-colors"
               >
-                <LogoutIcon />
-                ログアウト
+                <span className="flex justify-center [&>svg]:w-5 [&>svg]:h-5">
+                  <LogoutIcon />
+                </span>
+                <span className="leading-tight">ログアウト</span>
               </button>
             </form>
           </div>
