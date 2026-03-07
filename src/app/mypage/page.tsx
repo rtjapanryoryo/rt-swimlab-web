@@ -4,6 +4,23 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { MenuLogSection } from '@/components/MenuLogSection';
 
+const COMMUNITY_URL = process.env.NEXT_PUBLIC_COMMUNITY_URL || '';
+
+const menuItems: Array<{
+  href: string;
+  label: string;
+  description: string;
+  external?: boolean;
+  disabled?: boolean;
+}> = [
+  { href: '/mypage', label: 'ダッシュボード', description: 'サマリーとプロフィールを確認' },
+  { href: '/mypage/menu', label: 'RT swim lab', description: '練習メニューをクイック作成・カスタム作成で生成' },
+  { href: '/mypage/genetic', label: 'RT GENE PROFILE', description: '遺伝子検査結果を確認' },
+  { href: '/mypage/subscription', label: '有料プラン', description: 'プレミアム機能の利用状況とプラン変更' },
+  { href: COMMUNITY_URL || '#', label: 'RTコミュニティ', description: 'RT公式コミュニティに参加', external: true, disabled: !COMMUNITY_URL },
+  { href: '/mypage/settings', label: '設定', description: '表示名・パスワード・アカウント連携を変更' },
+];
+
 type Profile = {
   id: string;
   role: string;
@@ -106,23 +123,47 @@ export default function MyPageDashboard() {
         </div>
       </section>
 
-      {/* RT swim lab への導線 */}
+      {/* メニュー一覧（モバイルでカルーセルに気づかない人向け。PC2列・モバイル1列） */}
       <section className="dashboard-card overflow-hidden">
         <div className="px-6 py-5 border-b border-slate-100/80 flex items-center gap-2">
           <span className="w-1 h-5 rounded-full bg-blue-500/70" />
-          <h2 className="text-sm font-semibold text-slate-800">練習メニュー</h2>
+          <h2 className="text-sm font-semibold text-slate-800">メニュー</h2>
         </div>
         <div className="p-6">
-          <p className="text-slate-600 text-sm mb-4">
-            クイック作成やカスタム作成で、あなた専用の練習メニューを生成できます。
-          </p>
-          <Link
-            href="/mypage/menu"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors"
-          >
-            RT swim lab を開く
-            <span className="text-blue-200">→</span>
-          </Link>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {menuItems.map((item) => {
+              const cardClass = 'block p-4 rounded-xl border border-slate-200/80 bg-white hover:border-blue-200 hover:bg-blue-50/50 transition-colors';
+              const disabledClass = 'block p-4 rounded-xl border border-slate-200/60 bg-slate-50/50 opacity-75 cursor-default';
+              if ('disabled' in item && item.disabled) {
+                return (
+                  <div key={item.label} className={disabledClass}>
+                    <p className="font-medium text-slate-600">{item.label}</p>
+                    <p className="text-xs text-slate-400 mt-1">{item.description}（設定でURLを有効にすると利用可能）</p>
+                  </div>
+                );
+              }
+              if ('external' in item && item.external) {
+                return (
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={cardClass}
+                  >
+                    <p className="font-medium text-slate-800">{item.label}</p>
+                    <p className="text-xs text-slate-500 mt-1">{item.description}</p>
+                  </a>
+                );
+              }
+              return (
+                <Link key={item.label} href={item.href} className={cardClass}>
+                  <p className="font-medium text-slate-800">{item.label}</p>
+                  <p className="text-xs text-slate-500 mt-1">{item.description}</p>
+                </Link>
+              );
+            })}
+          </div>
         </div>
       </section>
 
