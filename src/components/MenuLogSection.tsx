@@ -13,14 +13,10 @@ export function MenuLogSection() {
   const [menus, setMenus] = useState<MenuLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
 
   const fetchMenus = useCallback(() => {
     const params = new URLSearchParams();
     params.set('summary', '1'); // 作成日時のみ取得（軽量）
-    if (from) params.set('from', from);
-    if (to) params.set('to', to);
     setLoading(true);
     fetch(`/api/menus?${params}`, { credentials: 'include' })
       .then(async (res) => {
@@ -33,7 +29,7 @@ export function MenuLogSection() {
         setMenus([]);
       })
       .finally(() => setLoading(false));
-  }, [from, to]);
+  }, []);
 
   useEffect(() => {
     fetchMenus();
@@ -94,37 +90,7 @@ export function MenuLogSection() {
             </Link>
           </div>
         ) : (
-          <div>
-            <div className="flex flex-wrap gap-3 items-end mb-3">
-              <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1">開始日</label>
-                <input
-                  type="date"
-                  value={from}
-                  onChange={(e) => setFrom(e.target.value)}
-                  className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1">終了日</label>
-                <input
-                  type="date"
-                  value={to}
-                  onChange={(e) => setTo(e.target.value)}
-                  className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
-                />
-              </div>
-              {(from || to) && (
-                <button
-                  type="button"
-                  onClick={() => { setFrom(''); setTo(''); }}
-                  className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-slate-900"
-                >
-                  クリア
-                </button>
-              )}
-            </div>
-            <div className="max-h-[280px] overflow-y-auto space-y-1.5">
+          <div className="max-h-[280px] overflow-y-auto space-y-1.5">
               {menus.map((m) => (
                 <div
                   key={m.id}
@@ -138,7 +104,6 @@ export function MenuLogSection() {
                   </span>
                 </div>
               ))}
-            </div>
           </div>
         )}
       </div>

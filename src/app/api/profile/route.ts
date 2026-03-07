@@ -54,8 +54,24 @@ export async function GET() {
     authUser?.email ||
     null;
 
+  // クイック・カスタムの生成回数（menus テーブルから集計）
+  let quick_count = 0;
+  let custom_count = 0;
+  try {
+    const [quickRes, customRes] = await Promise.all([
+      sb.from('menus').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('source', 'quick'),
+      sb.from('menus').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('source', 'custom'),
+    ]);
+    quick_count = quickRes.count ?? 0;
+    custom_count = customRes.count ?? 0;
+  } catch {
+    // 非致命的：件数取得失敗時は 0 のまま
+  }
+
   return NextResponse.json({
-    profile: data ? { ...data, display_name: displayName ?? data.display_name } : null,
+    profile: data
+      ? { ...data, display_name: displayName ?? data.display_name, quick_count, custom_count }
+      : null,
   });
 }
 

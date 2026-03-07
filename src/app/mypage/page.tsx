@@ -24,6 +24,8 @@ type Profile = {
   role: string;
   display_name: string | null;
   total_usage_count: number;
+  quick_count?: number;
+  custom_count?: number;
   created_at?: string;
 };
 
@@ -106,6 +108,9 @@ export default function MyPageDashboard() {
                   <p className="text-2xl font-semibold text-blue-600 tabular-nums">
                     {profile?.total_usage_count ?? 0}
                     <span className="text-sm font-normal text-slate-500 ml-1">回</span>
+                  </p>
+                  <p className="text-sm text-slate-500 mt-1">
+                    クイック {profile?.quick_count ?? 0}回 / カスタム {profile?.custom_count ?? 0}回
                   </p>
                 </div>
               </div>
