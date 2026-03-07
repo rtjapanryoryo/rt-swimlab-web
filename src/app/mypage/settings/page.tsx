@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { ExternalLinks } from '@/components/ExternalLinks';
 
 export default function SettingsPage() {
   const [displayName, setDisplayName] = useState('');
@@ -98,10 +99,10 @@ export default function SettingsPage() {
     <div className="space-y-8">
       <header>
         <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
-          設定
+          アカウント情報
         </h1>
         <p className="text-slate-500 mt-1 text-sm">
-          表示名やパスワードを管理できます
+          表示名・パスワード・有料プランを管理できます
         </p>
       </header>
 
@@ -203,6 +204,23 @@ export default function SettingsPage() {
             >
               パスワードをリセットする（メール送信）
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* 有料プラン */}
+      <section className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+        <div className="px-6 py-5 border-b border-slate-100">
+          <h2 className="text-sm font-semibold text-slate-800">有料プラン</h2>
+          <p className="text-xs text-slate-500 mt-0.5">プレミアム機能の利用状況とプラン変更</p>
+        </div>
+        <div className="py-12 px-6 text-center">
+          <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-xl">◆</div>
+          <p className="text-slate-600 font-medium">準備中</p>
+          <p className="text-slate-400 text-sm mt-1">Stripe との連携は準備中です。しばらくお待ちください</p>
+          <div className="mt-6 pt-6 border-t border-slate-100">
+            <p className="text-xs text-slate-500 mb-3">お問い合わせ・最新情報はこちら</p>
+            <ExternalLinks variant="buttons" />
           </div>
         </div>
       </section>

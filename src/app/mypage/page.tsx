@@ -13,12 +13,10 @@ const menuItems: Array<{
   external?: boolean;
   disabled?: boolean;
 }> = [
-  { href: '/mypage', label: 'ダッシュボード', description: 'サマリーとプロフィールを確認' },
   { href: '/mypage/menu', label: 'RT swim lab', description: '練習メニューをクイック作成・カスタム作成で生成' },
   { href: '/mypage/genetic', label: 'RT GENE PROFILE', description: '遺伝子検査結果を確認' },
-  { href: '/mypage/subscription', label: '有料プラン', description: 'プレミアム機能の利用状況とプラン変更' },
   { href: COMMUNITY_URL || '#', label: 'RTコミュニティ', description: 'RT公式コミュニティに参加', external: true, disabled: !COMMUNITY_URL },
-  { href: '/mypage/settings', label: '設定', description: '表示名・パスワード・アカウント連携を変更' },
+  { href: '/mypage/settings', label: 'アカウント情報', description: '表示名・パスワード・有料プラン・アカウント連携を変更' },
 ];
 
 type Profile = {
@@ -52,7 +50,7 @@ export default function MyPageDashboard() {
     fetchData();
   }, []);
 
-  // 設定で表示名・プロフィール更新時に再取得
+  // アカウント情報で表示名・プロフィール更新時に再取得
   useEffect(() => {
     const handler = () => fetchData();
     window.addEventListener('profile-updated', handler);
@@ -115,7 +113,7 @@ export default function MyPageDashboard() {
                 href="/mypage/settings"
                 className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
               >
-                設定で名前を変更する
+                アカウント情報で名前を変更する
                 <span className="text-blue-500">→</span>
               </Link>
             </>
@@ -138,7 +136,7 @@ export default function MyPageDashboard() {
                 return (
                   <div key={item.label} className={disabledClass}>
                     <p className="font-medium text-slate-600">{item.label}</p>
-                    <p className="text-xs text-slate-400 mt-1">{item.description}（設定でURLを有効にすると利用可能）</p>
+                    <p className="text-xs text-slate-400 mt-1">{item.description}（アカウント情報でURLを有効にすると利用可能）</p>
                   </div>
                 );
               }

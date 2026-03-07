@@ -22,9 +22,8 @@ const navItems = [
   { href: '/mypage', label: 'ダッシュボード', icon: '○' },
   { href: '/mypage/menu', label: 'RT swim lab', icon: '◆' },
   { href: '/mypage/genetic', label: 'RT GENE PROFILE', icon: '◇' },
-  { href: '/mypage/subscription', label: '有料プラン', icon: '◇' },
   { href: COMMUNITY_URL || '#', label: 'RTコミュニティ', icon: '○', external: true, disabled: !COMMUNITY_URL },
-  { href: '/mypage/settings', label: '設定', icon: '⚙' },
+  { href: '/mypage/settings', label: 'アカウント情報', icon: '⚙' },
 ];
 
 export default function MyPageLayout({
