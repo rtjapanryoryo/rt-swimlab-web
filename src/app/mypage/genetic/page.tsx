@@ -144,7 +144,7 @@ export default function GeneticPage() {
       </header>
 
       {/* 公式LPへの導線 */}
-      <section className="rounded-2xl border border-teal-200/80 bg-gradient-to-br from-teal-50/80 to-white p-6">
+      <section className="rounded-2xl border border-blue-200/80 bg-gradient-to-br from-blue-50/80 to-white p-6">
         <p className="text-slate-700 text-sm leading-relaxed mb-4">
           才能を決める検査ではありません。
           限られた時間の中で、あなたが最短距離を進むための
@@ -154,10 +154,10 @@ export default function GeneticPage() {
           href={GENE_PROFILE_LP_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white text-sm font-medium rounded-xl hover:bg-teal-700 transition-colors"
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors"
         >
           詳しく見る・お申し込み
-          <span className="text-teal-200">→</span>
+          <span className="text-blue-200">→</span>
         </a>
       </section>
 
@@ -185,7 +185,7 @@ export default function GeneticPage() {
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading || profiles.length >= 1}
-            className="w-full py-5 px-4 border-2 border-dashed border-slate-200 rounded-lg hover:border-teal-300 hover:bg-teal-50/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+            className="w-full py-5 px-4 border-2 border-dashed border-slate-200 rounded-lg hover:border-blue-300 hover:bg-blue-50/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
           >
             {uploading ? (
               <span className="text-slate-500">圧縮・アップロード中...</span>

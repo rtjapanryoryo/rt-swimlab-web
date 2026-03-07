@@ -57,7 +57,7 @@ export default function MyPageDashboard() {
     <div className="space-y-8">
       {/* ウェルカム（AZACLI風：〇〇様） */}
       <header>
-        <h1 className="text-xl sm:text-2xl font-semibold text-teal-700 tracking-tight">
+        <h1 className="text-xl sm:text-2xl font-semibold text-blue-700 tracking-tight">
           {displayNameWithSama}
         </h1>
         <p className="text-slate-500 mt-1 text-sm">
@@ -74,7 +74,7 @@ export default function MyPageDashboard() {
       {/* プロフィール（固定で上） */}
       <section className="dashboard-card overflow-hidden">
         <div className="px-6 py-5 border-b border-slate-100/80 flex items-center gap-2">
-          <span className="w-1 h-5 rounded-full bg-teal-500/70" />
+          <span className="w-1 h-5 rounded-full bg-blue-500/70" />
           <h2 className="text-sm font-semibold text-slate-800">プロフィール</h2>
         </div>
         <div className="p-6">
@@ -98,7 +98,7 @@ export default function MyPageDashboard() {
                   <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">
                     累計生成回数
                   </p>
-                  <p className="text-2xl font-semibold text-teal-600 tabular-nums">
+                  <p className="text-2xl font-semibold text-blue-600 tabular-nums">
                     {profile?.total_usage_count ?? 0}
                     <span className="text-sm font-normal text-slate-500 ml-1">回</span>
                   </p>
@@ -106,10 +106,10 @@ export default function MyPageDashboard() {
               </div>
               <Link
                 href="/mypage/settings"
-                className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-teal-600 hover:text-teal-700 transition-colors"
+                className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
               >
                 設定で名前を変更する
-                <span className="text-teal-500">→</span>
+                <span className="text-blue-500">→</span>
               </Link>
             </>
           )}
@@ -119,7 +119,7 @@ export default function MyPageDashboard() {
       {/* RT swim lab への導線 */}
       <section className="dashboard-card overflow-hidden">
         <div className="px-6 py-5 border-b border-slate-100/80 flex items-center gap-2">
-          <span className="w-1 h-5 rounded-full bg-teal-500/70" />
+          <span className="w-1 h-5 rounded-full bg-blue-500/70" />
           <h2 className="text-sm font-semibold text-slate-800">練習メニュー</h2>
         </div>
         <div className="p-6">
@@ -128,10 +128,10 @@ export default function MyPageDashboard() {
           </p>
           <Link
             href="/mypage/menu"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white text-sm font-medium rounded-xl hover:bg-teal-700 transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors"
           >
             RT swim lab を開く
-            <span className="text-teal-200">→</span>
+            <span className="text-blue-200">→</span>
           </Link>
         </div>
       </section>

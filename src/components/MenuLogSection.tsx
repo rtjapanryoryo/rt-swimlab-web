@@ -54,7 +54,7 @@ export function MenuLogSection() {
   return (
     <section className="dashboard-card overflow-hidden">
       <div className="px-6 py-5 border-b border-slate-100/80 flex items-center gap-2">
-        <span className="w-1 h-5 rounded-full bg-teal-500/70" />
+        <span className="w-1 h-5 rounded-full bg-blue-500/70" />
         <h2 className="text-sm font-semibold text-slate-800">メニューログ</h2>
       </div>
       <div className="p-6">
@@ -75,7 +75,7 @@ export function MenuLogSection() {
             </p>
             <Link
               href="/mypage/menu"
-              className="mt-4 inline-flex items-center px-4 py-2 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 transition-colors text-sm"
+              className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors text-sm"
             >
               メニューを作成する
             </Link>
@@ -90,7 +90,7 @@ export function MenuLogSection() {
                     type="date"
                     value={from}
                     onChange={(e) => setFrom(e.target.value)}
-                    className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none"
+                    className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
                   />
                 </div>
                 <div>
@@ -99,7 +99,7 @@ export function MenuLogSection() {
                     type="date"
                     value={to}
                     onChange={(e) => setTo(e.target.value)}
-                    className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none"
+                    className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
                   />
                 </div>
                 {(from || to) && (
@@ -120,7 +120,7 @@ export function MenuLogSection() {
                     onClick={() => setSelectedId(selectedId === m.id ? null : m.id)}
                     className={`w-full text-left p-3 rounded-xl border transition-all ${
                       selectedId === m.id
-                        ? 'border-teal-200 bg-teal-50/80'
+                        ? 'border-blue-200 bg-blue-50/80'
                         : 'border-slate-100 hover:bg-slate-50/80'
                     }`}
                   >

@@ -44,7 +44,7 @@ export function ExternalLinks({ variant = 'inline' }: { variant?: Variant }) {
             href={LINE_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-slate-600 hover:text-teal-700 font-medium transition-colors"
+            className="text-slate-600 hover:text-blue-700 font-medium transition-colors"
           >
             RT公式LINE
           </a>
@@ -54,7 +54,7 @@ export function ExternalLinks({ variant = 'inline' }: { variant?: Variant }) {
             href={COMMUNITY_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-slate-600 hover:text-teal-700 transition-colors"
+            className="text-slate-600 hover:text-blue-700 transition-colors"
           >
             コミュニティ
           </a>
@@ -71,7 +71,7 @@ export function ExternalLinks({ variant = 'inline' }: { variant?: Variant }) {
           href={LINE_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="hover:text-teal-600 transition-colors"
+          className="hover:text-blue-600 transition-colors"
         >
           RT公式LINE
         </a>

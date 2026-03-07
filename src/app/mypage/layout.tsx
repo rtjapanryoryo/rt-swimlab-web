@@ -36,10 +36,10 @@ export default function MyPageLayout({
 
   if (loading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#faf9f7]">
+      <div className="min-h-screen flex items-center justify-center bg-[#fafbfc]">
         {loading ? (
           <div className="flex flex-col items-center gap-4">
-            <div className="w-8 h-8 border-2 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-600 rounded-full animate-spin" />
             <p className="text-sm text-slate-500">読み込み中...</p>
           </div>
         ) : (
@@ -47,7 +47,7 @@ export default function MyPageLayout({
             <p className="text-slate-600">マイページを利用するにはログインしてください。</p>
             <Link
               href="/login?redirect=/mypage"
-              className="inline-block px-6 py-3 rounded-xl bg-teal-600 text-white font-medium hover:bg-teal-700 transition-colors shadow-sm"
+              className="inline-block px-6 py-3 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors shadow-sm"
             >
               ログイン
             </Link>
@@ -58,7 +58,7 @@ export default function MyPageLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#faf9f7] via-[#f8f7f5] to-[#f5f4f2]">
+    <div className="min-h-screen bg-gradient-to-b from-[#fafbfc] via-[#f5f7fa] to-[#f0f4f8]">
       {/* モバイル用ヘッダーカルーセル（PCでは非表示。PCは添付イメージ通りサイドバーのみ） */}
       <header
         className="lg:hidden sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 no-print"
@@ -80,7 +80,7 @@ export default function MyPageLayout({
               const baseClass =
                 'flex items-center gap-1.5 shrink-0 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap';
               const activeClass = isActive
-                ? 'bg-teal-100 text-teal-800'
+                ? 'bg-blue-100 text-blue-800'
                 : 'text-slate-600 hover:bg-slate-100';
               const content = (
                 <>
@@ -128,10 +128,10 @@ export default function MyPageLayout({
         </nav>
       </header>
 
-      <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-6 lg:gap-8 py-6 sm:py-8 px-4 sm:px-6">
-        {/* サイドナビ（PCのみ。モバイルではヘッダーカルーセルで表示） */}
-        <aside className="hidden lg:block lg:w-56 flex-shrink-0 order-2 lg:order-1">
-          <nav className="dashboard-card overflow-hidden lg:sticky lg:top-8">
+      <div className="flex flex-col lg:flex-row min-h-screen">
+        {/* サイドナビ（PC: 左端固定。モバイルではヘッダーカルーセルで表示） */}
+        <aside className="hidden lg:flex lg:fixed lg:inset-y-0 lg:left-0 lg:w-56 lg:z-40 lg:flex-shrink-0">
+          <nav className="w-full h-full overflow-y-auto bg-white border-r border-slate-200/80 shadow-sm">
             <div className="px-5 py-4 border-b border-slate-100">
               <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">
                 My Page
@@ -149,11 +149,11 @@ export default function MyPageLayout({
                 const baseClass =
                   'flex items-center gap-3 w-full px-5 py-3 text-left text-sm font-medium transition-colors';
                 const activeClass = isActive
-                  ? 'bg-teal-50 text-teal-800 border-l-2 border-teal-500'
+                  ? 'bg-blue-50 text-blue-800 border-l-2 border-blue-500'
                   : 'text-slate-600 hover:bg-slate-50/80 hover:text-slate-900';
                 const content = (
                   <>
-                    <span className={`text-xs opacity-70 ${isActive ? 'text-teal-600' : ''}`}>{item.icon}</span>
+                    <span className={`text-xs opacity-70 ${isActive ? 'text-blue-600' : ''}`}>{item.icon}</span>
                     {item.label}
                   </>
                 );
@@ -201,8 +201,10 @@ export default function MyPageLayout({
           </nav>
         </aside>
 
-        {/* メインコンテンツ（モバイルはヘッダーカルーセルのみ、フッターなし） */}
-        <main className="flex-1 min-w-0 order-1 lg:order-2">{children}</main>
+        {/* メインコンテンツ（PC: サイドバー分の余白＋パディング。モバイルはヘッダーカルーセルのみ） */}
+        <main className="flex-1 min-w-0 order-1 lg:order-2 py-6 sm:py-8 px-4 sm:px-6 lg:pl-[14rem] lg:pr-8 lg:py-8">
+          {children}
+        </main>
       </div>
     </div>
   );

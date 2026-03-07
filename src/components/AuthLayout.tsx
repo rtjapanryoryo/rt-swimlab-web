@@ -12,7 +12,7 @@ type AuthLayoutProps = {
  */
 export function AuthLayout({ activeTab, children }: AuthLayoutProps) {
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#f5f5f4] py-6 sm:py-8 px-4 sm:px-6">
+    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#f5f7fa] py-6 sm:py-8 px-4 sm:px-6">
       {/* ヘッダー: ロゴ + タイトル + サブタイトル */}
       <div className="text-center mb-8">
         <div className="flex justify-center mb-4">
@@ -46,7 +46,7 @@ export function AuthLayout({ activeTab, children }: AuthLayoutProps) {
             href="/login"
             className={`flex-1 py-4 text-center text-sm font-medium transition-colors ${
               activeTab === 'login'
-                ? 'text-teal-600 border-b-2 border-teal-600'
+                ? 'text-blue-600 border-b-2 border-blue-600'
                 : 'text-slate-500 hover:text-slate-700'
             }`}
           >
@@ -56,7 +56,7 @@ export function AuthLayout({ activeTab, children }: AuthLayoutProps) {
             href="/signup"
             className={`flex-1 py-4 text-center text-sm font-medium transition-colors ${
               activeTab === 'signup'
-                ? 'text-teal-600 border-b-2 border-teal-600'
+                ? 'text-blue-600 border-b-2 border-blue-600'
                 : 'text-slate-500 hover:text-slate-700'
             }`}
           >

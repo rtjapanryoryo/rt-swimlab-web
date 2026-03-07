@@ -1,11 +1,11 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f5f5f4;
+  --background: #f5f7fa;
   --foreground: #1c1917;
-  --accent-teal: #0d9488;
-  --accent-teal-hover: #0f766e;
-  --accent-teal-muted: #99f6e4;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-muted: #bfdbfe;
   --accent-warm: #78716c;
   --warm-bg: #fafaf9;
   --card-bg: #ffffff;
@@ -178,7 +178,7 @@ html, body {
   height: 100%;
   width: 100%;
   max-width: 100%;
-  background: linear-gradient(165deg, #fafaf9 0%, #f5f5f4 40%, #f0f0ee 70%, #f5f5f4 100%);
+  background: linear-gradient(165deg, #fafbfc 0%, #f5f7fa 40%, #f0f4f8 70%, #f5f7fa 100%);
 }
 
 /* PDFキャプチャ用：1枚に収め、文字の潰れ・重なりを防ぐ */
@@ -319,7 +319,7 @@ body {
   background: linear-gradient(180deg, #ffffff 0%, #fafaf9 50%, #f5f5f4 100%);
   box-shadow:
     0 1px 2px rgba(28, 25, 23, 0.02),
-    0 8px 24px rgba(13, 148, 136, 0.05),
+    0 8px 24px rgba(37, 99, 235, 0.06),
     0 0 0 1px rgba(214, 211, 209, 0.5);
   border: 1px solid rgba(214, 211, 209, 0.6);
 }
@@ -330,7 +330,7 @@ body {
   background: linear-gradient(180deg, #ffffff 0%, #fefefe 50%, #fafaf9 100%);
   box-shadow:
     0 1px 2px rgba(28, 25, 23, 0.02),
-    0 4px 16px rgba(13, 148, 136, 0.05),
+    0 4px 16px rgba(37, 99, 235, 0.05),
     0 0 0 1px rgba(120, 113, 108, 0.06);
   border: 1px solid rgba(214, 211, 209, 0.8);
 }
