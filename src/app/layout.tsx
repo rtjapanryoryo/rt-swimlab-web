@@ -3,6 +3,7 @@ import "./globals.css";
 import { SplashScreenProvider } from "@/components/SplashScreen";
 import { AuthProvider } from "@/components/AuthProvider";
 import { TopNav } from "@/components/TopNav";
+import { MainContent } from "@/components/MainContent";
 import { SiteFooter } from "@/components/SiteFooter";
 
 export const metadata: Metadata = {
@@ -26,9 +27,9 @@ export default function RootLayout({
       <body className="antialiased font-sans flex flex-col min-h-screen">
         <AuthProvider>
           <TopNav />
-          <div className="flex-1 w-full min-w-0 pt-2 pr-3 sm:pr-20 md:pr-40">
+          <MainContent>
             <SplashScreenProvider>{children}</SplashScreenProvider>
-          </div>
+          </MainContent>
           <SiteFooter />
         </AuthProvider>
       </body>

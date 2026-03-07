@@ -44,23 +44,23 @@ export function UserNav() {
   }
 
   return (
-    <div className="flex items-center gap-5">
-      <Link
-        href="/mypage/menu"
-        className="text-sm font-medium text-slate-800/90 hover:text-slate-900 transition-colors py-2 px-3 rounded-lg hover:bg-slate-100/80"
-      >
-        練習メニュー
-      </Link>
+    <div className="flex items-center gap-2 sm:gap-4 shrink-0">
       <Link
         href="/mypage"
-        className="text-sm font-medium text-slate-800/90 hover:text-slate-900 transition-colors py-2 px-3 rounded-lg hover:bg-slate-100/80"
+        className="text-xs sm:text-sm font-medium text-slate-800/90 hover:text-slate-900 transition-colors py-1.5 sm:py-2 px-2 sm:px-3 rounded-lg hover:bg-slate-100/80 whitespace-nowrap"
       >
         マイページ
       </Link>
-      <form action="/api/auth/logout" method="post">
+      <Link
+        href="/mypage/menu"
+        className="text-xs sm:text-sm font-medium text-slate-800/90 hover:text-slate-900 transition-colors py-1.5 sm:py-2 px-2 sm:px-3 rounded-lg hover:bg-slate-100/80 whitespace-nowrap"
+      >
+        RT swim lab
+      </Link>
+      <form action="/api/auth/logout" method="post" className="shrink-0">
         <button
           type="submit"
-          className="flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg border border-slate-200/80 bg-white/80 hover:bg-slate-50 text-slate-600 hover:text-slate-800 transition-colors backdrop-blur-sm"
+          className="flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-slate-200/80 bg-white/80 hover:bg-slate-50 text-slate-600 hover:text-slate-800 transition-colors backdrop-blur-sm whitespace-nowrap"
         >
           <LogoutIcon />
           ログアウト

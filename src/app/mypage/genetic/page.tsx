@@ -168,12 +168,12 @@ export default function GeneticPage() {
         </div>
       )}
 
-      {/* アップロード */}
-      <section className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
-        <div className="px-6 py-5 border-b border-slate-100">
+      {/* PDFを追加 */}
+      <section className="bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-100">
           <h2 className="text-sm font-semibold text-slate-800">PDFを追加</h2>
         </div>
-        <div className="p-6">
+        <div className="p-4">
           <input
             ref={fileInputRef}
             type="file"
@@ -186,7 +186,7 @@ export default function GeneticPage() {
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading || profiles.length >= 1}
-            className="w-full py-8 px-6 border-2 border-dashed border-slate-200 rounded-xl hover:border-teal-300 hover:bg-teal-50/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-5 px-4 border-2 border-dashed border-slate-200 rounded-lg hover:border-teal-300 hover:bg-teal-50/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
           >
             {uploading ? (
               <span className="text-slate-500">圧縮・アップロード中...</span>
@@ -197,23 +197,23 @@ export default function GeneticPage() {
         </div>
       </section>
 
-      {/* PDF表示（右側ビジュアルのみ・全幅） */}
-      <section className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
-        <div className="p-4 sm:p-6">
+      {/* PDF表示（コンパクト枠） */}
+      <section className="bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden">
+        <div className="p-4">
           {loading ? (
-            <div className="py-12 text-center text-slate-500 text-sm">読み込み中...</div>
+            <div className="py-8 text-center text-slate-500 text-sm">読み込み中...</div>
           ) : profiles.length === 0 ? (
-            <div className="py-16 text-center">
-              <div className="w-14 h-14 mx-auto mb-5 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-2xl">
+            <div className="py-10 text-center">
+              <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-xl">
                 ◇
               </div>
-              <p className="text-slate-600 font-medium">まだPDFがありません</p>
-              <p className="text-slate-400 text-sm mt-1">上のボタンからアップロードしてください</p>
+              <p className="text-slate-600 font-medium text-sm">まだPDFがありません</p>
+              <p className="text-slate-400 text-xs mt-1">上のボタンからアップロードしてください</p>
             </div>
           ) : (
             <div className="flex flex-col">
               {/* ファイル名＋削除（スリムバー） */}
-              <div className="flex items-center justify-between gap-4 py-2 px-1 border-b border-slate-100 mb-4">
+              <div className="flex items-center justify-between gap-3 py-1.5 px-1 border-b border-slate-100 mb-3">
                 <p className="text-sm font-medium text-slate-800 truncate" title={profiles[0]?.display_name}>
                   {profiles[0]?.display_name}
                 </p>
@@ -221,21 +221,22 @@ export default function GeneticPage() {
                   type="button"
                   onClick={() => profiles[0] && handleDelete(profiles[0].id)}
                   disabled={deletingId === profiles[0]?.id}
-                  className="shrink-0 px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                  className="shrink-0 px-2.5 py-1 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50"
                 >
                   {deletingId === profiles[0]?.id ? '削除中...' : '削除'}
                 </button>
               </div>
-              {/* PDFビューア（全幅・スクロール可） */}
-              <div className="bg-slate-50 rounded-xl border border-slate-200 overflow-auto min-h-[max(560px,calc(100vh-280px))]">
+              {/* PDFビューア（最小限の高さ・スクロール可） */}
+              <div className="bg-slate-50/30 rounded-lg border border-slate-200/60 overflow-auto" style={{ minHeight: 320 }}>
                 {viewUrl ? (
                   <iframe
                     src={viewUrl}
                     title="PDFプレビュー"
-                    className="w-full min-h-[max(560px,calc(100vh-280px))] border-0"
+                    className="w-full border-0"
+                    style={{ minHeight: 320 }}
                   />
                 ) : viewingId ? (
-                  <div className="flex items-center justify-center min-h-[400px] text-slate-500 text-sm">
+                  <div className="flex items-center justify-center py-24 text-slate-500 text-sm">
                     読み込み中...
                   </div>
                 ) : null}

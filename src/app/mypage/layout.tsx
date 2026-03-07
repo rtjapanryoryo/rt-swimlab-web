@@ -23,7 +23,6 @@ const navItems = [
   { href: '/mypage/menus', label: 'メニューログ', icon: '▸' },
   { href: '/mypage/genetic', label: 'RT GENE PROFILE', icon: '◇' },
   { href: '/mypage/subscription', label: '有料プラン', icon: '◇' },
-  { href: LINE_URL || '#', label: 'お問い合わせ', icon: '●', external: true, disabled: !LINE_URL },
   { href: COMMUNITY_URL || '#', label: 'RTコミュニティ', icon: '○', external: true, disabled: !COMMUNITY_URL },
   { href: '/mypage/settings', label: '設定', icon: '⚙' },
 ];
@@ -118,22 +117,8 @@ export default function MyPageLayout({
                 );
               })}
             </ul>
-            <div className="px-5 py-3 border-t border-slate-100 space-y-2">
-              {LINE_URL ? (
-                <a
-                  href={LINE_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-700 transition-colors"
-                >
-                  お問い合わせ
-                </a>
-              ) : (
-                <span className="flex items-center gap-2 text-xs text-slate-400" title="NEXT_PUBLIC_LINE_URL を設定するとRT公式LINEへリンクします">
-                  お問い合わせ
-                </span>
-              )}
-              <form action="/api/auth/logout" method="post" className="pt-1">
+            <div className="px-5 py-3 border-t border-slate-100">
+              <form action="/api/auth/logout" method="post">
                 <button
                   type="submit"
                   className="flex items-center gap-2 w-full text-left text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors py-2 -ml-1"
