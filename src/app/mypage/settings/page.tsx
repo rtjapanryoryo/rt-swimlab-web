@@ -207,21 +207,23 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* アカウント連携 */}
-      <section className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
-        <div className="px-6 py-5 border-b border-slate-100">
-          <h2 className="text-sm font-semibold text-slate-800">アカウント連携</h2>
-          <p className="text-xs text-slate-500 mt-0.5">メールとGoogleを紐付けるとどちらでもログインできます</p>
-        </div>
-        <div className="p-6">
-          <Link
-            href="/mypage"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-teal-600 hover:text-teal-700 transition-colors"
-          >
-            ← マイページへ戻る
-          </Link>
-        </div>
-      </section>
+      {/* アカウント連携（一旦非表示） */}
+      {false && (
+        <section className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <h2 className="text-sm font-semibold text-slate-800">アカウント連携</h2>
+            <p className="text-xs text-slate-500 mt-0.5">メールとGoogleを紐付けるとどちらでもログインできます</p>
+          </div>
+          <div className="p-6">
+            <Link
+              href="/mypage"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-teal-600 hover:text-teal-700 transition-colors"
+            >
+              ← マイページへ戻る
+            </Link>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

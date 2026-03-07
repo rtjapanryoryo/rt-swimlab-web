@@ -3,8 +3,6 @@
 import Link from 'next/link';
 import { useAuth } from '@/components/AuthProvider';
 
-const LINE_URL = process.env.NEXT_PUBLIC_LINE_URL || '';
-
 export function UserNav() {
   const { user, loading } = useAuth();
 
@@ -19,16 +17,6 @@ export function UserNav() {
   if (!user) {
     return (
       <div className="flex items-center gap-3">
-        {LINE_URL && (
-          <a
-            href={LINE_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs md:text-sm text-slate-600 hover:text-slate-900 underline underline-offset-2"
-          >
-            お問い合わせ
-          </a>
-        )}
         <Link
           href="/signup"
           className="text-xs md:text-sm text-slate-600 hover:text-slate-900 underline underline-offset-2"
@@ -59,16 +47,6 @@ export function UserNav() {
       >
         マイページ
       </Link>
-      {LINE_URL && (
-        <a
-          href={LINE_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-sm font-medium text-slate-800/90 hover:text-slate-900 transition-colors py-2 px-3 rounded-lg hover:bg-slate-100/80"
-        >
-          お問い合わせ
-        </a>
-      )}
       <form action="/api/auth/logout" method="post">
         <button
           type="submit"

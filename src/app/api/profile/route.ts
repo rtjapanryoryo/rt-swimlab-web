@@ -71,7 +71,7 @@ export async function PATCH(request: NextRequest) {
   }
 
   const body = await request.json().catch(() => ({}));
-  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  const updates: Record<string, unknown> = {};
   if (typeof body.display_name === 'string') updates.display_name = body.display_name.trim();
 
   const { data, error } = await sb
