@@ -61,8 +61,8 @@ export default function MyPageLayout({
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#faf9f7] via-[#f8f7f5] to-[#f5f4f2]">
       <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-6 lg:gap-8 py-6 sm:py-8 px-4 sm:px-6">
-        {/* サイドナビ */}
-        <aside className="lg:w-56 flex-shrink-0 order-2 lg:order-1">
+        {/* サイドナビ（モバイルでは非表示・ヘッダーのTopNavでナビ） */}
+        <aside className="hidden lg:block lg:w-56 flex-shrink-0 order-2 lg:order-1">
           <nav className="dashboard-card overflow-hidden lg:sticky lg:top-8">
             <div className="px-5 py-4 border-b border-slate-100">
               <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">

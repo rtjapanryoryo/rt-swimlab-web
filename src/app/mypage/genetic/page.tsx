@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { ExternalLinks } from '@/components/ExternalLinks';
 import { compressPdfIfNeeded } from '@/lib/compress-pdf';
 import { uploadGeneProfile } from './actions';
 
@@ -226,14 +225,13 @@ export default function GeneticPage() {
                   {deletingId === profiles[0]?.id ? '削除中...' : '削除'}
                 </button>
               </div>
-              {/* PDFビューア（最小限の高さ・スクロール可） */}
-              <div className="bg-slate-50/30 rounded-lg border border-slate-200/60 overflow-auto" style={{ minHeight: 320 }}>
+              {/* PDFビューア（PC:大きめ / 携帯:幅に合わせてスクロール可） */}
+              <div className="bg-slate-50/30 rounded-lg border border-slate-200/60 overflow-auto min-h-[400px] sm:min-h-[520px] md:min-h-[600px]">
                 {viewUrl ? (
                   <iframe
-                    src={viewUrl}
+                    src={`${viewUrl}#view=FitH`}
                     title="PDFプレビュー"
-                    className="w-full border-0"
-                    style={{ minHeight: 320 }}
+                    className="w-full min-w-0 border-0 min-h-[400px] sm:min-h-[520px] md:min-h-[600px]"
                   />
                 ) : viewingId ? (
                   <div className="flex items-center justify-center py-24 text-slate-500 text-sm">
@@ -246,11 +244,6 @@ export default function GeneticPage() {
         </div>
       </section>
 
-      {/* 外部リンク */}
-      <section className="pt-4 border-t border-slate-100">
-        <p className="text-xs text-slate-500 mb-3">お問い合わせ・最新情報はこちら</p>
-        <ExternalLinks variant="buttons" />
-      </section>
     </div>
   );
 }
