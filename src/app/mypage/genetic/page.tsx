@@ -244,8 +244,8 @@ export default function GeneticPage() {
                   ))}
                 </div>
               </div>
-              {/* PDFプレビュー（メイン・大きく表示） */}
-              <div className="flex-1 min-w-0 bg-slate-50 rounded-xl border border-slate-200 overflow-hidden flex flex-col min-h-[max(560px,calc(100vh-220px))]">
+              {/* PDFプレビュー（1ページずつスクロールで表示） */}
+              <div className="flex-1 min-w-0 bg-slate-50 rounded-xl border border-slate-200 overflow-auto flex flex-col min-h-[max(560px,calc(100vh-220px))]">
                 {viewUrl ? (
                   <iframe
                     src={viewUrl}
