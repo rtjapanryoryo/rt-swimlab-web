@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
             {
               id: user_id,
               role: 'user',
-              display_name: authUser?.user_metadata?.full_name ?? user_email || null,
+              display_name: authUser?.user_metadata?.full_name ?? (user_email || null),
               total_usage_count: nextCount,
               updated_at: new Date().toISOString(),
             },
