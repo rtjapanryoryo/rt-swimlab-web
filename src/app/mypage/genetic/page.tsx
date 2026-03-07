@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { ExternalLinks } from '@/components/ExternalLinks';
+import { uploadGeneProfile } from './actions';
 
 type GeneProfile = {
   id: string;
@@ -26,7 +27,7 @@ export default function GeneticPage() {
     } catch {
       const msg = text || '不明なエラー';
       if (/request entity too large|payload too large/i.test(msg)) {
-        return { error: 'ファイルが大きすぎます。50MB以下のPDFを選択してください。' };
+        return { error: 'ファイルが大きすぎます。100MB以下のPDFを選択してください。' };
       }
       return { error: msg };
     }
@@ -56,8 +57,8 @@ export default function GeneticPage() {
       setError('PDFファイルのみアップロードできます');
       return;
     }
-    if (file.size > 50 * 1024 * 1024) {
-      setError('ファイルサイズは50MBまでです');
+    if (file.size > 100 * 1024 * 1024) {
+      setError('ファイルサイズは100MBまでです');
       return;
     }
     setUploading(true);
@@ -66,13 +67,8 @@ export default function GeneticPage() {
     formData.append('file', file);
     formData.append('display_name', file.name.replace(/\.pdf$/i, ''));
     try {
-      const res = await fetch('/api/gene-profiles', {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
-      });
-      const data = await parseJsonOrText(res);
-      if (!res.ok) throw new Error(data.error ?? 'アップロードに失敗しました');
+      const result = await uploadGeneProfile(formData);
+      if (result.error) throw new Error(result.error);
       fetchProfiles();
       if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (e) {
@@ -149,7 +145,7 @@ export default function GeneticPage() {
       <section className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
         <div className="px-6 py-5 border-b border-slate-100">
           <h2 className="text-sm font-semibold text-slate-800">PDFを追加</h2>
-          <p className="text-xs text-slate-500 mt-0.5">遺伝子情報PDFをアップロード（50MBまで）</p>
+          <p className="text-xs text-slate-500 mt-0.5">遺伝子情報PDFをアップロード（100MBまで）</p>
         </div>
         <div className="p-6">
           <input

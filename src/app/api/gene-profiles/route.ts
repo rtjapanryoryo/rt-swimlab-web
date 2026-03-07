@@ -57,9 +57,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'PDF ファイルのみアップロードできます' }, { status: 400 });
   }
 
-  const maxSize = 50 * 1024 * 1024; // 50MB
+  const maxSize = 100 * 1024 * 1024; // 100MB
   if (file.size > maxSize) {
-    return NextResponse.json({ error: 'ファイルサイズは 50MB までです' }, { status: 400 });
+    return NextResponse.json({ error: 'ファイルサイズは 100MB までです' }, { status: 400 });
   }
 
   const ext = file.name.toLowerCase().endsWith('.pdf') ? '' : '.pdf';
