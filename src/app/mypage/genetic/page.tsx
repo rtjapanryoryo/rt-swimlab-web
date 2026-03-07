@@ -19,12 +19,25 @@ export default function GeneticPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  async function parseJsonOrText(res: Response) {
+    const text = await res.text();
+    try {
+      return text ? JSON.parse(text) : {};
+    } catch {
+      const msg = text || '不明なエラー';
+      if (/request entity too large|payload too large/i.test(msg)) {
+        return { error: 'ファイルが大きすぎます。10MB以下のPDFを選択してください。' };
+      }
+      return { error: msg };
+    }
+  }
+
   function fetchProfiles() {
     setLoading(true);
     setError(null);
     fetch('/api/gene-profiles', { credentials: 'include' })
       .then(async (res) => {
-        const data = await res.json();
+        const data = await parseJsonOrText(res);
         if (!res.ok) throw new Error(data.error ?? '取得に失敗しました');
         setProfiles(data.profiles ?? []);
       })
@@ -58,7 +71,7 @@ export default function GeneticPage() {
         body: formData,
         credentials: 'include',
       });
-      const data = await res.json();
+      const data = await parseJsonOrText(res);
       if (!res.ok) throw new Error(data.error ?? 'アップロードに失敗しました');
       fetchProfiles();
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -74,7 +87,7 @@ export default function GeneticPage() {
     setViewUrl(null);
     try {
       const res = await fetch(`/api/gene-profiles/${id}`, { credentials: 'include' });
-      const data = await res.json();
+      const data = await parseJsonOrText(res);
       if (!res.ok) throw new Error(data.error ?? '表示に失敗しました');
       setViewUrl(data.profile?.signed_url ?? null);
     } catch (e) {
@@ -93,7 +106,7 @@ export default function GeneticPage() {
         credentials: 'include',
       });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
+        const data = await parseJsonOrText(res);
         throw new Error(data.error ?? '削除に失敗しました');
       }
       if (viewingId === id) {
