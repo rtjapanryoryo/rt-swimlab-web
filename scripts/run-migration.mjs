@@ -7,14 +7,25 @@
  * Supabase Dashboard → Settings → Database → Connection string → URI
  * 例: postgresql://postgres.[project-ref]:[PASSWORD]@aws-0-us-east-1.pooler.supabase.com:6543/postgres
  */
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import { config } from 'dotenv';
 
-config({ path: resolve(process.cwd(), '.env.ai') });
-config({ path: resolve(process.cwd(), '.env.local') });
+const root = process.cwd();
+const r1 = config({ path: resolve(root, '.env.ai') });
+const r2 = config({ path: resolve(root, '.env.local') });
+const parsed = { ...r1?.parsed, ...r2?.parsed };
 
-const DATABASE_URL = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL;
+let DATABASE_URL =
+  process.env.DATABASE_URL ||
+  process.env.SUPABASE_DB_URL ||
+  parsed?.DATABASE_URL ||
+  parsed?.SUPABASE_DB_URL;
+if (!DATABASE_URL && existsSync(resolve(root, '.env.ai'))) {
+  const raw = readFileSync(resolve(root, '.env.ai'), 'utf-8');
+  const m = raw.match(/DATABASE_URL\s*=\s*(?:"([^"]*)"|'([^']*)'|(\S+))/);
+  if (m) DATABASE_URL = (m[1] ?? m[2] ?? m[3] ?? '').trim();
+}
 if (!DATABASE_URL) {
   console.error(`
 ❌ DATABASE_URL が未設定です。
@@ -40,15 +51,23 @@ async function run() {
     process.exit(1);
   }
 
-  const sqlPath = resolve(process.cwd(), 'supabase/migrations/20260305000000_create_profiles_and_generation_logs.sql');
-  const sql = readFileSync(sqlPath, 'utf-8');
+  const migrationsDir = resolve(process.cwd(), 'supabase/migrations');
+  const { readdirSync } = await import('fs');
+  const files = readdirSync(migrationsDir)
+    .filter((f) => f.endsWith('.sql'))
+    .sort();
 
   const client = new pg.default.Client({ connectionString: DATABASE_URL });
   try {
     await client.connect();
-    console.log('→ マイグレーション実行中...');
-    await client.query(sql);
-    console.log('✅ マイグレーション完了');
+
+    for (const f of files) {
+      const sqlPath = resolve(migrationsDir, f);
+      const sql = readFileSync(sqlPath, 'utf-8');
+      console.log(`→ ${f} 実行中...`);
+      await client.query(sql);
+      console.log(`   ✅ 完了`);
+    }
 
     console.log('→ 既存ユーザーを profiles に登録...');
     await client.query(`

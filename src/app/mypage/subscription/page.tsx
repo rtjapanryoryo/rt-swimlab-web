@@ -1,13 +1,17 @@
 export default function SubscriptionPage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <header>
-        <h1 className="text-2xl font-bold text-slate-900">有料プラン</h1>
-        <p className="text-slate-600 mt-1">Stripe との連携は準備中です。</p>
+        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">有料プラン</h1>
+        <p className="text-slate-500 mt-1 text-sm">Stripe との連携は準備中です</p>
       </header>
-      <div className="p-8 bg-white rounded-xl shadow-sm border border-slate-200 text-center text-slate-500">
-        準備中
-      </div>
+      <section className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+        <div className="py-20 text-center">
+          <div className="w-14 h-14 mx-auto mb-5 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-2xl">◆</div>
+          <p className="text-slate-600 font-medium">準備中</p>
+          <p className="text-slate-400 text-sm mt-1">しばらくお待ちください</p>
+        </div>
+      </section>
     </div>
   );
 }

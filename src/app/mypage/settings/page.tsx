@@ -2,11 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useAuth } from '@/components/AuthProvider';
-import { createClient } from '@/lib/supabase/client';
 
 export default function SettingsPage() {
-  const { user } = useAuth();
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -42,72 +39,95 @@ export default function SettingsPage() {
     }
   }
 
-  if (loading) return <p className="text-slate-600">読み込み中...</p>;
+  if (loading) {
+    return (
+      <div className="space-y-8 animate-pulse">
+        <div className="h-10 w-48 bg-slate-200 rounded-lg" />
+        <div className="h-40 bg-slate-100 rounded-2xl" />
+        <div className="h-32 bg-slate-100 rounded-2xl" />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <header>
-        <h1 className="text-2xl font-bold text-slate-900">設定</h1>
-        <p className="text-slate-600 mt-1">パスワードや表示名を変更できます。</p>
+        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
+          設定
+        </h1>
+        <p className="text-slate-500 mt-1 text-sm">
+          表示名やパスワードを管理できます
+        </p>
       </header>
 
-      {/* 表示名変更 */}
-      <div className="p-6 bg-white rounded-xl shadow-sm border border-slate-200">
-        <h2 className="text-sm font-semibold text-slate-700 mb-4">表示名</h2>
-        <form onSubmit={handleSaveName} className="flex flex-wrap gap-3 items-end">
-          <div className="flex-1 min-w-[200px]">
-            <label htmlFor="display_name" className="block text-xs text-slate-500 mb-1">
-              表示名
-            </label>
-            <input
-              id="display_name"
-              type="text"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg"
-              placeholder="お名前"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={saving}
-            className="px-4 py-2 bg-slate-800 text-white rounded-lg font-medium hover:bg-slate-900 disabled:opacity-50"
-          >
-            {saving ? '保存中...' : '保存'}
-          </button>
-        </form>
-        {message && (
-          <p className="mt-3 text-sm text-slate-600">{message}</p>
-        )}
-      </div>
+      {/* 表示名 */}
+      <section className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+        <div className="px-6 py-5 border-b border-slate-100">
+          <h2 className="text-sm font-semibold text-slate-800">表示名</h2>
+          <p className="text-xs text-slate-500 mt-0.5">マイページやメニューに表示されます</p>
+        </div>
+        <div className="p-6">
+          <form onSubmit={handleSaveName} className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
+            <div className="flex-1 w-full sm:max-w-xs">
+              <label htmlFor="display_name" className="block text-xs font-medium text-slate-500 mb-1.5">
+                表示名
+              </label>
+              <input
+                id="display_name"
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-colors"
+                placeholder="お名前"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={saving}
+              className="px-6 py-2.5 bg-teal-600 text-white font-medium rounded-xl hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+            >
+              {saving ? '保存中...' : '保存'}
+            </button>
+          </form>
+          {message && (
+            <p className={`mt-4 text-sm ${message.includes('失敗') ? 'text-amber-600' : 'text-teal-600'}`}>
+              {message}
+            </p>
+          )}
+        </div>
+      </section>
 
-      {/* パスワード変更 */}
-      <div className="p-6 bg-white rounded-xl shadow-sm border border-slate-200">
-        <h2 className="text-sm font-semibold text-slate-700 mb-4">パスワード</h2>
-        <p className="text-sm text-slate-600 mb-3">
-          パスワードを忘れた場合や変更したい場合は、以下のリンクからリセットできます。
-        </p>
-        <Link
-          href="/forgot-password"
-          className="inline-block px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
-        >
-          パスワードをリセットする
-        </Link>
-      </div>
+      {/* パスワード */}
+      <section className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+        <div className="px-6 py-5 border-b border-slate-100">
+          <h2 className="text-sm font-semibold text-slate-800">パスワード</h2>
+          <p className="text-xs text-slate-500 mt-0.5">忘れた場合や変更したい場合</p>
+        </div>
+        <div className="p-6">
+          <Link
+            href="/forgot-password"
+            className="inline-flex items-center px-5 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+          >
+            パスワードをリセットする
+          </Link>
+        </div>
+      </section>
 
       {/* アカウント連携 */}
-      <div className="p-6 bg-white rounded-xl shadow-sm border border-slate-200">
-        <h2 className="text-sm font-semibold text-slate-700 mb-2">アカウント連携</h2>
-        <p className="text-xs text-slate-600">
-          メールとGoogleを同じアカウントに紐付けると、どちらでもログインできます。
-        </p>
-        <Link
-          href="/mypage"
-          className="mt-3 inline-block text-sm text-slate-500 hover:text-slate-700 underline"
-        >
-          ← マイページへ戻る
-        </Link>
-      </div>
+      <section className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+        <div className="px-6 py-5 border-b border-slate-100">
+          <h2 className="text-sm font-semibold text-slate-800">アカウント連携</h2>
+          <p className="text-xs text-slate-500 mt-0.5">メールとGoogleを紐付けるとどちらでもログインできます</p>
+        </div>
+        <div className="p-6">
+          <Link
+            href="/mypage"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-teal-600 hover:text-teal-700 transition-colors"
+          >
+            ← マイページへ戻る
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }

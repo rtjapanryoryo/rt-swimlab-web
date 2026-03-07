@@ -4,15 +4,17 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/components/AuthProvider';
 
+const LINE_URL = process.env.NEXT_PUBLIC_LINE_URL || '';
 const COMMUNITY_URL = process.env.NEXT_PUBLIC_COMMUNITY_URL || '';
 
 const navItems = [
-  { href: '/mypage', label: 'ダッシュボード', icon: '📊' },
-  { href: '/mypage/menus', label: 'メニューログ', icon: '📋' },
-  { href: '/mypage/genetic', label: '遺伝子情報PDF', icon: '🧬' },
-  { href: '/mypage/subscription', label: '有料プラン', icon: '💳' },
-  ...(COMMUNITY_URL ? [{ href: COMMUNITY_URL, label: 'コミュニティ', icon: '👥', external: true }] : []),
-  { href: '/mypage/settings', label: '設定', icon: '⚙️' },
+  { href: '/mypage', label: 'ダッシュボード', icon: '◉' },
+  { href: '/mypage/menus', label: 'メニューログ', icon: '▸' },
+  { href: '/mypage/genetic', label: '遺伝子情報PDF', icon: '◇' },
+  { href: '/mypage/subscription', label: '有料プラン', icon: '◆' },
+  ...(LINE_URL ? [{ href: LINE_URL, label: 'RT公式LINE', icon: '●', external: true }] : []),
+  ...(COMMUNITY_URL ? [{ href: COMMUNITY_URL, label: 'コミュニティ', icon: '○', external: true }] : []),
+  { href: '/mypage/settings', label: '設定', icon: '⚙' },
 ];
 
 export default function MyPageLayout({
@@ -25,15 +27,18 @@ export default function MyPageLayout({
 
   if (loading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
         {loading ? (
-          <p className="text-slate-600">読み込み中...</p>
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-8 h-8 border-2 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" />
+            <p className="text-sm text-slate-500">読み込み中...</p>
+          </div>
         ) : (
-          <div className="text-center space-y-4">
+          <div className="text-center space-y-6 px-6">
             <p className="text-slate-600">マイページを利用するにはログインしてください。</p>
             <Link
               href="/login?redirect=/mypage"
-              className="inline-block px-4 py-2 rounded-xl bg-slate-800 text-white hover:bg-slate-900 font-medium"
+              className="inline-block px-6 py-3 rounded-xl bg-teal-600 text-white font-medium hover:bg-teal-700 transition-colors shadow-sm"
             >
               ログイン
             </Link>
@@ -44,28 +49,31 @@ export default function MyPageLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-slate-50/95 to-slate-100">
-      <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-6 py-6 px-4">
-        {/* サイドバー：大きなメニューバー */}
-        <nav className="md:w-56 flex-shrink-0">
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-2 sticky top-6">
-            <h2 className="px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              マイページ
-            </h2>
-            <ul className="space-y-0.5">
+    <div className="min-h-screen bg-[#f8fafc]">
+      <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-8 py-8 px-4 sm:px-6">
+        {/* サイドナビ */}
+        <aside className="lg:w-56 flex-shrink-0">
+          <nav className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden sticky top-8">
+            <div className="px-5 py-4 border-b border-slate-100">
+              <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">
+                My Page
+              </p>
+              <p className="text-sm font-semibold text-slate-800 mt-0.5">マイページ</p>
+            </div>
+            <ul className="py-2">
               {navItems.map((item) => {
                 const isActive =
                   'external' in item
                     ? false
                     : pathname === item.href || (item.href !== '/mypage' && pathname.startsWith(item.href));
-                const className = `flex items-center gap-3 w-full px-3 py-3 rounded-lg text-left text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-slate-100 text-slate-900'
-                    : 'text-slate-700 hover:bg-slate-50'
-                }`;
+                const baseClass =
+                  'flex items-center gap-3 w-full px-5 py-3 text-left text-sm font-medium transition-colors';
+                const activeClass = isActive
+                  ? 'bg-teal-50 text-teal-800 border-l-2 border-teal-500'
+                  : 'text-slate-600 hover:bg-slate-50/80 hover:text-slate-900';
                 const content = (
                   <>
-                    <span className="text-lg">{item.icon}</span>
+                    <span className={`text-xs opacity-70 ${isActive ? 'text-teal-600' : ''}`}>{item.icon}</span>
                     {item.label}
                   </>
                 );
@@ -76,7 +84,7 @@ export default function MyPageLayout({
                         href={item.href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={className}
+                        className={`${baseClass} ${activeClass}`}
                       >
                         {content}
                       </a>
@@ -85,21 +93,23 @@ export default function MyPageLayout({
                 }
                 return (
                   <li key={item.href}>
-                    <Link href={item.href} className={className}>
+                    <Link href={item.href} className={`${baseClass} ${activeClass}`}>
                       {content}
                     </Link>
                   </li>
                 );
               })}
             </ul>
-            <Link
-              href="/"
-              className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100 px-3 py-2 text-sm text-slate-500 hover:text-slate-700"
-            >
-              ← トップへ戻る
-            </Link>
-          </div>
-        </nav>
+            <div className="px-5 py-3 border-t border-slate-100">
+              <Link
+                href="/"
+                className="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-700 transition-colors"
+              >
+                ← トップへ戻る
+              </Link>
+            </div>
+          </nav>
+        </aside>
 
         {/* メインコンテンツ */}
         <main className="flex-1 min-w-0">{children}</main>
