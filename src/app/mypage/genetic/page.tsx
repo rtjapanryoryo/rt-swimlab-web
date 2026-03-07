@@ -229,7 +229,7 @@ export default function GeneticPage() {
               <div className="bg-slate-50/30 rounded-lg border border-slate-200/60 overflow-auto min-h-[400px] sm:min-h-[520px] md:min-h-[600px]">
                 {viewUrl ? (
                   <iframe
-                    src={`${viewUrl}#view=FitH`}
+                    src={`${viewUrl}#view=FitH&pagemode=none`}
                     title="PDFプレビュー"
                     className="w-full min-w-0 border-0 min-h-[400px] sm:min-h-[520px] md:min-h-[600px]"
                   />

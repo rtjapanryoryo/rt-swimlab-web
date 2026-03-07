@@ -2,13 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { MenuSheet } from '@/components/MenuSheet';
-import type { TrainingInput, TrainingResult } from '@/lib/rt/generator';
 
 type MenuLog = {
   id: string;
-  input: Record<string, unknown>;
-  result: Record<string, unknown> & { rawText?: string };
   source: string;
   created_at: string;
 };
@@ -19,10 +15,10 @@ export function MenuLogSection() {
   const [error, setError] = useState<string | null>(null);
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams();
+    params.set('summary', '1'); // 作成日時のみ取得（軽量）
     if (from) params.set('from', from);
     if (to) params.set('to', to);
     setLoading(true);
@@ -39,7 +35,6 @@ export function MenuLogSection() {
       .finally(() => setLoading(false));
   }, [from, to]);
 
-  const selected = menus.find((m) => m.id === selectedId);
   const formatDate = (s: string) => {
     const d = new Date(s);
     return d.toLocaleString('ja-JP', {
@@ -71,7 +66,7 @@ export function MenuLogSection() {
             </div>
             <p className="text-slate-600 font-medium text-sm">保存されたメニューはありません</p>
             <p className="text-slate-400 text-xs mt-1">
-              RT swim lab でメニューを作成し、「保存」でログに追加できます
+              RT swim lab でメニューを作成すると、ログイン中は自動で作成日時が記録されます
             </p>
             <Link
               href="/mypage/menu"
@@ -81,82 +76,50 @@ export function MenuLogSection() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <div>
-              <div className="flex flex-wrap gap-3 items-end mb-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">開始日</label>
-                  <input
-                    type="date"
-                    value={from}
-                    onChange={(e) => setFrom(e.target.value)}
-                    className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">終了日</label>
-                  <input
-                    type="date"
-                    value={to}
-                    onChange={(e) => setTo(e.target.value)}
-                    className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
-                  />
-                </div>
-                {(from || to) && (
-                  <button
-                    type="button"
-                    onClick={() => { setFrom(''); setTo(''); }}
-                    className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-slate-900"
-                  >
-                    クリア
-                  </button>
-                )}
+          <div>
+            <div className="flex flex-wrap gap-3 items-end mb-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1">開始日</label>
+                <input
+                  type="date"
+                  value={from}
+                  onChange={(e) => setFrom(e.target.value)}
+                  className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                />
               </div>
-              <div className="max-h-[320px] overflow-y-auto space-y-2">
-                {menus.map((m) => (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => setSelectedId(selectedId === m.id ? null : m.id)}
-                    className={`w-full text-left p-3 rounded-xl border transition-all ${
-                      selectedId === m.id
-                        ? 'border-blue-200 bg-blue-50/80'
-                        : 'border-slate-100 hover:bg-slate-50/80'
-                    }`}
-                  >
-                    <p className="text-xs text-slate-400 tabular-nums">{formatDate(m.created_at)}</p>
-                    <p className="text-sm font-medium text-slate-800">
-                      {m.source === 'custom' ? 'カスタム作成' : 'クイック作成'}
-                    </p>
-                  </button>
-                ))}
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1">終了日</label>
+                <input
+                  type="date"
+                  value={to}
+                  onChange={(e) => setTo(e.target.value)}
+                  className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                />
               </div>
-            </div>
-            <div className="min-h-[200px]">
-              {selected ? (
-                <div className="space-y-3">
-                  <p className="text-xs text-slate-400">
-                    {formatDate(selected.created_at)} · {selected.source === 'custom' ? 'カスタム' : 'クイック'}
-                  </p>
-                  {selected.result.rawText ? (
-                    <pre className="whitespace-pre-wrap text-sm text-slate-800 bg-slate-50 rounded-xl p-4">
-                      {selected.result.rawText}
-                    </pre>
-                  ) : (
-                    <div className="bg-slate-50/50 rounded-xl p-4">
-                      <MenuSheet
-                        input={(selected.input || {}) as unknown as TrainingInput}
-                        result={(selected.result || {}) as unknown as TrainingResult}
-                        source={selected.source as 'quick' | 'custom'}
-                      />
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="py-12 text-center text-slate-500 text-sm">
-                  左のリストから選択
-                </div>
+              {(from || to) && (
+                <button
+                  type="button"
+                  onClick={() => { setFrom(''); setTo(''); }}
+                  className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-slate-900"
+                >
+                  クリア
+                </button>
               )}
+            </div>
+            <div className="max-h-[280px] overflow-y-auto space-y-1.5">
+              {menus.map((m) => (
+                <div
+                  key={m.id}
+                  className="flex items-center justify-between py-2 px-3 rounded-lg border border-slate-100 bg-slate-50/30"
+                >
+                  <span className="text-sm font-medium text-slate-800 tabular-nums">
+                    {formatDate(m.created_at)}
+                  </span>
+                  <span className="text-xs text-slate-500">
+                    {m.source === 'custom' ? 'カスタム' : 'クイック'}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         )}
