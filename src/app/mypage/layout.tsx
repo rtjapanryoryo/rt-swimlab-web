@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 
 function LogoutIcon() {
@@ -33,6 +34,27 @@ export default function MyPageLayout({
 }) {
   const pathname = usePathname();
   const { user, loading } = useAuth();
+  const [displayName, setDisplayName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    fetch('/api/profile', { credentials: 'include' })
+      .then((r) => r.json())
+      .then((res) => setDisplayName(res.profile?.display_name ?? null))
+      .catch(() => setDisplayName(null));
+  }, [user]);
+
+  useEffect(() => {
+    const handler = () => {
+      if (!user) return;
+      fetch('/api/profile', { credentials: 'include' })
+        .then((r) => r.json())
+        .then((res) => setDisplayName(res.profile?.display_name ?? null))
+        .catch(() => setDisplayName(null));
+    };
+    window.addEventListener('profile-updated', handler);
+    return () => window.removeEventListener('profile-updated', handler);
+  }, [user]);
 
   if (loading || !user) {
     return (
@@ -66,7 +88,9 @@ export default function MyPageLayout({
       >
         <div className="px-4 py-3">
           <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">My Page</p>
-          <p className="text-sm font-semibold text-slate-800 mt-0.5">マイページ</p>
+          <p className="text-sm font-semibold text-slate-800 mt-0.5 truncate">
+            {displayName ? `${displayName}様` : 'マイページ'}
+          </p>
         </div>
         <nav className="overflow-x-auto scrollbar-hide scroll-smooth border-t border-slate-100">
           <div className="flex gap-1 px-4 py-2 min-w-max">
@@ -136,7 +160,9 @@ export default function MyPageLayout({
               <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">
                 My Page
               </p>
-              <p className="text-sm font-semibold text-slate-800 mt-0.5">マイページ</p>
+              <p className="text-sm font-semibold text-slate-800 mt-0.5 truncate" title={displayName ? `${displayName}様` : undefined}>
+                {displayName ? `${displayName}様` : 'マイページ'}
+              </p>
             </div>
             <ul className="py-2">
               {navItems.map((item) => {
@@ -202,7 +228,7 @@ export default function MyPageLayout({
         </aside>
 
         {/* メインコンテンツ（PC: サイドバー分の余白＋パディング。本面は広めに） */}
-        <main className="flex-1 min-w-0 order-1 lg:order-2 py-6 sm:py-8 px-4 sm:px-6 lg:pl-[20rem] lg:pr-8 lg:py-8 lg:max-w-6xl">
+        <main className="flex-1 min-w-0 order-1 lg:order-2 py-6 sm:py-8 px-4 sm:px-6 lg:pl-[20rem] lg:pr-6 lg:py-8 lg:max-w-[calc(100%-20rem-1.5rem)]">
           {children}
         </main>
       </div>

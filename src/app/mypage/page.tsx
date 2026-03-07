@@ -55,16 +55,6 @@ export default function MyPageDashboard() {
 
   return (
     <div className="space-y-8">
-      {/* ウェルカム（AZACLI風：〇〇様） */}
-      <header>
-        <h1 className="text-xl sm:text-2xl font-semibold text-blue-700 tracking-tight">
-          {displayNameWithSama}
-        </h1>
-        <p className="text-slate-500 mt-1 text-sm">
-          サマリーと最新のお知らせをご確認ください。
-        </p>
-      </header>
-
       {error && (
         <div className="p-4 bg-amber-50/80 border border-amber-200/80 rounded-xl text-amber-800 text-sm">
           {error}
