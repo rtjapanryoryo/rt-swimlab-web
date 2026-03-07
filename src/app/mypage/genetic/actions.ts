@@ -3,7 +3,7 @@
 import { createClient, getEffectiveUser } from '@/lib/supabase/server';
 import { getSupabaseServiceRole } from '@/lib/supabase/admin';
 
-const MAX_SIZE = 100 * 1024 * 1024; // 100MB
+const MAX_SIZE = 20 * 1024 * 1024; // 20MB（圧縮前の上限。圧縮後は10MB以下を想定）
 
 export type UploadResult = { profile?: { id: string; display_name: string; created_at: string }; error?: string };
 
@@ -20,6 +20,15 @@ export async function uploadGeneProfile(formData: FormData): Promise<UploadResul
     return { error: 'not_configured' };
   }
 
+  const { count } = await supabase
+    .from('gene_profiles')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', user.id);
+
+  if ((count ?? 0) >= 1) {
+    return { error: '格納できるPDFは1件までです。新しいPDFを追加するには、既存のものを削除してください。' };
+  }
+
   const file = formData.get('file') as File | null;
   const displayName = (formData.get('display_name') as string) || 'RT GENE PROFILE';
 
@@ -32,7 +41,7 @@ export async function uploadGeneProfile(formData: FormData): Promise<UploadResul
   }
 
   if (file.size > MAX_SIZE) {
-    return { error: 'ファイルサイズは 100MB までです' };
+    return { error: 'ファイルサイズは 20MB までです（自動圧縮で10MB以下になります）' };
   }
 
   const ext = file.name.toLowerCase().endsWith('.pdf') ? '' : '.pdf';

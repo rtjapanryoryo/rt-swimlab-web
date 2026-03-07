@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { ExternalLinks } from '@/components/ExternalLinks';
+import { compressPdfIfNeeded } from '@/lib/compress-pdf';
 import { uploadGeneProfile } from './actions';
 
 type GeneProfile = {
@@ -27,7 +28,7 @@ export default function GeneticPage() {
     } catch {
       const msg = text || '不明なエラー';
       if (/request entity too large|payload too large/i.test(msg)) {
-        return { error: 'ファイルが大きすぎます。100MB以下のPDFを選択してください。' };
+        return { error: 'ファイルが大きすぎます。20MB以下のPDFを選択してください。' };
       }
       return { error: msg };
     }
@@ -57,14 +58,22 @@ export default function GeneticPage() {
       setError('PDFファイルのみアップロードできます');
       return;
     }
-    if (file.size > 100 * 1024 * 1024) {
-      setError('ファイルサイズは100MBまでです');
+    if (file.size > 20 * 1024 * 1024) {
+      setError('ファイルサイズは20MBまでです（自動圧縮されます）');
       return;
     }
     setUploading(true);
     setError(null);
+    let fileToUpload = file;
+    if (file.size > 2 * 1024 * 1024) {
+      try {
+        fileToUpload = await compressPdfIfNeeded(file);
+      } catch {
+        // 圧縮失敗時は元ファイルで続行
+      }
+    }
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('file', fileToUpload);
     formData.append('display_name', file.name.replace(/\.pdf$/i, ''));
     try {
       const result = await uploadGeneProfile(formData);
@@ -145,7 +154,7 @@ export default function GeneticPage() {
       <section className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
         <div className="px-6 py-5 border-b border-slate-100">
           <h2 className="text-sm font-semibold text-slate-800">PDFを追加</h2>
-          <p className="text-xs text-slate-500 mt-0.5">遺伝子情報PDFをアップロード（100MBまで）</p>
+          <p className="text-xs text-slate-500 mt-0.5">遺伝子情報PDFを1件まで格納。自動圧縮で確実にアップロード</p>
         </div>
         <div className="p-6">
           <input
@@ -159,11 +168,11 @@ export default function GeneticPage() {
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
+            disabled={uploading || profiles.length >= 1}
             className="w-full py-8 px-6 border-2 border-dashed border-slate-200 rounded-xl hover:border-teal-300 hover:bg-teal-50/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {uploading ? (
-              <span className="text-slate-500">アップロード中...</span>
+              <span className="text-slate-500">圧縮・アップロード中...</span>
             ) : (
               <span className="text-slate-600">クリックしてPDFを選択</span>
             )}
@@ -179,7 +188,7 @@ export default function GeneticPage() {
             <p className="text-xs text-slate-500 mt-0.5">いつでも確認・ダウンロードできます</p>
           </div>
           {profiles.length > 0 && (
-            <span className="text-xs text-slate-400 tabular-nums">{profiles.length} 件</span>
+            <span className="text-xs text-slate-400 tabular-nums">1件まで（削除・差し替え可）</span>
           )}
         </div>
         <div className="p-4 sm:p-6">
