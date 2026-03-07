@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { getUser } from '@/lib/supabase/server';
+import { getEffectiveUser } from '@/lib/supabase/server';
 import { getAllContent } from '@/lib/rt/content';
 
 /**
@@ -8,7 +8,7 @@ import { getAllContent } from '@/lib/rt/content';
  * ログイン済みユーザーのみ。クイック作成時にクライアントから利用。
  */
 export async function GET(request: NextRequest) {
-  const user = await getUser();
+  const user = await getEffectiveUser();
   if (!user) {
     return NextResponse.json({ error: 'ログインが必要です。' }, { status: 401 });
   }

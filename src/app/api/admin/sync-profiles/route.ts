@@ -3,18 +3,23 @@
  * Supabase の sync_profiles_from_auth() を呼び出す
  */
 import { NextResponse } from 'next/server';
-import { getUser } from '@/lib/supabase/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, getEffectiveUser } from '@/lib/supabase/server';
+import { getSupabaseServiceRole } from '@/lib/supabase/admin';
 
 export async function POST() {
-  const user = await getUser();
+  const user = await getEffectiveUser();
   if (!user) {
     return NextResponse.json({ error: 'login_required' }, { status: 401 });
   }
 
-  const supabase = await createClient();
+  const supabase = user.isBypass ? getSupabaseServiceRole() : await createClient();
   if (!supabase) {
     return NextResponse.json({ error: 'not_configured' }, { status: 503 });
+  }
+
+  const { data: me } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+  if (me?.role !== 'admin') {
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   }
 
   const { data, error } = await supabase.rpc('sync_profiles_from_auth');

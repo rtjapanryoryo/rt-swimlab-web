@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import path from 'path';
 import { config as loadEnv } from 'dotenv';
-import { getUser } from '@/lib/supabase/server';
+import { getEffectiveUser } from '@/lib/supabase/server';
 import OpenAI from 'openai';
 import { getCommonContent, getProtocolContent, getPromptContent } from '@/lib/rt/content';
 
@@ -23,7 +23,7 @@ function getOpenAIStatus(): { configured: boolean; reason?: 'missing' | 'placeho
 /** GET: ログイン済みユーザー向けに OpenAI API が利用可能か返す。診断用の keyExists も返す */
 export async function GET(request: NextRequest) {
   try {
-    const user = await getUser();
+    const user = await getEffectiveUser();
     const keyExists = (process.env.OPENAI_API_KEY || '').trim().length > 0;
     const status = getOpenAIStatus();
     console.log('[custom-menu] GET: OPENAI_API_KEY exists:', keyExists, 'configured:', status.configured, 'reason:', status.reason ?? 'ok');
@@ -219,9 +219,9 @@ export async function POST(request: NextRequest) {
   try {
     let user = null;
     try {
-      user = await getUser();
+      user = await getEffectiveUser();
     } catch (authErr) {
-      console.error('[custom-menu] getUser error:', authErr);
+      console.error('[custom-menu] getEffectiveUser error:', authErr);
       return ensureJson500();
     }
     if (!user) {

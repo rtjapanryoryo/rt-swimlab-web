@@ -4,24 +4,25 @@
  * - POST: 新規ログ追加 + total_usage_count +1（テスト用ダミー含む）
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { getUser } from '@/lib/supabase/server';
+import { getEffectiveUser } from '@/lib/supabase/server';
 import { createClient } from '@/lib/supabase/server';
+import { getSupabaseServiceRole } from '@/lib/supabase/admin';
 
 export async function GET(request: NextRequest) {
-  const user = await getUser();
+  const user = await getEffectiveUser();
   if (!user) {
     return NextResponse.json({ error: 'login_required' }, { status: 401 });
   }
 
-  const supabase = await createClient();
-  if (!supabase) {
+  const sb = user.isBypass ? getSupabaseServiceRole() : await createClient();
+  if (!sb) {
     return NextResponse.json({ error: 'not_configured' }, { status: 503 });
   }
 
   const { searchParams } = new URL(request.url);
   const limit = Math.min(parseInt(searchParams.get('limit') ?? '50', 10), 100);
 
-  const { data, error } = await supabase
+  const { data, error } = await sb
     .from('generation_logs')
     .select('id, content_details, created_at')
     .eq('user_id', user.id)
@@ -37,12 +38,12 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const user = await getUser();
+  const user = await getEffectiveUser();
   if (!user) {
     return NextResponse.json({ error: 'login_required' }, { status: 401 });
   }
 
-  const sb = await createClient();
+  const sb = user.isBypass ? getSupabaseServiceRole() : await createClient();
   if (!sb) {
     return NextResponse.json({ error: 'not_configured' }, { status: 503 });
   }

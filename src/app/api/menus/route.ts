@@ -12,11 +12,11 @@ try {
 } catch {
   // .env.ai が無くても続行
 }
-import { getUser } from '@/lib/supabase/server';
-import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/admin';
+import { getEffectiveUser } from '@/lib/supabase/server';
+import { getSupabaseAdmin, getSupabaseServiceRole, isSupabaseConfigured } from '@/lib/supabase/admin';
 
 export async function POST(request: NextRequest) {
-  const user = await getUser();
+  const user = await getEffectiveUser();
   if (!user) {
     return NextResponse.json(
       { error: 'login_required', message: 'ログインが必要です。' },
@@ -24,10 +24,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const sb = getSupabaseAdmin();
+  const sb = user.isBypass ? getSupabaseServiceRole() : getSupabaseAdmin();
   if (!sb) {
     return NextResponse.json(
-      { error: 'not_configured', message: 'メニュー保存は未設定です。' },
+      { error: 'not_configured', message: user.isBypass ? 'バイパス時は SUPABASE_SERVICE_ROLE_KEY が必要です。' : 'メニュー保存は未設定です。' },
       { status: 503 }
     );
   }
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  const user = await getUser();
+  const user = await getEffectiveUser();
   if (!user) {
     return NextResponse.json(
       { error: 'login_required', message: 'ログインが必要です。' },
@@ -84,10 +84,10 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const sb = getSupabaseAdmin();
+  const sb = user.isBypass ? getSupabaseServiceRole() : getSupabaseAdmin();
   if (!sb) {
     return NextResponse.json(
-      { error: 'not_configured', message: 'メニュー一覧は未設定です。' },
+      { error: 'not_configured', message: user.isBypass ? 'バイパス時は SUPABASE_SERVICE_ROLE_KEY が必要です。' : 'メニュー一覧は未設定です。' },
       { status: 503 }
     );
   }

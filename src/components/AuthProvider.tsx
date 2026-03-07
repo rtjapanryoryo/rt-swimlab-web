@@ -17,13 +17,44 @@ export function useAuth() {
   return ctx;
 }
 
+const BYPASS_COOKIE = 'dev-bypass-user-id';
+const BYPASS_COOKIE_MAX_AGE = 60 * 60 * 24; // 24h
+
+function setBypassCookie(userId: string) {
+  document.cookie = `${BYPASS_COOKIE}=${encodeURIComponent(userId)}; path=/; max-age=${BYPASS_COOKIE_MAX_AGE}; SameSite=Lax`;
+}
+
+function clearBypassCookie() {
+  document.cookie = `${BYPASS_COOKIE}=; path=/; max-age=0`;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const devBypass =
+    typeof window !== 'undefined' &&
+    process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === 'true' &&
+    process.env.NEXT_PUBLIC_DEV_BYPASS_USER_ID;
+
   useEffect(() => {
     let mounted = true;
     async function init() {
+      if (devBypass) {
+        const mockUser = {
+          id: process.env.NEXT_PUBLIC_DEV_BYPASS_USER_ID!,
+          email: 'dev-bypass@local',
+          app_metadata: {},
+          user_metadata: { full_name: '開発用バイパス' },
+          aud: 'authenticated',
+          created_at: new Date().toISOString(),
+        } as User;
+        setBypassCookie(mockUser.id);
+        if (mounted) setUser(mockUser);
+        if (mounted) setLoading(false);
+        return;
+      }
+      clearBypassCookie();
       try {
         const supabase = createClient();
         const { data: { session } } = await supabase.auth.getSession();
@@ -36,10 +67,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     init();
 
+    if (devBypass) return;
+
     try {
       const supabase = createClient();
       const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-        if (mounted) setUser(session?.user ?? null);
+        if (mounted) {
+          setUser(session?.user ?? null);
+          if (!session) clearBypassCookie();
+        }
       });
       return () => {
         mounted = false;
@@ -49,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       return () => { mounted = false; };
     }
-  }, []);
+  }, [devBypass]);
 
   return (
     <AuthContext.Provider value={{ user, loading }}>

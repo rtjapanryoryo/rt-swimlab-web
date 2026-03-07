@@ -10,7 +10,7 @@ const COMMUNITY_URL = process.env.NEXT_PUBLIC_COMMUNITY_URL || '';
 const navItems = [
   { href: '/mypage', label: 'ダッシュボード', icon: '◉' },
   { href: '/mypage/menus', label: 'メニューログ', icon: '▸' },
-  { href: '/mypage/genetic', label: '遺伝子情報PDF', icon: '◇' },
+  { href: '/mypage/genetic', label: 'RT GENE PROFILE', icon: '◇' },
   { href: '/mypage/subscription', label: '有料プラン', icon: '◆' },
   ...(LINE_URL ? [{ href: LINE_URL, label: 'RT公式LINE', icon: '●', external: true }] : []),
   ...(COMMUNITY_URL ? [{ href: COMMUNITY_URL, label: 'コミュニティ', icon: '○', external: true }] : []),

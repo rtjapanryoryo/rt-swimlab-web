@@ -39,6 +39,12 @@ export function UserNav() {
   return (
     <div className="flex items-center gap-3">
       <Link
+        href="/"
+        className="text-xs md:text-sm text-slate-600 hover:text-slate-900 underline underline-offset-2"
+      >
+        練習メニュー
+      </Link>
+      <Link
         href="/mypage"
         className="text-xs md:text-sm text-slate-600 hover:text-slate-900 underline underline-offset-2"
       >

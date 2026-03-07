@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { getUser } from '@/lib/supabase/server';
+import { getEffectiveUser } from '@/lib/supabase/server';
 import { getQuickSettings } from '@/lib/rt/content';
 
 /**
@@ -8,7 +8,7 @@ import { getQuickSettings } from '@/lib/rt/content';
  */
 export async function GET(request: NextRequest) {
   try {
-    const user = await getUser();
+    const user = await getEffectiveUser();
     if (!user) {
       return NextResponse.json(
         { error: 'login_required', message: 'ログインが必要です' },

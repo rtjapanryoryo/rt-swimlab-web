@@ -36,3 +36,31 @@ export async function getUser() {
   const { data: { user } } = await supabase.auth.getUser();
   return user;
 }
+
+/** 開発用バイパス時は { id, isBypass: true } を返す */
+export type EffectiveUser = { id: string; email?: string | null; isBypass?: boolean };
+
+/**
+ * 認証済みユーザーを取得。開発用バイパス有効時は cookie の user id を返す。
+ * API Route では必ずこちらを使用すること。
+ */
+export async function getEffectiveUser(): Promise<EffectiveUser | null> {
+  const user = await getUser();
+  if (user) return { ...user, isBypass: false };
+
+  const bypassId = process.env.DEV_BYPASS_USER_ID;
+  if (
+    !bypassId ||
+    process.env.NODE_ENV !== 'development' ||
+    process.env.DEV_BYPASS_AUTH !== 'true'
+  ) {
+    return null;
+  }
+
+  const cookieStore = await cookies();
+  const bypassCookie = cookieStore.get('dev-bypass-user-id')?.value?.trim();
+  if (bypassCookie === bypassId) {
+    return { id: bypassId, isBypass: true };
+  }
+  return null;
+}

@@ -3,16 +3,16 @@
  * role=admin のみアクセス可能（RLS で制御）
  */
 import { NextResponse } from 'next/server';
-import { getUser } from '@/lib/supabase/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, getEffectiveUser } from '@/lib/supabase/server';
+import { getSupabaseServiceRole } from '@/lib/supabase/admin';
 
 export async function GET() {
-  const user = await getUser();
+  const user = await getEffectiveUser();
   if (!user) {
     return NextResponse.json({ error: 'login_required' }, { status: 401 });
   }
 
-  const sb = await createClient();
+  const sb = user.isBypass ? getSupabaseServiceRole() : await createClient();
   if (!sb) {
     return NextResponse.json({ error: 'not_configured' }, { status: 503 });
   }

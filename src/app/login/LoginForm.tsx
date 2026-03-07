@@ -7,10 +7,30 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { WebViewOpenInBrowser } from '@/components/WebViewOpenInBrowser';
 
-function LoginFormInner({ authConfigured }: { authConfigured: boolean }) {
+const BYPASS_COOKIE = 'dev-bypass-user-id';
+const BYPASS_COOKIE_MAX_AGE = 60 * 60 * 24; // 24h
+
+function setBypassCookie(userId: string) {
+  document.cookie = `${BYPASS_COOKIE}=${encodeURIComponent(userId)}; path=/; max-age=${BYPASS_COOKIE_MAX_AGE}; SameSite=Lax`;
+}
+
+function LoginFormInner({
+  authConfigured,
+  devBypassEnabled,
+}: {
+  authConfigured: boolean;
+  devBypassEnabled?: boolean;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') ?? '/';
+
+  function handleDevBypass() {
+    const userId = process.env.NEXT_PUBLIC_DEV_BYPASS_USER_ID;
+    if (!userId) return;
+    setBypassCookie(userId);
+    window.location.href = redirect || '/';
+  }
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -55,7 +75,7 @@ function LoginFormInner({ authConfigured }: { authConfigured: boolean }) {
         setError(err.message === 'Invalid login credentials' ? 'メールアドレスまたはパスワードが正しくありません。' : err.message);
         return;
       }
-      let target = redirect || '/mypage';
+      let target = redirect || '/';
       try {
         const res = await fetch('/api/profile', { credentials: 'include' });
         const json = await res.json().catch(() => ({}));
@@ -167,16 +187,34 @@ function LoginFormInner({ authConfigured }: { authConfigured: boolean }) {
               新規登録
             </Link>
           </p>
+
+          {devBypassEnabled && (
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <button
+                type="button"
+                onClick={handleDevBypass}
+                className="w-full px-4 py-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md hover:bg-amber-100"
+              >
+                開発用で入る（フリーパス）
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </WebViewOpenInBrowser>
   );
 }
 
-export function LoginForm({ authConfigured }: { authConfigured: boolean }) {
+export function LoginForm({
+  authConfigured,
+  devBypassEnabled,
+}: {
+  authConfigured: boolean;
+  devBypassEnabled?: boolean;
+}) {
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center">読み込み中...</div>}>
-      <LoginFormInner authConfigured={authConfigured} />
+      <LoginFormInner authConfigured={authConfigured} devBypassEnabled={devBypassEnabled} />
     </Suspense>
   );
 }

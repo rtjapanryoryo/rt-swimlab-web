@@ -41,10 +41,10 @@ export async function GET(request: NextRequest) {
   if (code) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error && data.user) {
-      const redirect = next || (await getRedirectForUser(supabase, data.user.id, '/mypage'));
+      const redirect = next || (await getRedirectForUser(supabase, data.user.id, '/'));
       return NextResponse.redirect(`${origin}${redirect}`);
     }
-    if (!error) return NextResponse.redirect(`${origin}${next || '/mypage'}`);
+    if (!error) return NextResponse.redirect(`${origin}${next || '/'}`);
     console.error('[auth/callback] OAuth exchange error:', error);
     return NextResponse.redirect(`${origin}/login?error=oauth`);
   }

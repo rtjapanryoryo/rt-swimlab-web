@@ -3,6 +3,7 @@ import "./globals.css";
 import { SplashScreenProvider } from "@/components/SplashScreen";
 import { AuthProvider } from "@/components/AuthProvider";
 import { UserNav } from "@/components/UserNav";
+import { SiteFooter } from "@/components/SiteFooter";
 
 export const metadata: Metadata = {
   title: "RT swim lab",
@@ -22,14 +23,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja">
-      <body className="antialiased font-sans">
+      <body className="antialiased font-sans flex flex-col min-h-screen">
         <AuthProvider>
           <div className="fixed top-0 right-0 z-50 p-4 no-print">
             <UserNav />
           </div>
-          <div className="w-full min-w-0 pt-2 pr-3 sm:pr-20 md:pr-40">
+          <div className="flex-1 w-full min-w-0 pt-2 pr-3 sm:pr-20 md:pr-40">
             <SplashScreenProvider>{children}</SplashScreenProvider>
           </div>
+          <SiteFooter />
         </AuthProvider>
       </body>
     </html>
