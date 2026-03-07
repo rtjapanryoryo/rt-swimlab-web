@@ -16,16 +16,16 @@ export function UserNav() {
 
   if (!user) {
     return (
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         <Link
           href="/signup"
-          className="text-xs md:text-sm text-slate-600 hover:text-slate-900 underline underline-offset-2"
+          className="text-sm font-medium text-slate-600 hover:text-teal-700 transition-all duration-200 py-2.5 px-4 rounded-xl border border-slate-200/70 hover:border-teal-200/80 hover:bg-teal-50/50"
         >
           新規登録
         </Link>
         <Link
           href="/login"
-          className="text-sm px-3 py-1.5 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-gray-700"
+          className="text-sm font-medium px-5 py-2.5 rounded-xl bg-teal-600 text-white hover:bg-teal-700 transition-all duration-200 shadow-[0_2px_8px_rgba(13,148,136,0.2)] hover:shadow-[0_4px_12px_rgba(13,148,136,0.25)]"
         >
           ログイン
         </Link>

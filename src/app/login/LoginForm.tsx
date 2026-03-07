@@ -146,17 +146,9 @@ function LoginFormInner({
               />
             </div>
             <div>
-              <div className="flex justify-between items-center mb-1">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                  パスワード
-                </label>
-                <Link
-                  href="/forgot-password"
-                  className="text-xs text-slate-500 hover:text-slate-700 underline"
-                >
-                  パスワードをお忘れですか？
-                </Link>
-              </div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                パスワード
+              </label>
               <input
                 id="password"
                 type="password"
@@ -166,6 +158,12 @@ function LoginFormInner({
                 autoComplete="current-password"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-slate-500 focus:border-slate-500"
               />
+              <Link
+                href="/forgot-password"
+                className="block mt-1.5 text-xs text-slate-500 hover:text-slate-700 underline"
+              >
+                パスワードをお忘れですか？
+              </Link>
             </div>
             {error && (
               <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-3">
