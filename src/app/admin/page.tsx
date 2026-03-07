@@ -18,9 +18,10 @@ export default function AdminPage() {
   const router = useRouter();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (loading || !user) return;
+  function fetchProfiles() {
     fetch('/api/admin/profiles', { credentials: 'include' })
       .then(async (res) => {
         const data = await res.json();
@@ -34,6 +35,30 @@ export default function AdminPage() {
         setProfiles(data.profiles ?? []);
       })
       .catch((e) => setError(e instanceof Error ? e.message : 'エラー'));
+  }
+
+  async function handleSync() {
+    setSyncing(true);
+    setSyncMessage(null);
+    try {
+      const res = await fetch('/api/admin/sync-profiles', { method: 'POST', credentials: 'include' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setSyncMessage(data.error ?? '同期に失敗しました');
+        return;
+      }
+      setSyncMessage(`${data.inserted_count ?? 0} 件を追加しました`);
+      fetchProfiles();
+    } catch {
+      setSyncMessage('同期に失敗しました');
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  useEffect(() => {
+    if (loading || !user) return;
+    fetchProfiles();
   }, [user, loading, router]);
 
   if (loading || !user) {
@@ -56,7 +81,7 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-slate-50 py-8 px-4">
       <div className="max-w-4xl mx-auto">
-        <header className="mb-8 flex items-center justify-between">
+        <header className="mb-6 flex items-center justify-between flex-wrap gap-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">管理者画面</h1>
             <p className="text-slate-600 mt-1">ユーザー利用状況のマスター管理</p>
@@ -68,6 +93,26 @@ export default function AdminPage() {
             ← マイページへ
           </Link>
         </header>
+
+        <div className="mb-6 p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
+          <p className="text-sm text-slate-600 mb-3">
+            auth.users に登録済みで profiles にいないユーザーを追加します。
+          </p>
+          <button
+            type="button"
+            onClick={handleSync}
+            disabled={syncing}
+            className="px-5 py-2.5 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {syncing ? '同期中...' : 'ユーザーを同期'}
+          </button>
+        </div>
+
+        {syncMessage && (
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm">
+            {syncMessage}
+          </div>
+        )}
 
         {error ? (
           <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-800">
