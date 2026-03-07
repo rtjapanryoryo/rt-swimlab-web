@@ -154,6 +154,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
         if (res.ok && data.created_at) {
           setMenuSavedAt(new Date(data.created_at));
           onSaved?.();
+          window.dispatchEvent(new Event('menu-saved'));
         }
       } catch {
         lastSavedRef.current = null;
@@ -490,6 +491,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
         return;
       }
       setMenuSavedAt(data.created_at ? new Date(data.created_at) : new Date());
+      window.dispatchEvent(new Event('menu-saved'));
     } catch (e) {
       console.error('[handleSaveMenu]', e);
       alert('保存に失敗しました。');

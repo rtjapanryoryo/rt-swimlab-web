@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 
 type MenuLog = {
@@ -16,7 +16,7 @@ export function MenuLogSection() {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
 
-  useEffect(() => {
+  const fetchMenus = useCallback(() => {
     const params = new URLSearchParams();
     params.set('summary', '1'); // 作成日時のみ取得（軽量）
     if (from) params.set('from', from);
@@ -34,6 +34,24 @@ export function MenuLogSection() {
       })
       .finally(() => setLoading(false));
   }, [from, to]);
+
+  useEffect(() => {
+    fetchMenus();
+  }, [fetchMenus]);
+
+  // タブに戻ったとき・メニュー保存イベントで再取得
+  useEffect(() => {
+    const onRefresh = () => fetchMenus();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') onRefresh();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('menu-saved', onRefresh);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('menu-saved', onRefresh);
+    };
+  }, [fetchMenus]);
 
   const formatDate = (s: string) => {
     const d = new Date(s);

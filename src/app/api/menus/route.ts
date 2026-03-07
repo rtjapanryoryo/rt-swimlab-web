@@ -13,7 +13,7 @@ try {
   // .env.ai が無くても続行
 }
 import { createClient, getEffectiveUser } from '@/lib/supabase/server';
-import { getSupabaseAdmin, getSupabaseServiceRole, isSupabaseConfigured } from '@/lib/supabase/admin';
+import { getSupabaseServiceRole, isSupabaseConfigured } from '@/lib/supabase/admin';
 
 export async function POST(request: NextRequest) {
   const user = await getEffectiveUser();
@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const sb = user.isBypass ? getSupabaseServiceRole() : getSupabaseAdmin();
+  const sb = user.isBypass ? getSupabaseServiceRole() : await createClient();
   if (!sb) {
     return NextResponse.json(
       { error: 'not_configured', message: user.isBypass ? 'バイパス時は SUPABASE_SERVICE_ROLE_KEY が必要です。' : 'メニュー一覧は未設定です。' },
