@@ -76,16 +76,19 @@ function LoginFormInner({
         setError(err.message === 'Invalid login credentials' ? 'メールアドレスまたはパスワードが正しくありません。' : err.message);
         return;
       }
-      let target = redirect || '/mypage';
+      // 即リダイレクトして体感ラグを軽減。admin判定は並行で行い、必要ならreplace
+      const baseTarget = redirect || '/mypage';
+      router.push(baseTarget);
+      setLoading(false); // 遷移開始したらローディング解除
       try {
         const res = await fetch('/api/profile', { credentials: 'include' });
         const json = await res.json().catch(() => ({}));
-        if (json.profile?.role === 'admin') target = '/admin';
+        if (json.profile?.role === 'admin' && baseTarget !== '/admin') {
+          router.replace('/admin');
+        }
       } catch {
-        /* profile 取得失敗時は /mypage へ */
+        /* profile 取得失敗時は baseTarget のまま */
       }
-      router.push(target);
-      router.refresh();
     } catch {
       setError('ログインに失敗しました。');
     } finally {

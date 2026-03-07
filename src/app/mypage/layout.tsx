@@ -18,7 +18,7 @@ const LINE_URL = process.env.NEXT_PUBLIC_LINE_URL || '';
 const COMMUNITY_URL = process.env.NEXT_PUBLIC_COMMUNITY_URL || '';
 
 const navItems = [
-  { href: '/mypage', label: 'ダッシュボード', icon: '◉' },
+  { href: '/mypage', label: 'ダッシュボード', icon: '○' },
   { href: '/mypage/menu', label: 'RT swim lab', icon: '◆' },
   { href: '/mypage/menus', label: 'メニューログ', icon: '▸' },
   { href: '/mypage/genetic', label: 'RT GENE PROFILE', icon: '◇' },
@@ -75,7 +75,9 @@ export default function MyPageLayout({
                 const isActive =
                   'external' in item
                     ? false
-                    : pathname === item.href || (item.href !== '/mypage' && pathname.startsWith(item.href));
+                    : item.href === '/mypage'
+                      ? pathname === '/mypage' || pathname === '/mypage/'
+                      : pathname === item.href || pathname.startsWith(item.href + '/');
                 const baseClass =
                   'flex items-center gap-3 w-full px-5 py-3 text-left text-sm font-medium transition-colors';
                 const activeClass = isActive
