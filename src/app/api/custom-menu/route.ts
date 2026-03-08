@@ -417,7 +417,7 @@ ${conditionInstructions}
     } else if (isOpenAIError) {
       errorText = `メニュー生成エラー: ${message}`;
     } else {
-      errorText = `サーバーエラー(500): ${message}. .env.ai の OPENAI_API_KEY と Supabase 設定、ターミナルログを確認してください。`;
+      errorText = `サーバーエラー(500): ${message}. 環境変数とターミナルログを確認してください。`;
     }
     console.error('[custom-menu] Error detail:', errorText);
     return ensureJson500();

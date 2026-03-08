@@ -77,7 +77,7 @@ export function SignupForm({ authConfigured }: { authConfigured: boolean }) {
         } else if (err.message.includes('Invalid email')) {
           setError('有効なメールアドレスを入力してください。');
         } else if (err.message === 'Failed to fetch' || err.message.includes('fetch')) {
-          setError('Supabase に接続できません。プロジェクトが一時停止していないか、環境変数を確認してください。');
+          setError('認証サービスに接続できません。設定を確認するか、しばらくしてから再度お試しください。');
         } else {
           setError(err.message);
         }
@@ -91,7 +91,7 @@ export function SignupForm({ authConfigured }: { authConfigured: boolean }) {
       if (msg.includes('NEXT_PUBLIC_SUPABASE')) {
         setError('認証サービスが設定されていません。管理者にお問い合わせください。');
       } else if (msg.includes('Failed to fetch') || msg.includes('fetch failed')) {
-        setError('Supabase に接続できません。プロジェクトが一時停止していないか、ネットワークを確認してください。');
+        setError('認証サービスに接続できません。ネットワークを確認するか、しばらくしてから再度お試しください。');
       } else {
         setError(msg || '登録に失敗しました。しばらくしてから再度お試しください。');
       }
@@ -135,8 +135,7 @@ export function SignupForm({ authConfigured }: { authConfigured: boolean }) {
             <div className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md p-4 mb-4">
               <p className="font-semibold mb-1">認証サービスが未設定です</p>
               <p className="text-xs mt-1">
-                <code className="bg-amber-100 px-1 rounded">NEXT_PUBLIC_SUPABASE_URL</code> と{' '}
-                <code className="bg-amber-100 px-1 rounded">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> を設定してください。
+                認証用の環境変数を設定してください。
               </p>
               <p className="text-xs mt-2 text-amber-700">
                 {typeof window !== 'undefined' && window.location.hostname === 'localhost'
