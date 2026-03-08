@@ -5,6 +5,7 @@ import { config as loadEnv } from 'dotenv';
 import { getEffectiveUser } from '@/lib/supabase/server';
 import OpenAI from 'openai';
 import { getCommonContent, getProtocolContent, getPromptContent } from '@/lib/rt/content';
+import { sumMenuDistance } from '@/lib/rt/menu-distance';
 
 // APIルートでも .env.ai を読む（next.config 経由で読めない場合のフォールバック）。失敗してもルートは登録する
 try {
@@ -86,6 +87,9 @@ const CORE_SYSTEM_PROMPT = `【コーチ思想の核心（50問インタビュ�
 - Rest 以外は強度を ①〜⑦ に対応（A1/EN1/EN2 等）で書く。
 - **強度の天井**: 期ごとにメイン・非メインの上限がある。リカバリー③③、基礎形成④③、発展形成④④、スピード持久⑤④、耐乳酸⑥④、調整⑤④、テーパー④③。これを超えないこと。
 - **W-down前の神経刺激**: 練習の最後（Down前）に 25m×2本 MAX（強度⑦）などを入れてもよい。量ではなく神経刺激が目的。
+
+【距離設計ありき（必須）】
+メニュー内容を先に決めず、まず総距離から逆算して各ブロックの距離配分を決めること。「距離：◯◯m」と入力されている場合、総距離はその数値の前後 ±100m 程度に収めること。ブロック配分の目安：W-up 10〜15%、Drill 10〜15%、Kick 10〜15%、Pull 15〜20%、Pre-Main 10〜15%、Main 30〜40%、Down 5〜10%。
 
 【距離整合の徹底（必須）】
 各セクションの積み上げと総距離が必ず一致すること。設計の正確性と信頼性を最優先に、ブロックごとの「距離×本数×セット数」を合計し total に記載。W-up 内の距離・本数計算も実際の合計と一致させること。設計後に必ず検算すること。
@@ -200,7 +204,7 @@ function buildConditionInstructions(
     '',
     `1. 目的（期）: ${periodGuide[period] || `期=${period}: 上記の期の定義に沿って重点を置く。`} ${ceilingNote}`,
     `2. 種目: ${strokeGuide[stroke] || `種目=${stroke}: その種目に合ったドリル・キック・プルにする。`}`,
-    `3. 距離（目標）: 目標距離=${distance}m。総距離はこの目標に合わせて設計すること。`,
+    `3. 距離（目標）: 目標距離=${distance}m。総距離は${targetDist ? `この目標の前後±100m程度（${Math.max(0, targetDist - 100)}〜${targetDist + 100}m）に収める` : '目標に合わせて設計する'}こと。まず距離配分を決めてから内容を設計すること。`,
     `4. 年齢: 年齢=${age}歳。年齢補正を強度に反映。${ageNum < 13 ? 'Kick比率高め・説明を丁寧に。' : ageNum >= 40 ? '強度-2〜3、安全最優先。' : '高校・大学基準でよい。'}`,
     `5. 距離タイプ: ${distanceGuide[distanceType] || `距離タイプ=${distanceType}: Mainセットの距離・本数・レストをそれに合わせる。`}`,
     `6. レベル: ${levelGuide[level] || (isMasters ? levelGuide['マスターズ（記録狙い）'] : `レベル=${level}: 育成〜初級は技術・フォーム優先、全国〜代表は量・強度高め。`)}`,
@@ -395,6 +399,11 @@ ${conditionInstructions}
       const hasAll = keys.every((k) => typeof parsed[k] === 'string');
       if (hasAll) {
         const result = Object.fromEntries(keys.map((k) => [k, String(parsed[k] ?? '')]));
+        // 各セッションの距離を自動合算し、総距離欄に反映（設計の正確性・信頼性）
+        const calculatedTotal = sumMenuDistance(result);
+        if (calculatedTotal > 0) {
+          result.total = `合計距離：${calculatedTotal.toLocaleString()}m`;
+        }
         return NextResponse.json({ result, menu: null });
       }
     } catch {

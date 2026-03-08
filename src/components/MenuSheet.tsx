@@ -20,6 +20,13 @@ function normalizeDash(v?: string | null) {
   return s.length ? s : '-';
 }
 
+/** 行の total 文字列から数値を抽出（例: "400m", "1,200m" → 400, 1200） */
+function parseRowTotalToNumber(value: string): number {
+  if (!value || value === '-') return 0;
+  const m = String(value).replace(/,/g, '').match(/(\d+)\s*m?$/);
+  return m ? parseInt(m[1], 10) : 0;
+}
+
 /** 距離表示：数字と単位mを分離して重なりを防ぐ */
 function DistDisplay({ value, addUnit = false }: { value: string; addUnit?: boolean }) {
   if (!value || value === '-') return <>-</>;
@@ -240,6 +247,27 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
     }
     return sheetRows;
   }, [result, input.stroke, order, sectionLabelsProp, templateOnly]);
+
+  // 行合計から総距離を算出（表と一致させるため）
+  const { sumFromRows, blockSubtotals } = useMemo(() => {
+    let sum = 0;
+    const subs: { section: string; dist: number }[] = [];
+    let prevSection = '';
+    let sectionSum = 0;
+    for (const row of rows) {
+      const resolved = row.section === '〃' ? prevSection : row.section;
+      if (resolved !== prevSection && prevSection) {
+        subs.push({ section: prevSection, dist: sectionSum });
+        sectionSum = 0;
+      }
+      prevSection = resolved;
+      const d = parseRowTotalToNumber(row.total);
+      sectionSum += d;
+      sum += d;
+    }
+    if (prevSection) subs.push({ section: prevSection, dist: sectionSum });
+    return { sumFromRows: sum, blockSubtotals: subs };
+  }, [rows]);
 
   // 日付を取得
   const today = new Date();
@@ -481,10 +509,28 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
 
       {/* まとめ */}
       <div className="border-t border-gray-300 pt-4 space-y-3 text-sm">
+        {blockSubtotals.length > 0 && (
+          <div className="mb-3">
+            <span className="font-semibold text-gray-700 block mb-1">ブロック別小計:</span>
+            <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-gray-700">
+              {blockSubtotals.map(({ section, dist }) => (
+                <span key={section}>
+                  {section}: <span className="tabular-nums font-medium">{dist.toLocaleString()}m</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="flex items-start">
           <span className="font-semibold text-gray-700 w-24">総距離:</span>
           <span className="text-gray-900 dist-cell-wrapper">
-            <DistDisplay value={(result.total ?? '').replace('合計距離：', '').trim()} />
+            <DistDisplay
+              value={
+                sumFromRows > 0
+                  ? `${sumFromRows.toLocaleString()}m`
+                  : (result.total ?? '').replace(/合計距離：|総距離：?/g, '').trim()
+              }
+            />
           </span>
         </div>
         <div className="flex items-start">
