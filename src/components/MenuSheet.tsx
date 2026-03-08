@@ -222,8 +222,25 @@ export function parseToSheetRow(section: string, raw: string, stroke?: string, t
   }
   if (!content) content = '-';
 
-  // Total計算（距離 × 本数 × セット）
-  if (distance !== '-' && count !== '-') {
+  // Total計算：複数構成（→ や + で区切られた場合）は各部分の合計を算出
+  const parts = text.split(/\s*[→＋+]\s*/);
+  let sumTotal = 0;
+  for (const part of parts) {
+    const partText = part.trim();
+    const cdMatch = partText.match(/(\d+)\s*[×x]\s*(\d+)\s*m(?!\w)/);
+    const dMatch = partText.match(/(\d+)\s*m(?!\w)/);
+    if (cdMatch) {
+      const cnt = parseInt(cdMatch[1], 10);
+      const dist = parseInt(cdMatch[2], 10);
+      sumTotal += cnt * dist;
+    } else if (dMatch) {
+      sumTotal += parseInt(dMatch[1], 10);
+    }
+  }
+  if (sumTotal > 0) {
+    total = `${sumTotal.toLocaleString()}m`;
+  } else if (distance !== '-' && count !== '-') {
+    // 従来ロジック（単一構成）
     const dist = parseInt(distance, 10);
     const cnt = parseInt(count, 10);
     const setNum = parseInt(sets, 10);
