@@ -150,11 +150,24 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
           }),
           credentials: 'include',
         });
-        const data = (await res.json()) as { created_at?: string };
+        const data = (await res.json()) as {
+          created_at?: string;
+          total_usage_count?: number;
+          quick_count?: number;
+          custom_count?: number;
+        };
         if (res.ok && data.created_at) {
           setMenuSavedAt(new Date(data.created_at));
           onSaved?.();
-          window.dispatchEvent(new Event('menu-saved'));
+          window.dispatchEvent(
+            new CustomEvent('menu-saved', {
+              detail: {
+                total_usage_count: data.total_usage_count,
+                quick_count: data.quick_count,
+                custom_count: data.custom_count,
+              },
+            })
+          );
         }
       } catch {
         lastSavedRef.current = null;
@@ -484,14 +497,30 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
         }),
         credentials: 'include',
       });
-      const data = (await res.json()) as { id?: string; created_at?: string; error?: string; message?: string };
+      const data = (await res.json()) as {
+        id?: string;
+        created_at?: string;
+        error?: string;
+        message?: string;
+        total_usage_count?: number;
+        quick_count?: number;
+        custom_count?: number;
+      };
       if (!res.ok) {
         if (res.status === 401) alert('ログインが必要です。');
         else alert(data.message ?? '保存に失敗しました。');
         return;
       }
       setMenuSavedAt(data.created_at ? new Date(data.created_at) : new Date());
-      window.dispatchEvent(new Event('menu-saved'));
+      window.dispatchEvent(
+        new CustomEvent('menu-saved', {
+          detail: {
+            total_usage_count: data.total_usage_count,
+            quick_count: data.quick_count,
+            custom_count: data.custom_count,
+          },
+        })
+      );
     } catch (e) {
       console.error('[handleSaveMenu]', e);
       alert('保存に失敗しました。');

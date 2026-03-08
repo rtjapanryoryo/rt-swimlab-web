@@ -1,40 +1,18 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-
-type Profile = {
-  display_name: string | null;
-  goal?: string | null;
-  show_goal?: boolean;
-};
+import { useProfile } from '@/contexts/ProfileContext';
 
 export function ProfileSection() {
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const { profile, setProfile, refetch } = useProfile();
   const [goalInput, setGoalInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  const fetchProfile = useCallback(() => {
-    fetch('/api/profile', { credentials: 'include' })
-      .then((r) => r.json())
-      .then((res) => {
-        const p = res.profile ?? null;
-        setProfile(p);
-        setGoalInput(p?.goal ?? '');
-      })
-      .catch(() => setProfile(null));
-  }, []);
-
   useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
-
-  useEffect(() => {
-    const handler = () => fetchProfile();
-    window.addEventListener('profile-updated', handler);
-    return () => window.removeEventListener('profile-updated', handler);
-  }, [fetchProfile]);
+    setGoalInput(profile?.goal ?? '');
+  }, [profile?.goal]);
 
   async function handleSaveGoal(e: React.FormEvent) {
     e.preventDefault();
@@ -49,7 +27,8 @@ export function ProfileSection() {
       });
       if (!res.ok) throw new Error('保存に失敗しました');
       setMessage('目標を保存しました');
-      setProfile((prev) => (prev ? { ...prev, goal: goalInput.trim() || null } : null));
+      const newGoal = goalInput.trim() || null;
+      setProfile((prev) => (prev ? { ...prev, goal: newGoal } : null));
       window.dispatchEvent(new Event('profile-updated'));
     } catch {
       setMessage('保存に失敗しました');

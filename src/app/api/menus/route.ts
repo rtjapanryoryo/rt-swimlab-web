@@ -66,9 +66,10 @@ export async function POST(request: NextRequest) {
     }
 
     // 累計生成回数 +1（profile 未存在時は service_role で upsert）+ 基本ログ
+    let nextCount = 0;
     try {
       const { data: profile } = await sb.from('profiles').select('total_usage_count').eq('id', user_id).single();
-      const nextCount = (profile?.total_usage_count ?? 0) + 1;
+      nextCount = (profile?.total_usage_count ?? 0) + 1;
       if (profile) {
         await sb.from('profiles').update({ total_usage_count: nextCount, updated_at: new Date().toISOString() }).eq('id', user_id);
       } else {
@@ -96,7 +97,27 @@ export async function POST(request: NextRequest) {
       console.warn('[menus] profile/log update failed (non-fatal):', e);
     }
 
-    return NextResponse.json({ id: data.id, created_at: data.created_at });
+    // 即時反映用に新件数を返す（楽観的更新でラグ解消）
+    let quick_count = 0;
+    let custom_count = 0;
+    try {
+      const [quickRes, customRes] = await Promise.all([
+        sb.from('menus').select('id', { count: 'exact', head: true }).eq('user_id', user_id).eq('source', 'quick'),
+        sb.from('menus').select('id', { count: 'exact', head: true }).eq('user_id', user_id).eq('source', 'custom'),
+      ]);
+      quick_count = quickRes.count ?? 0;
+      custom_count = customRes.count ?? 0;
+    } catch {
+      /* 非致命的 */
+    }
+
+    return NextResponse.json({
+      id: data.id,
+      created_at: data.created_at,
+      total_usage_count: quick_count + custom_count,
+      quick_count,
+      custom_count,
+    });
   } catch (e) {
     console.error('[menus] POST error:', e);
     return NextResponse.json(

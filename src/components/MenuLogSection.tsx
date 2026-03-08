@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useProfile } from '@/contexts/ProfileContext';
 
 type MenuLog = {
   id: string;
@@ -9,25 +10,11 @@ type MenuLog = {
   created_at: string;
 };
 
-type Profile = {
-  display_name: string | null;
-  total_usage_count: number;
-  quick_count?: number;
-  custom_count?: number;
-};
-
 export function MenuLogSection() {
+  const { profile } = useProfile();
   const [menus, setMenus] = useState<MenuLog[]>([]);
-  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const fetchProfile = useCallback(() => {
-    fetch('/api/profile', { credentials: 'include' })
-      .then((r) => r.json())
-      .then((res) => setProfile(res.profile ?? null))
-      .catch(() => setProfile(null));
-  }, []);
 
   const fetchMenus = useCallback(() => {
     const params = new URLSearchParams();
@@ -47,31 +34,22 @@ export function MenuLogSection() {
   }, []);
 
   useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
-
-  useEffect(() => {
     fetchMenus();
   }, [fetchMenus]);
 
-  // タブに戻ったとき・メニュー保存イベント・プロフィール更新で再取得
+  // タブに戻ったとき・メニュー保存イベントでメニュー一覧を再取得（プロフィールは ProfileContext で即時反映）
   useEffect(() => {
-    const onRefresh = () => {
-      fetchMenus();
-      fetchProfile();
-    };
     const onVisible = () => {
-      if (document.visibilityState === 'visible') onRefresh();
+      if (document.visibilityState === 'visible') fetchMenus();
     };
+    const onMenuSaved = () => fetchMenus();
     document.addEventListener('visibilitychange', onVisible);
-    window.addEventListener('menu-saved', onRefresh);
-    window.addEventListener('profile-updated', onRefresh);
+    window.addEventListener('menu-saved', onMenuSaved);
     return () => {
       document.removeEventListener('visibilitychange', onVisible);
-      window.removeEventListener('menu-saved', onRefresh);
-      window.removeEventListener('profile-updated', onRefresh);
+      window.removeEventListener('menu-saved', onMenuSaved);
     };
-  }, [fetchMenus, fetchProfile]);
+  }, [fetchMenus]);
 
   const formatDate = (s: string) => {
     const d = new Date(s);
