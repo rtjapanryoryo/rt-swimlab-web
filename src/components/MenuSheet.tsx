@@ -367,8 +367,8 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
               <span className="text-gray-900">{strokeNames[input.stroke] || strokeNames['Fr'] || input.stroke || 'Fr（自由形）'}</span>
             </div>
             <div className="flex">
-              <span className="font-semibold text-gray-700 w-24">性別:</span>
-              <span className="text-gray-900">{input.gender}</span>
+              <span className="font-semibold text-gray-700 w-24">距離:</span>
+              <span className="text-gray-900">{input.distance ? `${input.distance}m` : '-'}</span>
             </div>
             <div className="flex">
               <span className="font-semibold text-gray-700 w-24">年齢:</span>

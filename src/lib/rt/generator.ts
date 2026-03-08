@@ -10,7 +10,7 @@
 export interface TrainingInput {
   period: string; // ①〜⑦
   stroke: string; // FR, Ba, Br, Fly, IM
-  gender: string; // 男, 女
+  distance: string; // 2000, 3000, 4000, 5000, 6000, 7000, 8000（目標距離m）
   age: string; // 年齢（数値）
   distanceType: string; // S, M, D
   level: string; // 全国大会入賞〜代表クラス, 上級, 中級, 初級, マスターズ各
@@ -767,13 +767,11 @@ function scoreTemplateMatch(c: TrainingResult, input: TrainingInput): number {
   }
   if (input.stroke === 'IM' && text.includes('IM')) score += 1;
 
-  // 練習時間: total の距離と practiceTime の目安の近さ
+  // 距離: total の距離とユーザー選択距離の近さ
   const totalMatch = c.total?.match(/(\d[\d,]*)\s*m/);
   const totalM = totalMatch ? parseInt(totalMatch[1].replace(/,/g, ''), 10) : 0;
-  const timeNum = parseInt(input.practiceTime || '90', 10);
-  const targetMin = timeNum <= 60 ? 2000 : timeNum <= 90 ? 2500 : 3500;
-  const targetMax = timeNum <= 60 ? 2500 : timeNum <= 90 ? 3500 : 4500;
-  if (totalM >= targetMin && totalM <= targetMax) score += 1;
+  const targetM = parseInt(input.distance || '4000', 10);
+  if (targetM > 0 && totalM >= targetM - 500 && totalM <= targetM + 500) score += 2;
 
   return score;
 }
@@ -801,7 +799,7 @@ function selectFrom9Templates(input: TrainingInput, templates: MenuTemplates9): 
   const maxScore = scored[0]?.score ?? 0;
   const topCandidates = scored.filter((s) => s.score === maxScore);
   const seed = [
-    input.period, input.stroke, input.gender, input.age, input.distanceType,
+    input.period, input.stroke, input.distance, input.age, input.distanceType,
     input.level, input.condition, input.practiceTime,
   ].join('');
   const idx = pickIndex(seed, topCandidates.length);
