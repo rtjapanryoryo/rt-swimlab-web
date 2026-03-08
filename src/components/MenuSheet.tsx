@@ -99,172 +99,74 @@ function fallbackStyle(section: string, stroke?: string, templateOnly?: boolean)
   return 'S1';
 }
 
-export function parseToSheetRow(section: string, raw: string, stroke?: string, templateOnly?: boolean): MenuSheetRow {
-  const text = (raw ?? '').trim();
+/** 1パート分をパースして MenuSheetRow を生成（複数構成用） */
+function parsePartToRow(
+  section: string,
+  partText: string,
+  sectionDisplay: string,
+  stroke?: string,
+  templateOnly?: boolean
+): MenuSheetRow {
+  const text = partText.trim();
   const styleFromContent = text ? extractStyleFromText(text) : null;
-  // クイック時: Pre-Main/Dive/Main は条件2（種目）を常に優先。他はテンプレ優先、未指定時は S1
   const style =
     templateOnly && (section === 'Pre-Main' || section === 'Dive' || section === 'Main')
       ? (stroke && STROKE_ALLOWED.has(stroke) ? stroke : 'S1')
       : (styleFromContent && STROKE_ALLOWED.has(styleFromContent) ? styleFromContent : fallbackStyle(section, stroke, templateOnly));
-  if (!text) {
-    const noDash = section === 'Pre-Main' || section === 'Dive';
-    return {
-      section,
-      distance: '-',
-      count: '-',
-      sets: '1',
-      intensity: '-',
-      style: fallbackStyle(section, stroke, templateOnly),
-      content: noDash ? '' : '-',
-      total: '-',
-      cycle: '-',
-    };
-  }
 
   let distance = '-';
   let count = '-';
   let sets = '1';
   let cycle = '-';
   let intensity = '-';
-  let equipment = '-';
-  let content = text;
-  let total = '-';
 
-  // 強度を抽出（A1, EN1, EN2…）→ 凡例番号（①〜⑦）にマッピング
-  // 半角・全角どちらの括弧にも対応
   const intensityCodes = ['AN1', 'AN2', 'AN3', 'AN', 'EN1', 'EN2', 'EN3', 'EN4', 'A1', 'A2'];
   const intensityToLegendMap: Record<string, string> = {
-    A1: '①',
-    A2: '①',
-    EN1: '②',
-    EN2: '③',
-    EN3: '④',
-    EN4: '④',
-    AN1: '⑤',
-    AN2: '⑥',
-    AN3: '⑦',
-    AN: '⑦',
+    A1: '①', A2: '①', EN1: '②', EN2: '③', EN3: '④', EN4: '④', AN1: '⑤', AN2: '⑥', AN3: '⑦', AN: '⑦',
   };
   for (const code of intensityCodes) {
-    const pattern = new RegExp(`[(\（]${code}[)\）]`, 'i');
-    const match = text.match(pattern);
-    if (match) {
-      const c = match[0].replace(/[()（）]/g, '').toUpperCase();
-      if (intensityToLegendMap[c]) {
-        intensity = intensityToLegendMap[c];
-        break;
-      }
-    }
-  }
-  // Rest 以外は強度を必ず ①〜⑦ に。未抽出時は ① をデフォルト
-  if (section !== 'Rest' && intensity === '-') {
-    intensity = '①';
-  }
-
-  // 種目: Cho, IM, Fr, Br, Ba, Fly のいずれか。Rest は - のまま。
-
-  // 距離を抽出（例: 200m, 50m）。5~10min 等の「min」を 10m と誤認しないよう m の直後に単語文字が続く場合は除外
-  const distMatch = text.match(/(\d+)\s*m(?!\w)/);
-  if (distMatch?.[1]) distance = distMatch[1];
-
-  // 本数×距離のパターンを抽出（例: 4×50m → count=4, distance=50）
-  const countDistMatch = text.match(/(\d+)\s*[×x]\s*(\d+)\s*m(?!\w)/);
-  if (countDistMatch) {
-    count = countDistMatch[1];
-    if (!distMatch) distance = countDistMatch[2];
-  }
-
-  // セット数のみ（例: 8×100m → sets=8）
-  const setOnlyMatch = text.match(/(\d+)\s*[×x]/);
-  if (setOnlyMatch && !countDistMatch) {
-    sets = setOnlyMatch[1];
-  }
-
-  // 距離があるが本数が - のときは 1 とする（Drill 等で「200m」のみの表記でも本数を開示）
-  if (count === '-' && distance !== '-') {
-    count = '1';
-  }
-  // W-up と Down は距離が無くても本数 1
-  if ((section === 'W-up' || section === 'Down') && count === '-') {
-    count = '1';
-  }
-
-  // サイクル（間隔）を抽出
-  const timeMatch = text.match(/\b(\d{2}:\d{2})\b/);
-  if (timeMatch?.[1]) {
-    cycle = timeMatch[1];
-  } else {
-    const atMatch = text.match(/@(\d+)\s*秒/);
-    if (atMatch?.[1]) cycle = `${atMatch[1]}秒`;
-    const restMatch = text.match(/(\d+)\s*秒\s*レスト/);
-    if (restMatch?.[1]) cycle = `${restMatch[1]}秒`;
-  }
-
-  // 器具を抽出（プルブイはサンプル用のため使用しない）
-  const equipmentPatterns = [
-    { pattern: /(ボード|board)/i, value: 'ボード' },
-    { pattern: /(フィン|fin)/i, value: 'フィン' },
-    { pattern: /(パドル|paddle)/i, value: 'パドル' },
-    { pattern: /(No\s*board|ボードなし)/i, value: 'ボードなし' },
-  ];
-  for (const { pattern, value } of equipmentPatterns) {
-    if (pattern.test(text)) {
-      equipment = value;
+    const m = text.match(new RegExp(`[(\（]${code}[)\）]`, 'i'));
+    if (m && intensityToLegendMap[m[0].replace(/[()（）]/g, '').toUpperCase()]) {
+      intensity = intensityToLegendMap[m[0].replace(/[()（）]/g, '').toUpperCase()];
       break;
     }
   }
+  if (section !== 'Rest' && intensity === '-') intensity = '①';
 
-  // 内容はテンプレの文字列をそのまま表示（クイックは全てテンプレに合わせる）
-  content = text.trim();
-  if (content.length > 120) {
-    content = content.substring(0, 120) + '...';
+  const distMatch = text.match(/(\d+)\s*m(?!\w)/);
+  const countDistMatch = text.match(/(\d+)\s*[×x]\s*(\d+)\s*m(?!\w)/);
+  if (countDistMatch) {
+    count = countDistMatch[1];
+    distance = countDistMatch[2];
+  } else if (distMatch?.[1]) {
+    distance = distMatch[1];
+    count = '1';
   }
-  if (!content) content = '-';
+  if ((section === 'W-up' || section === 'Down') && count === '-') count = '1';
 
-  // Total計算：複数構成（→ や + で区切られた場合）は各部分の合計を算出
-  const parts = text.split(/\s*[→＋+]\s*/);
-  let sumTotal = 0;
-  for (const part of parts) {
-    const partText = part.trim();
-    const cdMatch = partText.match(/(\d+)\s*[×x]\s*(\d+)\s*m(?!\w)/);
-    const dMatch = partText.match(/(\d+)\s*m(?!\w)/);
-    if (cdMatch) {
-      const cnt = parseInt(cdMatch[1], 10);
-      const dist = parseInt(cdMatch[2], 10);
-      sumTotal += cnt * dist;
-    } else if (dMatch) {
-      sumTotal += parseInt(dMatch[1], 10);
-    }
-  }
-  if (sumTotal > 0) {
-    total = `${sumTotal.toLocaleString()}m`;
-  } else if (distance !== '-' && count !== '-') {
-    // 従来ロジック（単一構成）
-    const dist = parseInt(distance, 10);
-    const cnt = parseInt(count, 10);
-    const setNum = parseInt(sets, 10);
-    if (!isNaN(dist) && !isNaN(cnt)) {
-      const totalDist = dist * cnt * (isNaN(setNum) ? 1 : setNum);
-      total = `${totalDist.toLocaleString()}m`;
-    } else if (distance !== '-') {
-      total = distance + 'm';
-    }
+  const atMatch = text.match(/@(\d+)\s*秒/);
+  if (atMatch?.[1]) cycle = `${atMatch[1]}秒`;
+  const timeMatch = text.match(/\b(\d{2}:\d{2})\b/);
+  if (timeMatch?.[1]) cycle = timeMatch[1];
+
+  let total = '-';
+  const d = parseInt(distance, 10);
+  const c = parseInt(count, 10);
+  if (!isNaN(d) && !isNaN(c)) {
+    total = `${(d * c).toLocaleString()}m`;
   } else if (distance !== '-') {
     total = distance + 'm';
   }
 
-  // Rest以外で "-" になりうる種目は S1 に統一
   const finalStyle =
-    section === 'Rest'
-      ? '-'
-      : section === 'W-up' || section === 'Down' || section === 'W-down'
-        ? 'Cho'
-        : (style && style !== '-' ? style : 'S1');
+    section === 'Rest' ? '-' : (section === 'W-up' || section === 'Down' || section === 'W-down' ? 'Cho' : (style && style !== '-' ? style : 'S1'));
+  let content = text.trim();
+  if (content.length > 120) content = content.substring(0, 120) + '...';
+  if (!content) content = '-';
   const displayContent = section === 'Pre-Main' || section === 'Dive' ? (content.trim() || '') : normalizeDash(content);
 
   return {
-    section: normalizeDash(section),
+    section: sectionDisplay,
     distance: normalizeDash(distance),
     count: normalizeDash(count),
     sets: normalizeDash(sets),
@@ -274,6 +176,40 @@ export function parseToSheetRow(section: string, raw: string, stroke?: string, t
     total: normalizeDash(total),
     cycle: normalizeDash(cycle),
   };
+}
+
+/**
+ * 複数構成（→ や +）のときは各部分を別行に分割し、距離・本数・セットを正確に表示。
+ * 単一構成のときは1行のまま。
+ */
+export function parseToSheetRow(section: string, raw: string, stroke?: string, templateOnly?: boolean): MenuSheetRow[] {
+  const text = (raw ?? '').trim();
+  if (!text) {
+    const noDash = section === 'Pre-Main' || section === 'Dive';
+    return [{
+      section,
+      distance: '-',
+      count: '-',
+      sets: '1',
+      intensity: '-',
+      style: fallbackStyle(section, stroke, templateOnly),
+      content: noDash ? '' : '-',
+      total: '-',
+      cycle: '-',
+    }];
+  }
+
+  const parts = text.split(/\s*[→＋+]\s*/).map((p) => p.trim()).filter(Boolean);
+  const isComposite = parts.length > 1;
+
+  if (isComposite) {
+    return parts.map((part, i) =>
+      parsePartToRow(section, part, i === 0 ? section : '〃', stroke, templateOnly)
+    );
+  }
+
+  const single = parsePartToRow(section, text, section, stroke, templateOnly);
+  return [single];
 }
 
 type MenuSheetProps = {
@@ -300,7 +236,7 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
       const value = (result as unknown as Record<string, string>)[key] ?? '';
       const labelFromContent = extractSectionLabelFromContent(value);
       const label = labelFromContent ?? sectionLabelsProp?.[key] ?? SECTION_KEY_TO_LABEL[key] ?? key;
-      sheetRows.push(parseToSheetRow(label, value, s, templateOnly));
+      sheetRows.push(...parseToSheetRow(label, value, s, templateOnly));
     }
     return sheetRows;
   }, [result, input.stroke, order, sectionLabelsProp, templateOnly]);
