@@ -89,8 +89,8 @@ const CORE_SYSTEM_PROMPT = `【コーチ思想の核心（50問インタビュ�
 - **強度表記の統一**: 「EN5」「EN6」は使用禁止。AN1（⑤）・AN2（⑥）を使う。内容内のEN/AN表記と強度欄の番号を必ず一致させる。「目的×強度×理由」を正確に表現すること。
 - **W-down前の神経刺激**: 練習の最後（Down前）に 25m×2本 MAX（強度⑦）などを入れてもよい。量ではなく神経刺激が目的。
 
-【距離設計ありき（必須）】
-メニュー内容を先に決めず、まず総距離から逆算して各ブロックの距離配分を決めること。「距離：◯◯m」と入力されている場合、**各セッションのTotalを積み上げ、その数値の前後±100mに必ず収める**。Total積み上げ方式は維持する。 距離未達時は期に応じて積み増し：①W-up・Pull／②Kick・Pull／③Pre-Main・Main／④Main前後／⑤数百m追加／⑥削りすぎず調整／⑦質を落とさず追加。
+【距離設計ありき（最優先）】
+設計の第一軸は「入力された距離（2000〜8000m）」である。メニュー内容を先に決めず、**まず目標総距離から逆算して各ブロックの距離配分を決める**。ユーザーが選択した距離（例: 5000m）に対して、総距離がその前後±100mに必ず収まること。各セッションのTotalを積み上げ、合計が目標と一致するように設計する。距離未達時は期に応じて積み増し：①W-up・Pull／②Kick・Pull／③Pre-Main・Main／④Main前後／⑤数百m追加／⑥削りすぎず調整／⑦質を落とさず追加。
 
 【距離整合の徹底（必須）】
 各セクションの積み上げと総距離が必ず一致すること。設計の正確性と信頼性を最優先に、ブロックごとの「距離×本数×セット数」を合計し total に記載。W-up 内の距離・本数計算も実際の合計と一致させること。設計後に必ず検算すること。
@@ -124,6 +124,40 @@ const REQUIRED_KEYS: { key: string; label: string }[] = [
   { key: 'condition', label: '状況' },
   { key: 'practiceTime', label: '練習時間(60/90/120)' },
 ];
+
+/** 目標距離に基づくブロック配分を算出（50m単位で丸め、合計が目標に一致） */
+function buildBlockAllocation(targetDist: number): { warmUp: number; drill: number; kick: number; pull: number; preMain: number; main: number; down: number } {
+  const round50 = (n: number) => Math.round(n / 50) * 50;
+  // 割合: W-up 12%, Drill 12%, Kick 12%, Pull 17%, Pre-Main 12%, Main 33%, Down 5%
+  const wu = round50(targetDist * 0.12);
+  const dr = round50(targetDist * 0.12);
+  const kk = round50(targetDist * 0.12);
+  const pl = round50(targetDist * 0.17);
+  const pm = round50(targetDist * 0.12);
+  const dn = round50(targetDist * 0.05);
+  const main = Math.max(round50(targetDist * 0.30), 400); // Main は最低400m
+  let sum = wu + dr + kk + pl + pm + main + dn;
+  const diff = targetDist - sum;
+  // 差分は Main で調整（±200m程度まで）
+  const mainAdjusted = Math.max(400, main + (Math.abs(diff) <= 250 ? diff : diff > 0 ? 200 : -200));
+  return {
+    warmUp: Math.max(200, wu),
+    drill: Math.max(150, dr),
+    kick: Math.max(150, kk),
+    pull: Math.max(200, pl),
+    preMain: Math.max(150, pm),
+    main: mainAdjusted,
+    down: Math.max(100, dn),
+  };
+}
+
+/** 配分の合計を確認し、目標に合わせて Main を微調整 */
+function normalizeBlockAllocation(alloc: ReturnType<typeof buildBlockAllocation>, targetDist: number) {
+  const { warmUp, drill, kick, pull, preMain, down } = alloc;
+  const fixed = warmUp + drill + kick + pull + preMain + down;
+  const mainNeeded = Math.max(400, targetDist - fixed);
+  return { ...alloc, main: mainNeeded };
+}
 
 /** 入力不足チェック。不足があれば不足項目のラベル配列を返す（なければ null） */
 function getMissingInputLabels(body: Record<string, unknown>): string[] | null {
@@ -286,18 +320,40 @@ export async function POST(request: NextRequest) {
       practiceTime
     );
 
+    const targetDist = distance ? parseInt(distance, 10) : null;
+    const alloc = targetDist && targetDist >= 2000 && targetDist <= 8000
+      ? normalizeBlockAllocation(buildBlockAllocation(targetDist), targetDist)
+      : null;
+
     const periodLabels: Record<string, string> = {
       '1': '① リカバリー期', '2': '② 基礎形成期', '3': '③ 発展形成期',
       '4': '④ 強化期 (スピード持久力)', '5': '⑤ 強化期 (耐乳酸)', '6': '⑥ 調整期', '7': '⑦ テーパー期',
     };
 
+    const distanceAllocationSection = alloc
+      ? `
+【距離配分（絶対遵守・設計の最優先軸）】
+目標総距離: ${targetDist}m。以下の各ブロック距離を必ず満たすこと。合計が${targetDist}mの前後±100mに収まらないメニューは不可。
+| ブロック | 目標距離 |
+| W-up | ${alloc.warmUp}m |
+| Drill | ${alloc.drill}m |
+| Kick | ${alloc.kick}m |
+| Pull | ${alloc.pull}m |
+| Pre-Main | ${alloc.preMain}m |
+| Main | ${alloc.main}m |
+| Down | ${alloc.down}m |
+→ 合計: ${alloc.warmUp + alloc.drill + alloc.kick + alloc.pull + alloc.preMain + alloc.main + alloc.down}m
+`
+      : '';
+
     const userPrompt = `以下の「入力条件」と「反映ルール」に従い、この8条件から導いた水泳練習メニューを1つだけ生成してください。
-**必須**：8条件すべてを設計の根拠とし、どの条件からどう反映したか分かる設計にすること。出力は必ず指定のJSONのみ（説明文は不要）。
+**必須**：8条件すべてを設計の根拠とし、**距離配分を最優先**に設計すること。出力は必ず指定のJSONのみ（説明文は不要）。
+${distanceAllocationSection}
 
 【入力条件（8項目すべてを満たすこと）】
 1. 目的（期）: ${periodLabels[period] || period}
 2. 種目: ${stroke}
-3. 距離（目標）: ${distance}m
+3. 距離（目標）: ${distance}m ← 総距離はこの値の前後±100mに必ず収める
 4. 年齢: ${age}歳
 5. 距離タイプ: ${distanceType}
 6. レベル: ${level}
@@ -316,16 +372,16 @@ ${conditionInstructions}
 【expectedEffect】このメニューで得られる効果を2〜3行で。
 {
   "purpose": "【目的】1行で明確に（目的・期・状況を反映）",
-  "warmUp": "2〜3段階。→で区切り、距離×本数×セットを検算。例: Cho 200m（A1）→ Cho 200m SKPS（A1）→ Cho 100m Build（EN1）",
-  "drill": "ドリル名 本数×距離m（内容）。例: 片手ドリル 6×50m（左右交互）",
-  "kick": "発展形成期以降は2構成。→で区切る。例: Kick 4×50m（Des）（EN1）→ Kick 4×50m（Fins）（EN2）",
-  "pull": "Pull 2構成。Fr中心で効率づくり（Swim寄りにしない）。→で区切る。例: Pull Fr 4×50m（DPS）（EN1）→ Pull Fr 4×100m（EN2）",
-  "preMain": "Pre-Main 本数×距離m（強度）。Mainより一段階抑えた橋渡し。例: Pre-Main 4×50m（EN2）",
+  "warmUp": "2〜3段階。→で区切り。**上記距離配分のW-up目標距離を満たす**距離×本数×セット。例: Cho 200m（A1）→ Cho 200m SKPS（A1）→ Cho 100m Build（EN1）",
+  "drill": "ドリル名 本数×距離m（内容）。**Drill目標距離を満たす**。例: 片手ドリル 6×50m（左右交互）",
+  "kick": "発展形成期以降は2構成。→で区切る。**Kick目標距離を満たす**。例: Kick 4×50m（Des）（EN1）→ Kick 4×50m（Fins）（EN2）",
+  "pull": "Pull 2構成。Fr中心で効率づくり。**Pull目標距離を満たす**。→で区切る。例: Pull Fr 4×50m（DPS）（EN1）→ Pull Fr 4×100m（EN2）",
+  "preMain": "Pre-Main 本数×距離m（強度）。**Pre-Main目標距離を満たす**。Mainより一段階抑えた橋渡し。例: Pre-Main 4×50m（EN2）",
   "dive": "Dive 本数×距離m（A1）。不要時は空文字",
   "rest": "Rest / Free time（5~10min）。不要時は空文字",
-  "main": "Main（カテゴリ名）本数×距離m @〇〇秒（強度）。基礎形成期以降は3段階構成可。例: Main（ベストアベレージ）8×25m @30秒（EN3）",
-  "down": "種目名を書かず Cho 固定。Easy Swim 距離m（A1）（例: Easy Swim 100m（A1））",
-  "total": "合計距離：〇〇〇〇m（各ブロックの距離×本数×セットの合計と必ず一致させること）",
+  "main": "Main（カテゴリ名）本数×距離m @〇〇秒（強度）。**Main目標距離を満たす**。基礎形成期以降は3段階構成可。例: Main（ベストアベレージ）8×25m @30秒（EN3）",
+  "down": "種目名を書かず Cho 固定。**Down目標距離を満たす**。Easy Swim 距離m（A1）（例: Easy Swim 100m（A1））",
+  "total": "合計距離：〇〇〇〇m（必ず目標距離${distance}mの前後±100m。各ブロック合計と一致）",
   "intention": "今日の狙い（2〜4行。期・目的・状況・距離タイプ・年齢を反映した、このメニュー固有の狙い）",
   "coachingPoint": "指導ポイント（箇条書き3つ。改行または・で区切り1つに。このメニューのブロックに即した具体的な意識点）",
   "caution": "注意点（箇条書き3つ。改行または・で区切り1つに。状況・年齢・疲労・月経期等を反映した、この選手・この日に必要な注意）",
