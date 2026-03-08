@@ -272,13 +272,17 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
       input.practiceTime
     );
 
+  /** カスタム用：ステップ1（種目・年齢・レベル・状況）の必須チェック */
+  const isCustomStep1Valid = () =>
+    !!(input.stroke || 'Fr') &&
+    !!input.age &&
+    !!input.level &&
+    !!input.condition;
+
   /** カスタム用：8項目すべての必須チェック */
   const isCustomFormValid = () =>
-    isQuickFormValid() &&
-    !!input.stroke &&
-    !!input.age &&
-    !!input.condition &&
-    !!input.level;
+    isCustomStep1Valid() &&
+    isQuickFormValid();
 
   /** クイック用：4項目＋デフォルトでテンプレートから1件抽出 */
   const buildQuickInput = (): TrainingInput => ({
@@ -680,7 +684,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
         <>
         <div id="input-form" className="panel-premium p-6 md:p-8 mb-6">
           {/* モード切替：クイック | カスタム */}
-          <div className="flex rounded-xl border border-slate-200 bg-slate-50/50 p-1 mb-6">
+          <div className="flex rounded-xl border border-slate-200 bg-slate-50/50 p-1 mb-4">
             <button
               type="button"
               onClick={() => { setMode('quick'); setCustomStep(1); setApiError(null); }}
@@ -696,11 +700,13 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
               カスタム（8項目）
             </button>
           </div>
+          <p className="text-sm text-slate-500 mb-5">
+            {mode === 'quick' ? '4項目でテンプレートから適正なメニューを1件抽出。すぐに表示されます。' : '8項目でAIが種目・年齢・状況に合わせてあなた専用のメニューを生成します。'}
+          </p>
 
           {mode === 'quick' && (
             <>
               <h2 className="text-lg font-semibold text-slate-900 mb-4">基本条件（4項目）</h2>
-              <p className="text-sm text-slate-600 mb-4">4項目に沿って、適正な練習メニューを1つ抽出します。</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">1. 目的</label>
@@ -760,10 +766,66 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
 
               {customStep === 1 && (
                 <>
-                  <h2 className="text-lg font-semibold text-slate-900 mb-4">ステップ1: 基本条件（4項目）</h2>
+                  <h2 className="text-lg font-semibold text-slate-900 mb-4">ステップ1: あなたについて（4項目）</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">1. 目的</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">1. 種目</label>
+                      <select value={input.stroke || 'Fr'} onChange={(e) => handleInputChange('stroke', e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40">
+                        <option value="Fr">Fr（自由形）</option>
+                        <option value="Ba">Ba（背泳ぎ）</option>
+                        <option value="Br">Br（平泳ぎ）</option>
+                        <option value="Fly">Fly（バタフライ）</option>
+                        <option value="IM">個人メドレー</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">2. 年齢</label>
+                      <select value={input.age} onChange={(e) => handleInputChange('age', e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40">
+                        <option value="">選択してください</option>
+                        {Array.from({ length: 94 }, (_, i) => 6 + i).map((n) => <option key={n} value={String(n)}>{n}歳</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">3. レベル</label>
+                      <select value={input.level} onChange={(e) => handleInputChange('level', e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40">
+                        <option value="">選択してください</option>
+                        <option value="全国大会入賞〜代表クラス">全国大会入賞〜代表クラス</option>
+                        <option value="上級（選手クラス〜全国大会）">上級（選手クラス〜全国大会）</option>
+                        <option value="中級（育成クラス〜県大会）">中級（育成クラス〜県大会）</option>
+                        <option value="初級（4泳法完泳）">初級（4泳法完泳）</option>
+                        <option value="マスターズ（記録狙い）">マスターズ（記録狙い）</option>
+                        <option value="マスターズ（大会出場）">マスターズ（大会出場）</option>
+                        <option value="マスターズ（泳力向上）">マスターズ（泳力向上）</option>
+                        <option value="マスターズ（健康志向）">マスターズ（健康志向）</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">4. 状況</label>
+                      <select value={input.condition} onChange={(e) => handleInputChange('condition', e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40">
+                        <option value="">選択してください</option>
+                        <option value="良好">良好</option>
+                        <option value="軽疲労">軽疲労</option>
+                        <option value="筋疲労（筋トレ後）">筋疲労（筋トレ後）</option>
+                        <option value="疲労残り（メイン翌日）">疲労残り（メイン翌日）</option>
+                        <option value="月経期">月経期</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="mt-6">
+                    <button onClick={() => setCustomStep(2)} disabled={!isCustomStep1Valid()} className="px-6 py-3 bg-slate-800 text-white font-semibold rounded-xl shadow-md hover:bg-slate-900 disabled:bg-slate-400 disabled:cursor-not-allowed transition-all">
+                      次へ
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {customStep === 2 && (
+                <>
+                  <h2 className="text-lg font-semibold text-slate-900 mb-4">ステップ2: 練習計画（4項目）</h2>
+                  <p className="text-sm text-slate-600 mb-4">今日の狙いと練習条件を入力してください。</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">5. 目的</label>
                       <select value={input.period} onChange={(e) => handleInputChange('period', e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40">
                         <option value="">選択してください</option>
                         <option value="1">① リカバリー期</option>
@@ -776,14 +838,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">2. 距離</label>
-                      <select value={input.distance} onChange={(e) => handleInputChange('distance', e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40">
-                        <option value="">選択してください</option>
-                        {DISTANCE_OPTIONS.map((d) => <option key={d} value={d}>{d}m</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">3. 距離タイプ</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">6. 距離タイプ</label>
                       <select value={input.distanceType} onChange={(e) => handleInputChange('distanceType', e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40">
                         <option value="">選択してください</option>
                         <option value="S">S（スプリント）</option>
@@ -792,68 +847,19 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">4. 練習時間</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">7. 距離</label>
+                      <select value={input.distance} onChange={(e) => handleInputChange('distance', e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40">
+                        <option value="">選択してください</option>
+                        {DISTANCE_OPTIONS.map((d) => <option key={d} value={d}>{d}m</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">8. 練習時間</label>
                       <select value={input.practiceTime} onChange={(e) => handleInputChange('practiceTime', e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40">
                         <option value="">選択してください</option>
                         <option value="60">60分</option>
                         <option value="90">90分</option>
                         <option value="120">120分</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="mt-6">
-                    <button onClick={() => setCustomStep(2)} disabled={!isQuickFormValid()} className="px-6 py-3 bg-slate-800 text-white font-semibold rounded-xl shadow-md hover:bg-slate-900 disabled:bg-slate-400 disabled:cursor-not-allowed transition-all">
-                      次へ
-                    </button>
-                  </div>
-                </>
-              )}
-
-              {customStep === 2 && (
-                <>
-                  <h2 className="text-lg font-semibold text-slate-900 mb-4">ステップ2: 詳細条件（4項目）</h2>
-                  <p className="text-sm text-slate-600 mb-4">あなたに合わせて、高度なメニューを生成します。</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">5. 種目</label>
-                      <select value={input.stroke || 'Fr'} onChange={(e) => handleInputChange('stroke', e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40">
-                        <option value="Fr">Fr（自由形）</option>
-                        <option value="Ba">Ba（背泳ぎ）</option>
-                        <option value="Br">Br（平泳ぎ）</option>
-                        <option value="Fly">Fly（バタフライ）</option>
-                        <option value="IM">個人メドレー</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">6. 年齢</label>
-                      <select value={input.age} onChange={(e) => handleInputChange('age', e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40">
-                        <option value="">選択してください</option>
-                        {Array.from({ length: 94 }, (_, i) => 6 + i).map((n) => <option key={n} value={String(n)}>{n}歳</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">7. 状況</label>
-                      <select value={input.condition} onChange={(e) => handleInputChange('condition', e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40">
-                        <option value="">選択してください</option>
-                        <option value="良好">良好</option>
-                        <option value="軽疲労">軽疲労</option>
-                        <option value="筋疲労（筋トレ後）">筋疲労（筋トレ後）</option>
-                        <option value="疲労残り（メイン翌日）">疲労残り（メイン翌日）</option>
-                        <option value="月経期">月経期</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">8. レベル</label>
-                      <select value={input.level} onChange={(e) => handleInputChange('level', e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40">
-                        <option value="">選択してください</option>
-                        <option value="全国大会入賞〜代表クラス">全国大会入賞〜代表クラス</option>
-                        <option value="上級（選手クラス〜全国大会）">上級（選手クラス〜全国大会）</option>
-                        <option value="中級（育成クラス〜県大会）">中級（育成クラス〜県大会）</option>
-                        <option value="初級（4泳法完泳）">初級（4泳法完泳）</option>
-                        <option value="マスターズ（記録狙い）">マスターズ（記録狙い）</option>
-                        <option value="マスターズ（大会出場）">マスターズ（大会出場）</option>
-                        <option value="マスターズ（泳力向上）">マスターズ（泳力向上）</option>
-                        <option value="マスターズ（健康志向）">マスターズ（健康志向）</option>
                       </select>
                     </div>
                   </div>
