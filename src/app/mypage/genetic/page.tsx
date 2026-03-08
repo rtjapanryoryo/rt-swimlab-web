@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { compressPdfIfNeeded } from '@/lib/compress-pdf';
 import { uploadGeneProfile } from './actions';
-import { MobilePdfViewer } from '@/components/MobilePdfViewer';
 
 type GeneProfile = {
   id: string;
@@ -117,6 +116,26 @@ export default function GeneticPage() {
     }
   }
 
+  /** PDFをダウンロード（モバイルで表示できない場合のフォールバック） */
+  async function handleDownloadPdf() {
+    if (!viewingId) return;
+    try {
+      const res = await fetch(`/api/gene-profiles/${viewingId}/pdf`, { credentials: 'include' });
+      if (!res.ok) throw new Error('取得に失敗しました');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = (profiles[0]?.display_name || 'RT-GENE-PROFILE').replace(/[^\w\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf\-]/g, '_') + '.pdf';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'PDFの保存に失敗しました');
+    }
+  }
+
   async function handleDelete(id: string) {
     if (!confirm('このPDFを削除しますか？')) return;
     setDeletingId(id);
@@ -221,46 +240,62 @@ export default function GeneticPage() {
             </div>
           ) : (
             <div className="flex flex-col">
-              {/* ファイル名＋削除（スリムバー） */}
+              {/* ファイル名＋操作（削除・保存） */}
               <div className="flex items-center justify-between gap-3 py-1.5 px-1 border-b border-slate-100 mb-3">
-                <p className="text-sm font-medium text-slate-800 truncate" title={profiles[0]?.display_name}>
+                <p className="text-sm font-medium text-slate-800 truncate min-w-0" title={profiles[0]?.display_name}>
                   {profiles[0]?.display_name}
                 </p>
-                <button
-                  type="button"
-                  onClick={() => profiles[0] && handleDelete(profiles[0].id)}
-                  disabled={deletingId === profiles[0]?.id}
-                  className="shrink-0 px-2.5 py-1 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50"
-                >
-                  {deletingId === profiles[0]?.id ? '削除中...' : '削除'}
-                </button>
-              </div>
-              {/* PDFビューア（モバイル: PDF.js で縦スクロール / PC: iframe） */}
-              <div className={`bg-slate-50/30 rounded-lg border border-slate-200/60 ${isMobile ? 'h-[min(65vh,480px)] min-h-[320px] overflow-hidden flex flex-col' : 'min-h-[400px] sm:min-h-[520px] md:min-h-[600px] overflow-auto'}`}>
-                {isMobile && viewingId ? (
-                  <>
-                    <a
-                      href={`/api/gene-profiles/${viewingId}/pdf`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="shrink-0 mx-2 mt-2 mb-1 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 active:bg-blue-800 text-center"
+                <div className="flex items-center gap-2 shrink-0">
+                  {viewUrl && (
+                    <button
+                      type="button"
+                      onClick={handleDownloadPdf}
+                      className="px-2.5 py-1 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg"
                     >
-                      PDFをブラウザで開く（表示できない場合）
-                    </a>
+                      PDFを保存
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => profiles[0] && handleDelete(profiles[0].id)}
+                    disabled={deletingId === profiles[0]?.id}
+                    className="px-2.5 py-1 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    {deletingId === profiles[0]?.id ? '削除中...' : '削除'}
+                  </button>
+                </div>
+              </div>
+              {/* PDFビューア（署名付きURLで iframe 表示。モバイルでも同一方式） */}
+              <div className={`bg-slate-50/30 rounded-lg border border-slate-200/60 ${isMobile ? 'min-h-[400px] overflow-hidden flex flex-col' : 'min-h-[400px] sm:min-h-[520px] md:min-h-[600px] overflow-auto'}`}>
+                {viewUrl ? (
+                  <>
+                    {isMobile && (
+                      <div className="shrink-0 flex gap-2 p-2">
+                        <a
+                          href={viewUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 py-2.5 text-sm font-medium text-center rounded-lg bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800"
+                        >
+                          ブラウザで開く
+                        </a>
+                        <button
+                          type="button"
+                          onClick={handleDownloadPdf}
+                          className="flex-1 py-2.5 text-sm font-medium rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-100"
+                        >
+                          PDFを保存
+                        </button>
+                      </div>
+                    )}
                     <div className="flex-1 min-h-[300px] overflow-hidden">
-                      <MobilePdfViewer
-                        pdfUrl={`/api/gene-profiles/${viewingId}/pdf`}
-                        className="h-full w-full"
-                        onError={(msg) => setError(msg)}
+                      <iframe
+                        src={`${viewUrl}#navpanes=0&pagemode=none&view=FitH`}
+                        title="PDFプレビュー"
+                        className="w-full h-full min-h-[300px] border-0"
                       />
                     </div>
                   </>
-                ) : viewUrl ? (
-                  <iframe
-                    src={`${viewUrl}#navpanes=0&pagemode=none&view=FitH`}
-                    title="PDFプレビュー"
-                    className="w-full min-w-0 border-0 min-h-[400px] sm:min-h-[520px] md:min-h-[600px]"
-                  />
                 ) : viewingId ? (
                   <div className="flex items-center justify-center py-24 text-slate-500 text-sm">
                     読み込み中...
