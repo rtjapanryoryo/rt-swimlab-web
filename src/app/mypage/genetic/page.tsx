@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { compressPdfIfNeeded } from '@/lib/compress-pdf';
 import { uploadGeneProfile } from './actions';
+import { MobilePdfViewer } from '@/components/MobilePdfViewer';
 
 type GeneProfile = {
   id: string;
@@ -234,13 +235,31 @@ export default function GeneticPage() {
                   {deletingId === profiles[0]?.id ? '削除中...' : '削除'}
                 </button>
               </div>
-              {/* PDFビューア（PC:左パネル非表示・右ページのみ / モバイル:1ページ収まる表示・スクロール可） */}
-              <div className={`bg-slate-50/30 rounded-lg border border-slate-200/60 overflow-auto ${isMobile ? 'h-[calc(100dvh-220px)] min-h-[50vh]' : 'min-h-[400px] sm:min-h-[520px] md:min-h-[600px]'}`}>
-                {viewUrl ? (
+              {/* PDFビューア（モバイル: PDF.js で縦スクロール / PC: iframe） */}
+              <div className={`bg-slate-50/30 rounded-lg border border-slate-200/60 ${isMobile ? 'h-[calc(100dvh-220px)] min-h-[50vh] overflow-hidden flex flex-col' : 'min-h-[400px] sm:min-h-[520px] md:min-h-[600px] overflow-auto'}`}>
+                {isMobile && viewingId ? (
+                  <>
+                    <a
+                      href={`/api/gene-profiles/${viewingId}/pdf`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 mx-2 mt-2 mb-1 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 text-center"
+                    >
+                      ブラウザで開く（スムーズにスクロール）
+                    </a>
+                    <div className="flex-1 min-h-0 overflow-hidden">
+                      <MobilePdfViewer
+                        pdfUrl={`/api/gene-profiles/${viewingId}/pdf`}
+                        className="h-full"
+                        onError={(msg) => setError(msg)}
+                      />
+                    </div>
+                  </>
+                ) : viewUrl ? (
                   <iframe
-                    src={`${viewUrl}#navpanes=0&pagemode=none&view=${isMobile ? 'Fit' : 'FitH'}`}
+                    src={`${viewUrl}#navpanes=0&pagemode=none&view=FitH`}
                     title="PDFプレビュー"
-                    className={`w-full min-w-0 border-0 ${isMobile ? 'h-[calc(100dvh-220px)] min-h-[50vh]' : 'min-h-[400px] sm:min-h-[520px] md:min-h-[600px]'}`}
+                    className="w-full min-w-0 border-0 min-h-[400px] sm:min-h-[520px] md:min-h-[600px]"
                   />
                 ) : viewingId ? (
                   <div className="flex items-center justify-center py-24 text-slate-500 text-sm">
