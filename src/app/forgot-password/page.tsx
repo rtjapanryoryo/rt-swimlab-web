@@ -1,15 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { WebViewOpenInBrowser } from '@/components/WebViewOpenInBrowser';
 
-export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState('');
+function ForgotPasswordForm() {
+  const searchParams = useSearchParams();
+  const emailParam = searchParams.get('email') ?? '';
+  const [email, setEmail] = useState(emailParam);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (emailParam) setEmail(emailParam);
+  }, [emailParam]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -106,5 +113,17 @@ export default function ForgotPasswordPage() {
         </div>
       </div>
     </WebViewOpenInBrowser>
+  );
+}
+
+export default function ForgotPasswordPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="p-8 text-slate-500 text-sm">読み込み中...</div>
+      </div>
+    }>
+      <ForgotPasswordForm />
+    </Suspense>
   );
 }

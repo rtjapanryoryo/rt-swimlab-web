@@ -3,9 +3,12 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/components/AuthProvider';
 import { ExternalLinks } from '@/components/ExternalLinks';
 
 export default function SettingsPage() {
+  const { user } = useAuth();
+  const accountEmail = user?.email ?? null;
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -289,9 +292,12 @@ export default function SettingsPage() {
             )}
           </form>
           <div className="pt-2 border-t border-slate-100">
+            {accountEmail && (
+              <p className="text-xs text-slate-500 mb-1">登録メール: {accountEmail}</p>
+            )}
             <p className="text-xs text-slate-500 mb-2">パスワードを忘れた場合は、登録メール宛にリセットリンクを送信できます。</p>
             <Link
-              href="/forgot-password"
+              href={accountEmail ? `/forgot-password?email=${encodeURIComponent(accountEmail)}` : '/forgot-password'}
               className="inline-flex items-center px-5 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-colors"
             >
               パスワードをリセットする（メール送信）
