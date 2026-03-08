@@ -18,6 +18,7 @@ type MobilePdfViewerProps = {
 /**
  * モバイル向け PDF ビューア（PDF.js で各ページを canvas に描画し、縦スクロール可能に）
  * iframe 内のネイティブビューアはモバイルでタッチスクロールが不安定なため、この方式で安定させる
+ * 認証必須のAPI対応: fetch で credentials を付与して取得し、ArrayBuffer を渡す
  */
 export function MobilePdfViewer({ pdfUrl, className = '', onError }: MobilePdfViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -33,8 +34,17 @@ export function MobilePdfViewer({ pdfUrl, className = '', onError }: MobilePdfVi
     setLoading(true);
     container.innerHTML = '';
 
-    getDocument({ url: pdfUrl })
-      .promise.then(async (pdf) => {
+    // モバイルで cookie 認証を確実に送るため、fetch で credentials 付き取得
+    fetch(pdfUrl, { credentials: 'include' })
+      .then((res) => {
+        if (!res.ok) throw new Error(res.status === 401 ? 'ログインが必要です' : `取得失敗 (${res.status})`);
+        return res.arrayBuffer();
+      })
+      .then((arrayBuffer) => {
+        if (cancelled) throw new Error('Abort');
+        return getDocument({ data: arrayBuffer }).promise;
+      })
+      .then(async (pdf) => {
         if (cancelled) return;
         const numPages = pdf.numPages;
         setPageCount(numPages);
@@ -68,7 +78,7 @@ export function MobilePdfViewer({ pdfUrl, className = '', onError }: MobilePdfVi
       })
       .catch((e) => {
         if (!cancelled) {
-          const msg = e instanceof Error ? e.message : 'PDFの読み込みに失敗しました';
+          const msg = e instanceof Error ? e.message : 'PDFの読み込みに失敗しました。ログイン状態を確認してください。';
           onError?.(msg);
         }
       })

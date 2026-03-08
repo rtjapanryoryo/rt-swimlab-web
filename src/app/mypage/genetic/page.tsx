@@ -236,21 +236,21 @@ export default function GeneticPage() {
                 </button>
               </div>
               {/* PDFビューア（モバイル: PDF.js で縦スクロール / PC: iframe） */}
-              <div className={`bg-slate-50/30 rounded-lg border border-slate-200/60 ${isMobile ? 'h-[calc(100dvh-220px)] min-h-[50vh] overflow-hidden flex flex-col' : 'min-h-[400px] sm:min-h-[520px] md:min-h-[600px] overflow-auto'}`}>
+              <div className={`bg-slate-50/30 rounded-lg border border-slate-200/60 ${isMobile ? 'h-[min(65vh,480px)] min-h-[320px] overflow-hidden flex flex-col' : 'min-h-[400px] sm:min-h-[520px] md:min-h-[600px] overflow-auto'}`}>
                 {isMobile && viewingId ? (
                   <>
                     <a
                       href={`/api/gene-profiles/${viewingId}/pdf`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="shrink-0 mx-2 mt-2 mb-1 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 text-center"
+                      className="shrink-0 mx-2 mt-2 mb-1 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 active:bg-blue-800 text-center"
                     >
-                      ブラウザで開く（スムーズにスクロール）
+                      PDFをブラウザで開く（表示できない場合）
                     </a>
-                    <div className="flex-1 min-h-0 overflow-hidden">
+                    <div className="flex-1 min-h-[300px] overflow-hidden">
                       <MobilePdfViewer
                         pdfUrl={`/api/gene-profiles/${viewingId}/pdf`}
-                        className="h-full"
+                        className="h-full w-full"
                         onError={(msg) => setError(msg)}
                       />
                     </div>
