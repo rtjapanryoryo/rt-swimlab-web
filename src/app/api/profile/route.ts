@@ -18,7 +18,7 @@ export async function GET() {
 
   let { data, error } = await sb
     .from('profiles')
-    .select('id, role, display_name, total_usage_count, created_at')
+    .select('id, role, display_name, total_usage_count, goal, show_goal, created_at')
     .eq('id', user.id)
     .single();
 
@@ -89,6 +89,8 @@ export async function PATCH(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
   const updates: Record<string, unknown> = {};
   if (typeof body.display_name === 'string') updates.display_name = body.display_name.trim();
+  if (typeof body.goal === 'string') updates.goal = body.goal.trim() || null;
+  if (typeof body.show_goal === 'boolean') updates.show_goal = body.show_goal;
 
   const { data, error } = await sb
     .from('profiles')

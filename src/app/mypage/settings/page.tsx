@@ -17,11 +17,19 @@ export default function SettingsPage() {
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
 
+  // あなたの目標
+  const [goal, setGoal] = useState('');
+  const [showGoal, setShowGoal] = useState(true);
+  const [goalSaving, setGoalSaving] = useState(false);
+  const [goalMessage, setGoalMessage] = useState<string | null>(null);
+
   useEffect(() => {
     fetch('/api/profile', { credentials: 'include' })
       .then((r) => r.json())
       .then((d) => {
         setDisplayName(d.profile?.display_name ?? '');
+        setGoal(d.profile?.goal ?? '');
+        setShowGoal(d.profile?.show_goal !== false);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -140,6 +148,88 @@ export default function SettingsPage() {
               {message}
             </p>
           )}
+        </div>
+      </section>
+
+      {/* あなたの目標 */}
+      <section className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+        <div className="px-6 py-5 border-b border-slate-100">
+          <h2 className="text-sm font-semibold text-slate-800">あなたの目標</h2>
+          <p className="text-xs text-slate-500 mt-0.5">ダッシュボードに表示する目標を一文で入力できます。表示のオン・オフも切り替え可能です</p>
+        </div>
+        <div className="p-6 space-y-6">
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setGoalSaving(true);
+              setGoalMessage(null);
+              try {
+                const res = await fetch('/api/profile', {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ goal: goal.trim() || null }),
+                  credentials: 'include',
+                });
+                if (!res.ok) throw new Error('保存に失敗しました');
+                setGoalMessage('目標を保存しました');
+                window.dispatchEvent(new Event('profile-updated'));
+              } catch {
+                setGoalMessage('保存に失敗しました');
+              } finally {
+                setGoalSaving(false);
+              }
+            }}
+            className="space-y-4"
+          >
+            <div>
+              <label htmlFor="goal" className="block text-xs font-medium text-slate-500 mb-1.5">
+                目標（一文）
+              </label>
+              <input
+                id="goal"
+                type="text"
+                value={goal}
+                onChange={(e) => setGoal(e.target.value)}
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-colors"
+                placeholder="例：100m自由形で1分を切る"
+              />
+            </div>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showGoal}
+                onChange={async (e) => {
+                  const v = e.target.checked;
+                  setShowGoal(v);
+                  try {
+                    await fetch('/api/profile', {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ show_goal: v }),
+                      credentials: 'include',
+                    });
+                    window.dispatchEvent(new Event('profile-updated'));
+                  } catch {
+                    setShowGoal(!v);
+                  }
+                }}
+                className="h-4 w-4 rounded border-gray-300 text-slate-700 focus:ring-slate-500"
+              />
+              <span className="text-sm text-slate-700">ダッシュボードに目標を表示する</span>
+            </label>
+            <button
+              type="submit"
+              disabled={goalSaving}
+              className="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+            >
+              {goalSaving ? '保存中...' : '目標を保存'}
+            </button>
+            {goalMessage && (
+              <p className={`text-sm ${goalMessage.includes('失敗') ? 'text-amber-600' : 'text-blue-600'}`}>
+                {goalMessage}
+              </p>
+            )}
+          </form>
         </div>
       </section>
 

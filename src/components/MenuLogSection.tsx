@@ -9,10 +9,25 @@ type MenuLog = {
   created_at: string;
 };
 
+type Profile = {
+  display_name: string | null;
+  total_usage_count: number;
+  quick_count?: number;
+  custom_count?: number;
+};
+
 export function MenuLogSection() {
   const [menus, setMenus] = useState<MenuLog[]>([]);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const fetchProfile = useCallback(() => {
+    fetch('/api/profile', { credentials: 'include' })
+      .then((r) => r.json())
+      .then((res) => setProfile(res.profile ?? null))
+      .catch(() => setProfile(null));
+  }, []);
 
   const fetchMenus = useCallback(() => {
     const params = new URLSearchParams();
@@ -32,22 +47,31 @@ export function MenuLogSection() {
   }, []);
 
   useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
+
+  useEffect(() => {
     fetchMenus();
   }, [fetchMenus]);
 
-  // タブに戻ったとき・メニュー保存イベントで再取得
+  // タブに戻ったとき・メニュー保存イベント・プロフィール更新で再取得
   useEffect(() => {
-    const onRefresh = () => fetchMenus();
+    const onRefresh = () => {
+      fetchMenus();
+      fetchProfile();
+    };
     const onVisible = () => {
       if (document.visibilityState === 'visible') onRefresh();
     };
     document.addEventListener('visibilitychange', onVisible);
     window.addEventListener('menu-saved', onRefresh);
+    window.addEventListener('profile-updated', onRefresh);
     return () => {
       document.removeEventListener('visibilitychange', onVisible);
       window.removeEventListener('menu-saved', onRefresh);
+      window.removeEventListener('profile-updated', onRefresh);
     };
-  }, [fetchMenus]);
+  }, [fetchMenus, fetchProfile]);
 
   const formatDate = (s: string) => {
     const d = new Date(s);
@@ -67,6 +91,21 @@ export function MenuLogSection() {
         <h2 className="text-sm font-semibold text-slate-800">メニューログ</h2>
       </div>
       <div className="p-6">
+        {/* 生成回数（横1行） */}
+        <div className="mb-6 pb-6 border-b border-slate-100/80 flex flex-wrap items-center gap-x-6 gap-y-1">
+          <span className="text-sm text-slate-600">
+            累計生成回数 <span className="font-semibold text-blue-600 tabular-nums">{profile?.total_usage_count ?? 0}</span> 回
+          </span>
+          <span className="text-slate-300">|</span>
+          <span className="text-sm text-slate-600">
+            クイック <span className="font-medium tabular-nums">{profile?.quick_count ?? 0}</span> 回
+          </span>
+          <span className="text-slate-300">|</span>
+          <span className="text-sm text-slate-600">
+            カスタム <span className="font-medium tabular-nums">{profile?.custom_count ?? 0}</span> 回
+          </span>
+        </div>
+
         {loading ? (
           <div className="py-8 text-center text-slate-500 text-sm animate-pulse">読み込み中...</div>
         ) : error ? (
