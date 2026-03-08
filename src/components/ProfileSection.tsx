@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { useProfile } from '@/contexts/ProfileContext';
 
 export function ProfileSection() {
-  const { profile, setProfile, refetch } = useProfile();
+  const { profile, setProfile } = useProfile();
   const [goalInput, setGoalInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -37,31 +36,19 @@ export function ProfileSection() {
     }
   }
 
-  const displayNameWithSama = profile?.display_name
-    ? `${profile.display_name}様`
-    : '（未設定）';
   const showGoal = profile?.show_goal !== false;
 
   return (
     <section className="dashboard-card overflow-hidden">
       <div className="px-6 py-5 border-b border-slate-100/80 flex items-center gap-2">
         <span className="w-1 h-5 rounded-full bg-blue-500/70" />
-        <h2 className="text-sm font-semibold text-slate-800">プロフィール</h2>
+        <h2 className="text-sm font-semibold text-slate-800">
+          {profile?.display_name?.trim() ? `${profile.display_name.trim()}様の目標` : 'あなたの目標'}
+        </h2>
       </div>
       <div className="p-6 space-y-6">
-        <div>
-          <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">表示名</p>
-          <p className="text-lg font-medium text-slate-900">{displayNameWithSama}</p>
-          <p className="text-xs text-slate-500 mt-1">
-            <Link href="/mypage/settings" className="text-blue-600 hover:underline">
-              アカウント情報で変更
-            </Link>
-          </p>
-        </div>
-
         {showGoal && (
           <div>
-            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1.5">あなたの目標</p>
             <form onSubmit={handleSaveGoal} className="flex flex-col sm:flex-row gap-3 items-start">
               <input
                 type="text"
@@ -83,11 +70,6 @@ export function ProfileSection() {
                 {message}
               </p>
             )}
-            <p className="text-xs text-slate-500 mt-1.5">
-              <Link href="/mypage/settings" className="text-blue-600 hover:underline">
-                設定で目標の表示を切り替え
-              </Link>
-            </p>
           </div>
         )}
       </div>

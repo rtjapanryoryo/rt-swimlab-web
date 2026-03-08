@@ -151,10 +151,12 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* あなたの目標 */}
+      {/* 目標（表示名様の目標） */}
       <section className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
         <div className="px-6 py-5 border-b border-slate-100">
-          <h2 className="text-sm font-semibold text-slate-800">あなたの目標</h2>
+          <h2 className="text-sm font-semibold text-slate-800">
+            {displayName?.trim() ? `${displayName.trim()}様の目標` : 'あなたの目標'}
+          </h2>
           <p className="text-xs text-slate-500 mt-0.5">ダッシュボードに表示する目標を一文で入力できます。表示のオン・オフも切り替え可能です</p>
         </div>
         <div className="p-6 space-y-6">
