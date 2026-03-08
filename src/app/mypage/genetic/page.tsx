@@ -18,7 +18,16 @@ export default function GeneticPage() {
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [viewUrl, setViewUrl] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   async function parseJsonOrText(res: Response) {
     const text = await res.text();
@@ -225,13 +234,13 @@ export default function GeneticPage() {
                   {deletingId === profiles[0]?.id ? '削除中...' : '削除'}
                 </button>
               </div>
-              {/* PDFビューア（PC:大きめ / 携帯:幅に合わせてスクロール可） */}
-              <div className="bg-slate-50/30 rounded-lg border border-slate-200/60 overflow-auto min-h-[400px] sm:min-h-[520px] md:min-h-[600px]">
+              {/* PDFビューア（PC:左パネル非表示・右ページのみ / モバイル:1ページ収まる表示・スクロール可） */}
+              <div className={`bg-slate-50/30 rounded-lg border border-slate-200/60 overflow-auto ${isMobile ? 'h-[calc(100dvh-220px)] min-h-[50vh]' : 'min-h-[400px] sm:min-h-[520px] md:min-h-[600px]'}`}>
                 {viewUrl ? (
                   <iframe
-                    src={`${viewUrl}#view=FitH&pagemode=none`}
+                    src={`${viewUrl}#navpanes=0&pagemode=none&view=${isMobile ? 'Fit' : 'FitH'}`}
                     title="PDFプレビュー"
-                    className="w-full min-w-0 border-0 min-h-[400px] sm:min-h-[520px] md:min-h-[600px]"
+                    className={`w-full min-w-0 border-0 ${isMobile ? 'h-[calc(100dvh-220px)] min-h-[50vh]' : 'min-h-[400px] sm:min-h-[520px] md:min-h-[600px]'}`}
                   />
                 ) : viewingId ? (
                   <div className="flex items-center justify-center py-24 text-slate-500 text-sm">
