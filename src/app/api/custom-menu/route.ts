@@ -331,7 +331,7 @@ export async function POST(request: NextRequest) {
       '4': '④ 強化期 (スピード持久力)', '5': '⑤ 強化期 (耐乳酸)', '6': '⑥ 調整期', '7': '⑦ テーパー期',
     };
 
-    const distanceAllocationSection = alloc
+    const distanceAllocationSection = alloc && targetDist != null
       ? `
 【距離配分（絶対遵守・設計の最優先軸）】
 目標総距離: **${targetDist}m**。以下の各ブロック距離を満たさないと不合格。合計が${targetDist - 100}〜${targetDist + 100}mに収まらないメニューは出さないこと。
@@ -416,11 +416,10 @@ ${conditionInstructions}
     }
 
     let systemContent = '';
-    // 1. プロトコル（思想）※最優先。高城直基コーチ50問インタビュー＋RTルール
+    // 1. プロトコル（思想）※最優先
     if (protocolContent) {
       systemContent +=
-        '【プロトコル＝ジェネレート（必ず従うこと。立石諒・高城直基監修の思想・定義・絶対ルールの正本）】\n\n' +
-        '※以下のコーチ思想（50問インタビュー）とRT_MENU_GENERATION_RULESを最優先に反映すること。\n\n' +
+        '【プロトコル＝ジェネレート（必ず従うこと。思想・定義・絶対ルールの正本）】\n\n' +
         protocolContent +
         '\n\n---\n\n';
     }
