@@ -108,7 +108,7 @@ function LoginFormInner({
                 type="button"
                 onClick={handleGoogleLogin}
                 disabled={oauthLoading}
-                className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 rounded-md bg-white hover:bg-gray-50 font-medium text-gray-700 disabled:opacity-50 mb-4"
+                className="w-full flex items-center justify-center gap-3 px-4 py-3.5 border-2 border-slate-200 rounded-2xl bg-white hover:bg-cyan-50/50 hover:border-cyan-200 font-semibold text-slate-700 disabled:opacity-50 mb-4 transition-all"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -120,10 +120,10 @@ function LoginFormInner({
               </button>
               <div className="relative mb-4">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300" />
+                  <div className="w-full border-t-2 border-slate-200" />
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">または</span>
+                  <span className="px-3 bg-white text-slate-500 font-medium">または</span>
                 </div>
               </div>
             </>
@@ -141,7 +141,7 @@ function LoginFormInner({
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                className="w-full px-3 py-2.5 sm:py-2 border border-gray-300 rounded-md focus:ring-slate-500 focus:border-slate-500 min-h-[44px] sm:min-h-0"
+                className="w-full px-4 py-3 border-2 border-slate-200 rounded-2xl focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400 outline-none min-h-[44px] sm:min-h-0 transition-colors"
                 placeholder="example@email.com"
               />
             </div>
@@ -157,7 +157,7 @@ function LoginFormInner({
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   autoComplete="current-password"
-                  className="w-full px-3 py-2.5 sm:py-2 pr-10 border border-gray-300 rounded-md focus:ring-slate-500 focus:border-slate-500 min-h-[44px] sm:min-h-0"
+                  className="w-full px-4 py-3 pr-10 border-2 border-slate-200 rounded-2xl focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400 outline-none min-h-[44px] sm:min-h-0 transition-colors"
                 />
                 <button
                   type="button"
@@ -187,7 +187,7 @@ function LoginFormInner({
             <button
               type="submit"
               disabled={loading}
-              className="w-full px-4 py-3.5 sm:py-3 bg-slate-800 text-white rounded-md hover:bg-slate-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px] touch-manipulation"
+              className="w-full px-4 py-4 bg-gradient-to-r from-cyan-500 to-teal-500 text-white rounded-2xl hover:from-cyan-600 hover:to-teal-600 font-semibold disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px] touch-manipulation shadow-lg shadow-cyan-500/25 transition-all"
             >
               {loading ? 'ログイン中...' : 'ログイン'}
             </button>

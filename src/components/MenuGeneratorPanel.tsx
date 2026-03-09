@@ -615,7 +615,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
   };
 
   return (
-    <div className={embedded ? 'py-4' : 'min-h-screen bg-gradient-to-b from-[#f8fafc] via-[#f1f5f9] to-[#e0f2fe] py-8 px-4'}>
+    <div className={embedded ? 'py-4' : 'min-h-screen bg-gradient-to-b from-cyan-50 via-teal-50 to-sky-100 py-8 px-4'}>
       <div className="max-w-5xl mx-auto">
         {!embedded && (
         <header className="mb-10 text-center no-print relative">
@@ -683,19 +683,19 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
         {showForm && (
         <>
         <div id="input-form" className="panel-premium p-6 md:p-8 mb-6">
-          {/* モード切替：クイック | カスタム */}
-          <div className="flex rounded-xl border border-slate-200 bg-slate-50/50 p-1 mb-4">
+          {/* モード切替：クイック | カスタム（ジム風） */}
+          <div className="flex rounded-2xl bg-slate-100/80 p-1.5 gap-1 mb-5">
             <button
               type="button"
               onClick={() => { setMode('quick'); setCustomStep(1); setApiError(null); }}
-              className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${mode === 'quick' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+              className={`flex-1 py-3 px-4 rounded-xl text-sm font-semibold transition-all ${mode === 'quick' ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/25' : 'text-slate-600 hover:bg-white hover:text-slate-900'}`}
             >
               クイック（4項目）
             </button>
             <button
               type="button"
               onClick={() => { setMode('custom'); setCustomStep(1); setApiError(null); }}
-              className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${mode === 'custom' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+              className={`flex-1 py-3 px-4 rounded-xl text-sm font-semibold transition-all ${mode === 'custom' ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/25' : 'text-slate-600 hover:bg-white hover:text-slate-900'}`}
             >
               カスタム（8項目）
             </button>
@@ -710,7 +710,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">1. 目的</label>
-                  <select value={input.period} onChange={(e) => handleInputChange('period', e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40">
+                  <select value={input.period} onChange={(e) => handleInputChange('period', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
                     <option value="">選択してください</option>
                     <option value="1">① リカバリー期</option>
                     <option value="2">② 基礎形成期</option>
@@ -723,14 +723,14 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">2. 距離</label>
-                  <select value={input.distance} onChange={(e) => handleInputChange('distance', e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40">
+                  <select value={input.distance} onChange={(e) => handleInputChange('distance', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
                     <option value="">選択してください</option>
                     {DISTANCE_OPTIONS.map((d) => <option key={d} value={d}>{d}m</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">3. 距離タイプ</label>
-                  <select value={input.distanceType} onChange={(e) => handleInputChange('distanceType', e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40">
+                  <select value={input.distanceType} onChange={(e) => handleInputChange('distanceType', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
                     <option value="">選択してください</option>
                     <option value="S">S（スプリント）</option>
                     <option value="M">M（ミドル）</option>
@@ -739,7 +739,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">4. 練習時間</label>
-                  <select value={input.practiceTime} onChange={(e) => handleInputChange('practiceTime', e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40">
+                  <select value={input.practiceTime} onChange={(e) => handleInputChange('practiceTime', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
                     <option value="">選択してください</option>
                     <option value="60">60分</option>
                     <option value="90">90分</option>
@@ -748,7 +748,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                 </div>
               </div>
               <div className="mt-6">
-                <button onClick={generateMenuLocal} disabled={!isQuickFormValid()} className="px-6 py-3 bg-slate-800 text-white font-semibold rounded-xl shadow-md hover:bg-slate-900 disabled:bg-slate-400 disabled:cursor-not-allowed transition-all">
+                <button onClick={generateMenuLocal} disabled={!isQuickFormValid()} className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-bold rounded-2xl shadow-lg shadow-cyan-500/25 hover:from-cyan-600 hover:to-teal-600 disabled:from-slate-400 disabled:to-slate-400 disabled:cursor-not-allowed transition-all">
                   メニューを生成
                 </button>
               </div>
@@ -759,9 +759,9 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
             <>
               {/* ステップインジケーター */}
               <div className="flex items-center gap-2 mb-5">
-                <span className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ${customStep >= 1 ? 'bg-slate-800 text-white' : 'bg-slate-200 text-slate-500'}`}>1</span>
-                <span className="h-px flex-1 max-w-[40px] bg-slate-200" />
-                <span className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ${customStep >= 2 ? 'bg-slate-800 text-white' : 'bg-slate-200 text-slate-500'}`}>2</span>
+                <span className={`flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold transition-all ${customStep >= 1 ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg' : 'bg-slate-200 text-slate-500'}`}>1</span>
+                <span className="h-1 flex-1 max-w-[48px] rounded-full bg-slate-200" />
+                <span className={`flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold transition-all ${customStep >= 2 ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg' : 'bg-slate-200 text-slate-500'}`}>2</span>
               </div>
 
               {customStep === 1 && (
@@ -770,7 +770,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">1. 種目</label>
-                      <select value={input.stroke || 'Fr'} onChange={(e) => handleInputChange('stroke', e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40">
+                      <select value={input.stroke || 'Fr'} onChange={(e) => handleInputChange('stroke', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
                         <option value="Fr">Fr（自由形）</option>
                         <option value="Ba">Ba（背泳ぎ）</option>
                         <option value="Br">Br（平泳ぎ）</option>
@@ -780,14 +780,14 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">2. 年齢</label>
-                      <select value={input.age} onChange={(e) => handleInputChange('age', e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40">
+                      <select value={input.age} onChange={(e) => handleInputChange('age', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
                         <option value="">選択してください</option>
                         {Array.from({ length: 94 }, (_, i) => 6 + i).map((n) => <option key={n} value={String(n)}>{n}歳</option>)}
                       </select>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">3. レベル</label>
-                      <select value={input.level} onChange={(e) => handleInputChange('level', e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40">
+                      <select value={input.level} onChange={(e) => handleInputChange('level', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
                         <option value="">選択してください</option>
                         <option value="全国大会入賞〜代表クラス">全国大会入賞〜代表クラス</option>
                         <option value="上級（選手クラス〜全国大会）">上級（選手クラス〜全国大会）</option>
@@ -801,7 +801,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">4. 状況</label>
-                      <select value={input.condition} onChange={(e) => handleInputChange('condition', e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40">
+                      <select value={input.condition} onChange={(e) => handleInputChange('condition', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
                         <option value="">選択してください</option>
                         <option value="良好">良好</option>
                         <option value="軽疲労">軽疲労</option>
@@ -812,7 +812,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                     </div>
                   </div>
                   <div className="mt-6">
-                    <button onClick={() => setCustomStep(2)} disabled={!isCustomStep1Valid()} className="px-6 py-3 bg-slate-800 text-white font-semibold rounded-xl shadow-md hover:bg-slate-900 disabled:bg-slate-400 disabled:cursor-not-allowed transition-all">
+                    <button onClick={() => setCustomStep(2)} disabled={!isCustomStep1Valid()} className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-semibold rounded-2xl shadow-lg shadow-cyan-500/25 hover:from-cyan-600 hover:to-teal-600 disabled:from-slate-400 disabled:to-slate-400 disabled:cursor-not-allowed transition-all">
                       次へ
                     </button>
                   </div>
@@ -826,7 +826,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">5. 目的</label>
-                      <select value={input.period} onChange={(e) => handleInputChange('period', e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40">
+                      <select value={input.period} onChange={(e) => handleInputChange('period', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
                         <option value="">選択してください</option>
                         <option value="1">① リカバリー期</option>
                         <option value="2">② 基礎形成期</option>
@@ -839,7 +839,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">6. 距離タイプ</label>
-                      <select value={input.distanceType} onChange={(e) => handleInputChange('distanceType', e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40">
+                      <select value={input.distanceType} onChange={(e) => handleInputChange('distanceType', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
                         <option value="">選択してください</option>
                         <option value="S">S（スプリント）</option>
                         <option value="M">M（ミドル）</option>
@@ -848,14 +848,14 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">7. 距離</label>
-                      <select value={input.distance} onChange={(e) => handleInputChange('distance', e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40">
+                      <select value={input.distance} onChange={(e) => handleInputChange('distance', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
                         <option value="">選択してください</option>
                         {DISTANCE_OPTIONS.map((d) => <option key={d} value={d}>{d}m</option>)}
                       </select>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">8. 練習時間</label>
-                      <select value={input.practiceTime} onChange={(e) => handleInputChange('practiceTime', e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-slate-400/40">
+                      <select value={input.practiceTime} onChange={(e) => handleInputChange('practiceTime', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
                         <option value="">選択してください</option>
                         <option value="60">60分</option>
                         <option value="90">90分</option>
@@ -867,7 +867,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                     <button onClick={() => setCustomStep(1)} className="px-6 py-3 border border-slate-200 bg-white text-slate-700 font-semibold rounded-xl shadow-sm hover:bg-slate-50">
                       戻る
                     </button>
-                    <button onClick={generateMenuWithAI} disabled={!isCustomFormValid() || customIsGenerating || openaiConfigured === false} className="px-6 py-3 bg-slate-800 text-white font-semibold rounded-xl shadow-md hover:bg-slate-900 disabled:bg-slate-400 disabled:cursor-not-allowed transition-all" title={openaiConfigured === false ? 'カスタム作成はOPENAI_API_KEY設定後に利用できます' : undefined}>
+                    <button onClick={generateMenuWithAI} disabled={!isCustomFormValid() || customIsGenerating || openaiConfigured === false} className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-bold rounded-2xl shadow-lg shadow-cyan-500/25 hover:from-cyan-600 hover:to-teal-600 disabled:from-slate-400 disabled:to-slate-400 disabled:cursor-not-allowed transition-all" title={openaiConfigured === false ? 'カスタム作成はOPENAI_API_KEY設定後に利用できます' : undefined}>
                       {customIsGenerating ? '生成中...' : 'AIでメニューを生成'}
                     </button>
                   </div>
@@ -972,13 +972,13 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                     <span className="text-sm text-slate-500 font-medium">表示:</span>
                     <button
                       onClick={() => setViewMode('table')}
-                      className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-all ${viewMode === 'table' ? 'bg-slate-800 text-white border-slate-800 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                      className={`px-3 py-1.5 rounded-xl border-2 text-sm font-semibold transition-all ${viewMode === 'table' ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white border-transparent shadow-lg' : 'bg-white text-slate-600 border-slate-200 hover:bg-cyan-50 hover:border-cyan-200'}`}
                     >
                       テーブル
                     </button>
                     <button
                       onClick={() => setViewMode('card')}
-                      className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-all ${viewMode === 'card' ? 'bg-slate-800 text-white border-slate-800 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                      className={`px-3 py-1.5 rounded-xl border-2 text-sm font-semibold transition-all ${viewMode === 'card' ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white border-transparent shadow-lg' : 'bg-white text-slate-600 border-slate-200 hover:bg-cyan-50 hover:border-cyan-200'}`}
                     >
                       カード
                     </button>
@@ -998,7 +998,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                 <button
                   onClick={() => handleSharePDF('menu-capture')}
                   disabled={isExporting}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-white hover:bg-slate-900 disabled:opacity-50 font-medium text-sm shadow-md transition-all"
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 text-white hover:from-cyan-600 hover:to-teal-600 disabled:opacity-50 font-semibold text-sm shadow-lg shadow-cyan-500/25 transition-all"
                 >
                   {isExporting ? '共有準備中...' : '共有'}
                 </button>
@@ -1028,7 +1028,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                   setShowForm(true);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className="px-6 py-3 rounded-xl border border-slate-200 bg-white text-slate-700 font-semibold hover:bg-slate-50 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400/50 transition-all shadow-sm"
+                className="px-6 py-3 rounded-2xl border-2 border-slate-200 bg-white text-slate-700 font-semibold hover:bg-cyan-50 hover:border-cyan-200 focus:outline-none focus:ring-2 focus:ring-cyan-400/30 transition-all shadow-sm"
               >
                 もう一度作る
               </button>

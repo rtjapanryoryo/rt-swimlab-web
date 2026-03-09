@@ -1,18 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  /* RT-japan 世界観：クールブルー基調 */
-  --background: #f1f5f9;
+  /* ジム・アプリ風：ポップでビジュアル重視 */
+  --background: #f0fdfa;
   --foreground: #0f172a;
-  --accent: #2563eb;
-  --accent-hover: #1d4ed8;
-  --accent-muted: #bfdbfe;
-  --accent-warm: #64748b;
-  --surface-base: #f8fafc;
+  --accent: #06b6d4;
+  --accent-hover: #0891b2;
+  --accent-warm: #f97316;
+  --accent-violet: #8b5cf6;
+  --accent-muted: #a5f3fc;
+  --surface-base: #f8fffe;
   --surface-elevated: #ffffff;
   --card-bg: #ffffff;
-  --card-border: rgba(148, 163, 184, 0.2);
-  --card-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(37, 99, 235, 0.06);
+  --card-border: rgba(6, 182, 212, 0.15);
+  --card-shadow: 0 4px 14px rgba(6, 182, 212, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
   --font-geist-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-geist-mono: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace;
 }
@@ -180,8 +181,8 @@ html, body {
   height: 100%;
   width: 100%;
   max-width: 100%;
-  /* RT世界観：上から下へ、白→スレート→青みのグラデーション */
-  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 35%, #e2e8f0 70%, #e0f2fe 100%);
+  /* ジム風：明るい水色→シアン→スカイのグラデーション */
+  background: linear-gradient(165deg, #ecfeff 0%, #cffafe 25%, #a5f3fc 50%, #67e8f9 75%, #22d3ee 100%);
 }
 
 /* PDFキャプチャ用：1枚に収め、文字の潰れ・重なりを防ぐ */
@@ -304,46 +305,46 @@ body {
   display: none;
 }
 
-/* カード（メニューセクション用）RT世界観 ※文字が切れないよう overflow は visible */
+/* カード（メニューセクション用）ポップ・ジム風 ※文字が切れないよう overflow は visible */
 .app-card {
-  border-radius: 16px;
-  background: linear-gradient(180deg, #ffffff 0%, #fafbff 50%, #f8fafc 100%);
+  border-radius: 20px;
+  background: linear-gradient(145deg, #ffffff 0%, #f0fdfa 100%);
   box-shadow:
-    0 1px 3px rgba(15, 23, 42, 0.04),
-    0 6px 16px rgba(37, 99, 235, 0.06),
-    0 0 0 1px rgba(148, 163, 184, 0.1);
-  border: 1px solid rgba(148, 163, 184, 0.15);
+    0 4px 20px rgba(6, 182, 212, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    0 0 0 1px rgba(6, 182, 212, 0.1);
+  border: 1px solid rgba(6, 182, 212, 0.2);
   overflow: visible;
 }
 
-/* プレミアムパネル（入力・結果ラッパー用）RT世界観 */
+/* プレミアムパネル（入力・結果ラッパー用）ポップ・ジム風 */
 .panel-premium {
-  border-radius: 20px;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 40%, #f1f5f9 100%);
+  border-radius: 24px;
+  background: linear-gradient(145deg, #ffffff 0%, #f0fdfa 50%, #ecfeff 100%);
   box-shadow:
-    0 1px 2px rgba(15, 23, 42, 0.02),
-    0 8px 24px rgba(37, 99, 235, 0.08),
-    0 0 0 1px rgba(148, 163, 184, 0.15);
-  border: 1px solid rgba(148, 163, 184, 0.2);
+    0 8px 32px rgba(6, 182, 212, 0.15),
+    0 4px 12px rgba(0, 0, 0, 0.05),
+    0 0 0 1px rgba(6, 182, 212, 0.15);
+  border: 1px solid rgba(6, 182, 212, 0.2);
 }
 
-/* RT雰囲気：薄い幾何学パターン（rt-japan.jp ヘッダー風・明るい版） */
+/* ポップ雰囲気：爽やかなグラデ＋水玉風アクセント */
 .rt-atmosphere {
   background-image:
-    repeating-linear-gradient(90deg, transparent 0, transparent 48px, rgba(148, 163, 184, 0.035) 48px, rgba(148, 163, 184, 0.035) 49px),
-    repeating-linear-gradient(0deg, transparent 0, transparent 48px, rgba(148, 163, 184, 0.035) 48px, rgba(148, 163, 184, 0.035) 49px),
-    linear-gradient(180deg, #fafbfc 0%, #f8fafc 40%, #f1f5f9 75%, #eef6ff 100%);
+    radial-gradient(circle at 20% 80%, rgba(6, 182, 212, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.06) 0%, transparent 40%),
+    linear-gradient(165deg, #ecfeff 0%, #cffafe 30%, #e0f2fe 70%, #f0f9ff 100%);
 }
 
-/* ダッシュボードカード（RT世界観・青みの白） */
+/* ダッシュボードカード（ポップ・ジム風） */
 .dashboard-card {
-  border-radius: 20px;
-  background: linear-gradient(180deg, #ffffff 0%, #fafbff 50%, #f8fafc 100%);
+  border-radius: 24px;
+  background: linear-gradient(145deg, #ffffff 0%, #f0fdfa 50%, #ecfeff 100%);
   box-shadow:
-    0 1px 2px rgba(15, 23, 42, 0.02),
-    0 4px 16px rgba(37, 99, 235, 0.06),
-    0 0 0 1px rgba(148, 163, 184, 0.12);
-  border: 1px solid rgba(148, 163, 184, 0.18);
+    0 4px 24px rgba(6, 182, 212, 0.1),
+    0 2px 12px rgba(0, 0, 0, 0.04),
+    0 0 0 1px rgba(6, 182, 212, 0.12);
+  border: 1px solid rgba(6, 182, 212, 0.18);
 }
 
 /* スプラッシュ用キーフレーム（styled-jsx の代わり） */

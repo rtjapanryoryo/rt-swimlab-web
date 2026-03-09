@@ -39,12 +39,12 @@ function MyPageLayoutInner({
       <div className="flex flex-col lg:flex-row min-h-screen">
         {/* サイドナビ（PC: 左端固定。モバイルではフッターカルーセルで表示） */}
         <aside className="hidden lg:flex lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 lg:z-40 lg:flex-shrink-0">
-          <nav className="w-full h-full overflow-y-auto bg-gradient-to-b from-white via-[#fafbff] to-[#f8fafc] border-r border-slate-200/80 shadow-sm">
-            <div className="px-5 py-4 border-b border-slate-100">
-              <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">
+          <nav className="w-full h-full overflow-y-auto bg-gradient-to-b from-white via-[#f0fdfa] to-[#ecfeff] border-r border-cyan-200/50 shadow-lg shadow-cyan-500/5">
+            <div className="px-5 py-4 border-b border-cyan-100/80">
+              <p className="text-[10px] font-bold text-cyan-500 uppercase tracking-widest">
                 My Page
               </p>
-              <p className="text-lg font-semibold text-slate-800 mt-0.5 truncate" title={displayName ? `${displayName}様` : undefined}>
+              <p className="text-lg font-bold text-slate-800 mt-0.5 truncate" title={displayName ? `${displayName}様` : undefined}>
                 {displayName ? `${displayName}様` : 'マイページ'}
               </p>
             </div>
@@ -57,10 +57,10 @@ function MyPageLayoutInner({
                       ? pathname === '/mypage' || pathname === '/mypage/'
                       : item.href === pathname || pathname.startsWith(item.href + '/');
                 const baseClass =
-                  'flex items-center gap-3 w-full px-5 py-3 text-left text-base font-medium transition-colors';
+                  'flex items-center gap-3 w-full px-5 py-3 text-left text-base font-medium transition-all rounded-r-xl mx-2';
                 const activeClass = isActive
-                  ? 'bg-blue-50 text-blue-800 border-l-2 border-blue-500'
-                  : 'text-slate-600 hover:bg-slate-50/80 hover:text-slate-900';
+                  ? 'bg-gradient-to-r from-cyan-100 to-teal-50 text-cyan-800 border-l-4 border-cyan-500 font-semibold'
+                  : 'text-slate-600 hover:bg-cyan-50/80 hover:text-slate-900';
                 const IconComponent = item.Icon;
                 const content = (
                   <>
@@ -98,11 +98,11 @@ function MyPageLayoutInner({
                 );
               })}
             </ul>
-            <div className="px-5 py-3 border-t border-slate-100">
+            <div className="px-5 py-3 border-t border-cyan-100/80">
               <form action="/api/auth/logout" method="post">
                 <button
                   type="submit"
-                  className="flex items-center gap-2 w-full text-left text-base font-medium text-slate-600 hover:text-slate-900 transition-colors py-2 -ml-1"
+                  className="flex items-center gap-2 w-full text-left text-base font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50/80 rounded-xl py-2 px-3 transition-colors"
                 >
                   <LogoutIcon />
                   ログアウト
@@ -120,11 +120,11 @@ function MyPageLayoutInner({
 
       {/* モバイル用フッター（PCでは非表示。アイコン上・ラベル下） */}
       <footer
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-slate-200/80 no-print"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t-2 border-cyan-100/80 shadow-[0_-4px_20px_rgba(6,182,212,0.08)] no-print"
         aria-label="マイページナビゲーション"
       >
         <nav className="overflow-x-auto scrollbar-hide scroll-smooth">
-          <div className="flex gap-0 min-w-max px-2 py-2">
+          <div className="flex gap-0 min-w-max px-2 py-3">
             {navItems.filter((item) => !('hideInFooter' in item && item.hideInFooter)).map((item) => {
               const isActive =
                 'external' in item
@@ -133,10 +133,10 @@ function MyPageLayoutInner({
                     ? pathname === '/mypage' || pathname === '/mypage/'
                     : item.href === pathname || pathname.startsWith(item.href + '/');
               const baseClass =
-                'flex flex-col items-center justify-center gap-0.5 shrink-0 min-w-[64px] py-2 px-2 rounded-lg text-[10px] font-medium transition-colors';
+                'flex flex-col items-center justify-center gap-0.5 shrink-0 min-w-[64px] py-2 px-2 rounded-2xl text-[10px] font-semibold transition-all';
               const activeClass = isActive
-                ? 'text-blue-600'
-                : 'text-slate-600 hover:text-slate-800 hover:bg-slate-50';
+                ? 'text-cyan-600 bg-cyan-50'
+                : 'text-slate-600 hover:text-slate-800 hover:bg-cyan-50/50';
               const IconComponent = item.Icon;
               const footerLabel = 'footerLabel' in item ? item.footerLabel : item.label;
               const content = (
@@ -177,7 +177,7 @@ function MyPageLayoutInner({
             <form action="/api/auth/logout" method="post" className="shrink-0">
               <button
                 type="submit"
-                className="flex flex-col items-center justify-center gap-0.5 shrink-0 min-w-[64px] py-2 px-2 rounded-lg text-[10px] font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-50 transition-colors"
+                className="flex flex-col items-center justify-center gap-0.5 shrink-0 min-w-[64px] py-2 px-2 rounded-2xl text-[10px] font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-50 transition-colors"
               >
                 <span className="flex justify-center [&>svg]:w-5 [&>svg]:h-5">
                   <LogoutIcon />
@@ -202,18 +202,18 @@ export default function MyPageLayout({
 
   if (loading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f8fafc] via-[#f1f5f9] to-[#e0f2fe]">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-cyan-50 via-teal-50 to-sky-100">
         {loading ? (
           <div className="flex flex-col items-center gap-4">
-            <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-600 rounded-full animate-spin" />
-            <p className="text-sm text-slate-500">読み込み中...</p>
+            <div className="w-10 h-10 border-2 border-cyan-200 border-t-cyan-500 rounded-full animate-spin" />
+            <p className="text-sm text-slate-600 font-medium">読み込み中...</p>
           </div>
         ) : (
           <div className="text-center space-y-6 px-6">
             <p className="text-slate-600">マイページを利用するにはログインしてください。</p>
             <Link
               href="/login?redirect=/mypage"
-              className="inline-block px-6 py-3 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors shadow-sm"
+              className="inline-block px-8 py-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-semibold hover:from-cyan-600 hover:to-teal-600 shadow-lg shadow-cyan-500/25 transition-all"
             >
               ログイン
             </Link>

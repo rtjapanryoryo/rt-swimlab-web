@@ -40,9 +40,9 @@ export function ProfileSection() {
 
   return (
     <section className="dashboard-card overflow-hidden">
-      <div className="px-6 py-5 border-b border-slate-100/80 flex items-center gap-2">
-        <span className="w-1 h-5 rounded-full bg-blue-500/70" />
-        <h2 className="text-sm font-semibold text-slate-800">
+      <div className="px-6 py-5 border-b border-cyan-100/80 flex items-center gap-2">
+        <span className="w-2 h-6 rounded-full bg-gradient-to-b from-cyan-400 to-teal-500" />
+        <h2 className="text-sm font-bold text-slate-800 tracking-wide">
           {profile?.display_name?.trim() ? `${profile.display_name.trim()}様の目標` : 'あなたの目標'}
         </h2>
       </div>
@@ -55,18 +55,18 @@ export function ProfileSection() {
                 value={goalInput}
                 onChange={(e) => setGoalInput(e.target.value)}
                 placeholder="例：100m自由形で1分を切る"
-                className="flex-1 w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                className="flex-1 w-full px-4 py-2.5 border-2 border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400 outline-none transition-colors"
               />
               <button
                 type="submit"
                 disabled={saving}
-                className="px-5 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 text-sm"
+                className="px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-semibold rounded-2xl hover:from-cyan-600 hover:to-teal-600 disabled:opacity-50 text-sm shadow-lg shadow-cyan-500/25 transition-all hover:shadow-cyan-500/40"
               >
                 {saving ? '保存中...' : '保存'}
               </button>
             </form>
             {message && (
-              <p className={`mt-2 text-sm ${message.includes('失敗') ? 'text-amber-600' : 'text-blue-600'}`}>
+              <p className={`mt-2 text-sm ${message.includes('失敗') ? 'text-amber-600' : 'text-cyan-600 font-medium'}`}>
                 {message}
               </p>
             )}

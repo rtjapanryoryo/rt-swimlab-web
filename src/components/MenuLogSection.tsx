@@ -64,15 +64,15 @@ export function MenuLogSection() {
 
   return (
     <section className="dashboard-card overflow-hidden">
-      <div className="px-6 py-5 border-b border-slate-100/80 flex items-center gap-2">
-        <span className="w-1 h-5 rounded-full bg-blue-500/70" />
-        <h2 className="text-sm font-semibold text-slate-800">メニューログ</h2>
+      <div className="px-6 py-5 border-b border-cyan-100/80 flex items-center gap-2">
+        <span className="w-2 h-6 rounded-full bg-gradient-to-b from-cyan-400 to-teal-500" />
+        <h2 className="text-sm font-bold text-slate-800 tracking-wide">メニューログ</h2>
       </div>
       <div className="p-6">
         {/* 生成回数（横1行） */}
-        <div className="mb-6 pb-6 border-b border-slate-100/80 flex flex-wrap items-center gap-x-6 gap-y-1">
+        <div className="mb-6 pb-6 border-b border-cyan-100/80 flex flex-wrap items-center gap-x-6 gap-y-1">
           <span className="text-sm text-slate-600">
-            累計生成回数 <span className="font-semibold text-blue-600 tabular-nums">{profile?.total_usage_count ?? 0}</span> 回
+            累計生成回数 <span className="font-bold text-cyan-600 tabular-nums">{profile?.total_usage_count ?? 0}</span> 回
           </span>
           <span className="text-slate-300">|</span>
           <span className="text-sm text-slate-600">
@@ -92,16 +92,16 @@ export function MenuLogSection() {
           </div>
         ) : menus.length === 0 ? (
           <div className="py-10 text-center">
-            <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-xl">
-              ▸
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-cyan-100 to-teal-100 flex items-center justify-center text-3xl">
+              🏊
             </div>
-            <p className="text-slate-600 font-medium text-sm">保存されたメニューはありません</p>
-            <p className="text-slate-400 text-xs mt-1">
+            <p className="text-slate-600 font-bold text-sm">保存されたメニューはありません</p>
+            <p className="text-slate-500 text-xs mt-1">
               RT swim lab でメニューを作成すると、ログイン中は自動で作成日時が記録されます
             </p>
             <Link
               href="/mypage/menu"
-              className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors text-sm"
+              className="mt-5 inline-flex items-center px-6 py-3 bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-semibold rounded-2xl hover:from-cyan-600 hover:to-teal-600 shadow-lg shadow-cyan-500/25 transition-all text-sm"
             >
               メニューを作成する
             </Link>
@@ -111,7 +111,7 @@ export function MenuLogSection() {
               {menus.map((m) => (
                 <div
                   key={m.id}
-                  className="flex items-center justify-between py-2 px-3 rounded-lg border border-slate-100 bg-slate-50/30"
+                  className="flex items-center justify-between py-2.5 px-4 rounded-xl border-2 border-slate-100 bg-cyan-50/30 hover:border-cyan-200 hover:bg-cyan-50/50 transition-colors"
                 >
                   <span className="text-sm font-medium text-slate-800 tabular-nums">
                     {formatDate(m.created_at)}

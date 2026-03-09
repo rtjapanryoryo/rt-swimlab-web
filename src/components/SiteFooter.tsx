@@ -10,7 +10,7 @@ export function SiteFooter() {
   const isMypage = pathname?.startsWith('/mypage') ?? false;
   return (
     <footer
-      className={`no-print mt-16 pt-8 border-t border-slate-200/80 bg-slate-50/30 ${isMypage ? 'pb-24 lg:pb-10' : 'pb-10'}`}
+      className={`no-print mt-16 pt-8 border-t-2 border-cyan-100/80 bg-gradient-to-b from-transparent to-cyan-50/50 ${isMypage ? 'pb-24 lg:pb-10' : 'pb-10'}`}
     >
       <div className="max-w-4xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-5 text-sm">
         <p className="text-xs text-slate-400 tracking-wide order-2 sm:order-1">© 2026 RT-japan.</p>
