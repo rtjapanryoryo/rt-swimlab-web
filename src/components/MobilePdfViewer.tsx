@@ -37,7 +37,11 @@ export function MobilePdfViewer({ pdfUrl, className = '', onError }: MobilePdfVi
     // モバイルで cookie 認証を確実に送るため、fetch で credentials 付き取得
     fetch(pdfUrl, { credentials: 'include' })
       .then((res) => {
-        if (!res.ok) throw new Error(res.status === 401 ? 'ログインが必要です' : `取得失敗 (${res.status})`);
+        if (!res.ok) {
+          if (res.status === 401) throw new Error('ログインが必要です');
+          if (res.status >= 500) throw new Error('PDFの取得に失敗しました。しばらく経ってからお試しください。');
+          throw new Error('PDFの取得に失敗しました。');
+        }
         return res.arrayBuffer();
       })
       .then((arrayBuffer) => {

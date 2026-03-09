@@ -3,8 +3,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { compressPdfIfNeeded } from '@/lib/compress-pdf';
 import { uploadGeneProfile } from './actions';
-import { MobilePdfViewer } from '@/components/MobilePdfViewer';
-
 type GeneProfile = {
   id: string;
   display_name: string;
@@ -17,20 +15,32 @@ export default function GeneticPage() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [viewingId, setViewingId] = useState<string | null>(null);
-  const [viewUrl, setViewUrl] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function toUserFriendlyError(res: Response, data: { error?: string }, fallback: string): string {
+    const raw = data?.error ?? '';
+    if (/relation|does not exist|relation.*gene_profiles/i.test(raw)) {
+      return 'GENE PROFILEの設定が完了していません。しばらく経ってからお試しください。';
+    }
+    if (/request entity too large|payload too large/i.test(raw)) {
+      return 'ファイルが大きすぎます。20MB以下のPDFを選択してください。';
+    }
+    if (res.status >= 500) {
+      return raw && !raw.startsWith('<') ? raw : 'サーバーエラーが発生しました。しばらく経ってからお試しください。';
+    }
+    return raw || fallback;
+  }
 
   async function parseJsonOrText(res: Response) {
     const text = await res.text();
     try {
       return text ? JSON.parse(text) : {};
     } catch {
-      const msg = text || '不明なエラー';
-      if (/request entity too large|payload too large/i.test(msg)) {
-        return { error: 'ファイルが大きすぎます。20MB以下のPDFを選択してください。' };
+      if (text.trimStart().startsWith('<')) {
+        return { error: res.status >= 500 ? 'サーバーエラーが発生しました。しばらく経ってからお試しください。' : '不明なエラー' };
       }
-      return { error: msg };
+      return { error: text || '不明なエラー' };
     }
   }
 
@@ -40,10 +50,16 @@ export default function GeneticPage() {
     fetch('/api/gene-profiles', { credentials: 'include' })
       .then(async (res) => {
         const data = await parseJsonOrText(res);
-        if (!res.ok) throw new Error(data.error ?? '取得に失敗しました');
+        if (!res.ok) {
+          throw new Error(toUserFriendlyError(res, data, '取得に失敗しました'));
+        }
         setProfiles(data.profiles ?? []);
       })
-      .catch((e) => setError(e instanceof Error ? e.message : 'エラー'))
+      .catch((e) => {
+        const msg = e instanceof Error ? e.message : '取得に失敗しました';
+        const friendly = /fetch|network|failed/i.test(msg) ? '接続に失敗しました。ネットワークを確認して再度お試しください。' : msg;
+        setError(friendly);
+      })
       .finally(() => setLoading(false));
   }
 
@@ -53,10 +69,10 @@ export default function GeneticPage() {
 
   // 1件のみなので格納済みなら自動表示
   useEffect(() => {
-    if (profiles.length > 0 && !viewUrl && !viewingId) {
-      handleView(profiles[0].id);
+    if (profiles.length > 0 && !viewingId) {
+      setViewingId(profiles[0].id);
     }
-  }, [profiles]);
+  }, [profiles, viewingId]);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -94,19 +110,6 @@ export default function GeneticPage() {
     }
   }
 
-  async function handleView(id: string) {
-    setViewingId(id);
-    setViewUrl(null);
-    try {
-      const res = await fetch(`/api/gene-profiles/${id}`, { credentials: 'include' });
-      const data = await parseJsonOrText(res);
-      if (!res.ok) throw new Error(data.error ?? '表示に失敗しました');
-      setViewUrl(data.profile?.signed_url ?? null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : '表示に失敗しました');
-      setViewingId(null);
-    }
-  }
 
   /** PDFを保存（ダウンロード） */
   async function handleDownloadPdf() {
@@ -114,7 +117,9 @@ export default function GeneticPage() {
     setError(null);
     try {
       const res = await fetch(`/api/gene-profiles/${viewingId}/pdf`, { credentials: 'include' });
-      if (!res.ok) throw new Error('取得に失敗しました');
+      if (!res.ok) {
+        throw new Error(res.status >= 500 ? 'PDFの取得に失敗しました。しばらく経ってからお試しください。' : '取得に失敗しました');
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -145,7 +150,6 @@ export default function GeneticPage() {
       }
       if (viewingId === id) {
         setViewingId(null);
-        setViewUrl(null);
       }
       fetchProfiles();
     } catch (e) {
@@ -185,8 +189,12 @@ export default function GeneticPage() {
       </section>
 
       {error && (
-        <div className="p-4 bg-amber-50/80 border border-amber-200/80 rounded-xl text-amber-800 text-sm">
-          {error}
+        <div
+          role="alert"
+          className="p-4 md:p-5 bg-amber-50 border-2 border-amber-300/90 rounded-xl text-amber-900 text-sm md:text-base leading-relaxed"
+        >
+          <p className="font-medium">エラー</p>
+          <p className="mt-1">{error}</p>
         </div>
       )}
 
@@ -224,6 +232,14 @@ export default function GeneticPage() {
         <div className="p-4">
           {loading ? (
             <div className="py-8 text-center text-slate-500 text-sm">読み込み中...</div>
+          ) : error && profiles.length === 0 ? (
+            <div className="py-10 text-center">
+              <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 text-xl">
+                !
+              </div>
+              <p className="text-slate-600 font-medium text-sm">データの取得に失敗しました</p>
+              <p className="text-slate-400 text-xs mt-1">上のエラーメッセージを確認してください</p>
+            </div>
           ) : profiles.length === 0 ? (
             <div className="py-10 text-center">
               <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-xl">
@@ -234,7 +250,7 @@ export default function GeneticPage() {
             </div>
           ) : (
             <div className="flex flex-col">
-              {/* ファイル名＋操作（保存・ブラウザで開く・削除） */}
+              {/* ファイル名＋操作（PDFを保存・削除） */}
               <div className="flex flex-wrap items-center justify-between gap-3 py-3 px-1 border-b border-cyan-100/80 mb-4">
                 <p className="text-sm font-semibold text-slate-800 truncate min-w-0" title={profiles[0]?.display_name}>
                   {profiles[0]?.display_name}
@@ -249,16 +265,6 @@ export default function GeneticPage() {
                       PDFを保存
                     </button>
                   )}
-                  {viewUrl && (
-                    <a
-                      href={viewUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-4 py-2 text-sm font-medium rounded-xl border-2 border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-colors"
-                    >
-                      ブラウザで開く
-                    </a>
-                  )}
                   <button
                     type="button"
                     onClick={() => profiles[0] && handleDelete(profiles[0].id)}
@@ -269,13 +275,13 @@ export default function GeneticPage() {
                   </button>
                 </div>
               </div>
-              {/* PDFビューア（PDF.jsで全ページ表示・縦スクロール） */}
-              <div className="bg-slate-50/50 rounded-xl border-2 border-slate-200/60 overflow-hidden">
+              {/* PDFビューア（iframeでブラウザネイティブ表示・確実に表示） */}
+              <div className="bg-slate-50/50 rounded-xl border-2 border-slate-200/60 overflow-hidden min-h-[500px] h-[calc(100vh-320px)]">
                 {viewingId ? (
-                  <MobilePdfViewer
-                    pdfUrl={`/api/gene-profiles/${viewingId}/pdf`}
-                    className="min-h-[500px] h-[calc(100vh-320px)]"
-                    onError={(msg) => setError(msg)}
+                  <iframe
+                    src={`/api/gene-profiles/${viewingId}/pdf`}
+                    title="RT GENE PROFILE"
+                    className="w-full h-full min-h-[500px] border-0"
                   />
                 ) : (
                   <div className="flex items-center justify-center py-24 text-slate-500 text-sm">
