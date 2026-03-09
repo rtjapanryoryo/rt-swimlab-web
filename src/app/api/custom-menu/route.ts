@@ -91,15 +91,15 @@ const CORE_SYSTEM_PROMPT = `【コーチ思想の核心（50問インタビュ�
 - **W-down前の神経刺激**: 練習の最後（Down前）に 25m×2本 MAX（強度⑦）などを入れてもよい。量ではなく神経刺激が目的。
 
 【距離設計ありき（最優先）】
-設計の第一軸は「入力された距離（2000〜8000m）」である。メニュー内容を先に決めず、**まず目標総距離から逆算して各ブロックの距離配分を決める**。ユーザーが選択した距離（例: 5000m）に対して、総距離がその前後±100mに必ず収まること。各セッションのTotalを積み上げ、合計が目標と一致するように設計する。距離未達時は期に応じて積み増し：①W-up・Pull／②Kick・Pull／③Pre-Main・Main／④Main前後／⑤数百m追加／⑥削りすぎず調整／⑦質を落とさず追加。
+設計の第一軸は「入力された距離（2000〜8000m）」である。**目的は入力距離と実際の練習総距離を一致させること。** メニュー内容を先に決めず、**まず目標総距離から逆算して各ブロックの距離配分を決める**。ユーザーが選択した距離（例: 5000m）に対して、各ブロックの距離×本数を積み上げた**実際の合計**がその前後±100mに必ず収まること。表示上の整合ではなく、計算可能な総距離が目標に届くように設計する。距離未達時は期に応じて積み増し：①W-up・Pull／②Kick・Pull／③Pre-Main・Main／④Main前後／⑤数百m追加／⑥削りすぎず調整／⑦質を落とさず追加。
 
 【距離整合の徹底（必須）】
-各セクションの積み上げと総距離が必ず一致すること。設計の正確性と信頼性を最優先に、ブロックごとの「距離×本数×セット数」を合計し total に記載。W-up 内の距離・本数計算も実際の合計と一致させること。設計後に必ず検算すること。
+各セクションの積み上げと総距離が必ず一致すること。設計の正確性と信頼性を最優先に、ブロックごとの「距離×本数×セット数」を合計し total に記載。W-up 内の距離・本数計算も実際の合計と一致させること。**設計後に必ず検算し、目標距離に届いていることを確認すること。**
 
 【セッション分割と記入形式（必須）】
-- 内容が分かれている場合は「→」でセッションを分けて記入。例: Cho 200m（A1）→ Cho 200m SKPS（A1）→ Cho 100m Build（EN1）
-- **強度や意図が変わる場合は必ず行を分ける**。段階設計の可視化のため、今後もこの形式を維持すること。
-- 各セッションごとに距離を明確にし、小計を出せる構造にすること。
+- **内容が分かれている場合は1セッションにまとめず、必ず「→」でセッションを分けて記入する。** W-up・Kick・Pull・Pre-Main・Main すべてに適用。段階設計と構成意図を明確にする。
+- **強度が変わる場合は必ず「→」でセッションを分ける。** 1ブロック内に強度の異なる内容を混在させない。「目的×強度×理由」を明確にすること。
+- **各セッションごとに距離を明示する。** 例: Cho 200m（A1）→ Cho 200m SKPS（A1）→ Cho 100m Build（EN1）。→で区切った各単位で「〇〇m」または「本数×距離m」が計算可能でなければならない。小計を出せる構造にすること。
 
 【Pre-Main と Main の強度差（必須）】
 Pre-Main は Main を最大化するための橋渡し。**必ず Main−1 段階に固定する。** Main④→Pre-Main③、Main⑤→Pre-Main④、Main⑥→Pre-Main④〜⑤。Pre-Main で Main と同じ強度にしない。
@@ -334,16 +334,17 @@ export async function POST(request: NextRequest) {
     const distanceAllocationSection = alloc && targetDist != null
       ? `
 【距離配分（絶対遵守・設計の最優先軸）】
-目標総距離: **${targetDist}m**。以下の各ブロック距離を満たさないと不合格。合計が${targetDist - 100}〜${targetDist + 100}mに収まらないメニューは出さないこと。
-| ブロック | 必達距離 | 例 |
-| W-up | ${alloc.warmUp}m | Cho 200m→200m→100m 等 |
-| Drill | ${alloc.drill}m | 本数×距離で合計${alloc.drill}m |
-| Kick | ${alloc.kick}m | 本数×距離で合計${alloc.kick}m |
-| Pull | ${alloc.pull}m | 本数×距離で合計${alloc.pull}m |
-| Pre-Main | ${alloc.preMain}m | 本数×距離で合計${alloc.preMain}m |
-| Main | ${alloc.main}m | 本数×距離で合計${alloc.main}m |
-| Down | ${alloc.down}m | Easy Swim ${alloc.down}m 等 |
-→ 合計が${targetDist}mになるよう、各ブロックの距離×本数を設計すること。
+★ 目標総距離: **${targetDist}m** ★
+以下のブロック別距離を**厳守**すること。各ブロックの「本数×距離」を積み上げた合計が${targetDist - 150}〜${targetDist + 150}mに収まらないメニューは不合格です。
+| ブロック | 必達距離(m) | 設計例 |
+| W-up | ${alloc.warmUp} | Cho 200m→200m→${Math.max(100, alloc.warmUp - 400)}m 等で合計${alloc.warmUp}m |
+| Drill | ${alloc.drill} | 例: 6×50m=300m、8×50m=400m 等で合計${alloc.drill}m |
+| Kick | ${alloc.kick} | 例: 4×50m→4×50m 等で合計${alloc.kick}m |
+| Pull | ${alloc.pull} | 例: 4×50m→4×100m 等で合計${alloc.pull}m |
+| Pre-Main | ${alloc.preMain} | 本数×距離で合計${alloc.preMain}m |
+| Main | ${alloc.main} | 本数×距離で合計${alloc.main}m（メインはここでしっかり距離を確保） |
+| Down | ${alloc.down} | Easy Swim ${alloc.down}m |
+→ 検算: ${alloc.warmUp}+${alloc.drill}+${alloc.kick}+${alloc.pull}+${alloc.preMain}+${alloc.main}+${alloc.down} = **${targetDist}m**
 
 【距離未達時の積み増し先】${{
       '1': '①リカバリー: W-up・Pullで積み増し',
@@ -366,12 +367,18 @@ ${distanceAllocationSection}
 【入力条件（8項目すべてを満たすこと）】
 1. 目的（期）: ${periodLabels[period] || period}
 2. 種目: ${stroke}
-3. 距離（目標）: ${distance}m ← 総距離はこの値の前後±100mに必ず収める
+3. 距離（目標）: ${distance}m ← **入力距離と実際の総距離を一致させる**。各ブロック合計がこの値の前後±100mに必ず収める
 4. 年齢: ${age}歳
 5. 距離タイプ: ${distanceType}
 6. レベル: ${level}
 7. 状況: ${condition}
 8. 練習時間: ${practiceTime}分
+
+【出力4原則（厳守）】
+①距離一致: 入力${distance}m → 実際の総距離が${distance}m前後に。届かないメニューは不合格。
+②セッション分割: 内容が分かれる場合は1つにまとめず「→」で必ず分ける（W-up/Kick/Pull/Pre-Main/Main すべて）。
+③強度分離: 強度が変わる場合は必ず「→」で行を分ける。1ブロック内に異なる強度を混在させない。
+④距離内訳: 各セッションごとに距離（〇〇m や 本数×距離m）を明示。小計・総距離が計算できる構造に。
 
 【反映ルール】
 ${conditionInstructions}
@@ -385,14 +392,14 @@ ${conditionInstructions}
 【expectedEffect】このメニューで得られる効果を2〜3行で。
 {
   "purpose": "【目的】1行で明確に（目的・期・状況を反映）",
-  "warmUp": "2〜3段階。→で区切り。**上記距離配分のW-up目標距離を満たす**距離×本数×セット。例: Cho 200m（A1）→ Cho 200m SKPS（A1）→ Cho 100m Build（EN1）",
+  "warmUp": "2〜3段階。**内容・強度が変わるたびに「→」でセッション分け。各単位に距離を明示。** 例: Cho 200m（A1）→ Cho 200m SKPS（A1）→ Cho 100m Build（EN1）。上記W-up目標距離を満たすこと。",
   "drill": "ドリル名 本数×距離m（内容）。**Drill目標距離を満たす**。Fr/Baは片手・左右交互可。**Br/Flyは「左右交互」禁止**。Br例: Brキックドリル 6×50m（フィン）、Fly例: 片キック 6×50m",
-  "kick": "発展形成期以降は2構成。→で区切る。**Kick目標距離を満たす**。例: Kick 4×50m（Des）（EN1）→ Kick 4×50m（Fins）（EN2）",
-  "pull": "Pull 2構成。Fr中心で効率づくり。**Pull目標距離を満たす**。→で区切る。例: Pull Fr 4×50m（DPS）（EN1）→ Pull Fr 4×100m（EN2）",
+  "kick": "発展形成期以降は2構成。**強度が変わるごとに「→」でセッション分け。各単位に距離を明示。** 例: Kick 4×50m（Des）（EN1）→ Kick 4×50m（Fins）（EN2）。Kick目標距離を満たすこと。",
+  "pull": "Pull 2構成。Fr中心で効率づくり。**強度が変わるごとに「→」でセッション分け。各単位に距離を明示。** 例: Pull Fr 4×50m（DPS）（EN1）→ Pull Fr 4×100m（EN2）。Pull目標距離を満たすこと。",
   "preMain": "Pre-Main 本数×距離m（強度）。**Pre-Main目標距離を満たす**。Mainより一段階抑えた橋渡し。例: Pre-Main 4×50m（EN2）",
   "dive": "Dive 本数×距離m（A1）。不要時は空文字",
   "rest": "Rest / Free time（5~10min）。不要時は空文字",
-  "main": "Main（カテゴリ名）本数×距離m @〇〇秒（強度）。**Main目標距離を満たす**。基礎形成期以降は3段階構成可。例: Main（ベストアベレージ）8×25m @30秒（EN3）",
+  "main": "Main（カテゴリ名）本数×距離m @〇〇秒（強度）。**強度が変わる場合は「→」でセッション分け。各単位に距離を明示。** 例: Main（ベストアベレージ）8×25m @30秒（EN3）→ Main 4×50m（EN2）。Main目標距離を満たすこと。",
   "down": "種目名を書かず Cho 固定。**Down目標距離を満たす**。Easy Swim 距離m（A1）（例: Easy Swim 100m（A1））",
   "total": "合計距離：〇〇〇〇m（必ず目標距離${distance}mの前後±100m。各ブロック合計と一致）",
   "intention": "今日の狙い（2〜4行。期・目的・状況・距離タイプ・年齢を反映した、このメニュー固有の狙い）",
@@ -416,6 +423,11 @@ ${conditionInstructions}
     }
 
     let systemContent = '';
+    // 0. 距離の最優先通知（目標がある場合）
+    if (targetDist != null && targetDist >= 2000 && targetDist <= 8000) {
+      systemContent +=
+        `【最優先・距離】今回の目標総距離は **${targetDist}m** です。生成するメニューの warmUp+drill+kick+pull+preMain+main+down の合計は必ず ${targetDist - 150}〜${targetDist + 150}m に収めること。距離不足・超過は不合格。\n\n`;
+    }
     // 1. プロトコル（思想）※最優先
     if (protocolContent) {
       systemContent +=
@@ -447,27 +459,22 @@ ${conditionInstructions}
       'main', 'down', 'total', 'intention', 'coachingPoint', 'caution', 'expectedEffect',
     ];
     const DISTANCE_TOLERANCE = 100;
+    const MAX_DISTANCE_RETRIES = 3;
     const openai = new OpenAI({ apiKey });
 
-    const doGenerate = async (retryHint?: string): Promise<string | null> => {
+    const doGenerate = async (retryHint?: string, temp?: number): Promise<string | null> => {
       const completion = await openai.chat.completions.create({
         model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemContent },
           { role: 'user', content: buildUserPrompt(retryHint) },
         ],
-        temperature: retryHint ? 0.4 : 0.6,
+        temperature: temp ?? (retryHint ? 0.25 : 0.5),
         max_tokens: 4096,
         response_format: { type: 'json_object' },
       });
       return completion.choices[0]?.message?.content?.trim() ?? null;
     };
-
-    let content = await doGenerate();
-    if (!content) {
-      console.error('[custom-menu] Empty completion content');
-      return NextResponse.json(INTERNAL_ERROR_JSON, { status: 500, headers: { 'Content-Type': 'application/json; charset=utf-8' } });
-    }
 
     const parseAndNormalize = (raw: string): Record<string, string> | null => {
       try {
@@ -484,21 +491,35 @@ ${conditionInstructions}
       }
     };
 
+    let content = await doGenerate();
+    if (!content) {
+      console.error('[custom-menu] Empty completion content');
+      return NextResponse.json(INTERNAL_ERROR_JSON, { status: 500, headers: { 'Content-Type': 'application/json; charset=utf-8' } });
+    }
+
     let result = parseAndNormalize(content);
     if (!result) {
       return NextResponse.json({ menu: content, result: null });
     }
 
     let calculatedTotal = sumMenuDistance(result);
-    const isWithinRange =
-      targetDist == null || targetDist < 2000 || targetDist > 8000 ||
-      Math.abs(calculatedTotal - targetDist) <= DISTANCE_TOLERANCE;
+    let retryCount = 0;
 
-    if (!isWithinRange && targetDist != null) {
+    while (
+      targetDist != null &&
+      targetDist >= 2000 &&
+      targetDist <= 8000 &&
+      Math.abs(calculatedTotal - targetDist) > DISTANCE_TOLERANCE &&
+      retryCount < MAX_DISTANCE_RETRIES
+    ) {
       const diff = calculatedTotal - targetDist;
-      const retryHint = `【重要・再生成】前回の生成で総距離が目標${targetDist}mより${Math.abs(diff)}m${diff < 0 ? '不足' : '超過'}していました。今回**必ず**${targetDist - DISTANCE_TOLERANCE}〜${targetDist + DISTANCE_TOLERANCE}mに収めてください。各ブロックの距離×本数を積み上げて合計が目標になるように設計し直してください。\n\n`;
-      console.log('[custom-menu] Distance out of range, retrying:', { targetDist, calculatedTotal, diff });
-      const retryContent = await doGenerate(retryHint);
+      const allocStr = alloc
+        ? `\n上記の距離配分表を厳守: W-up ${alloc.warmUp}m, Drill ${alloc.drill}m, Kick ${alloc.kick}m, Pull ${alloc.pull}m, Pre-Main ${alloc.preMain}m, Main ${alloc.main}m, Down ${alloc.down}m → 合計=${targetDist}m`
+        : '';
+      const retryHint = `【最重要・再生成 #${retryCount + 1}】前回の総距離は${calculatedTotal}mでした。目標は${targetDist}mです。${diff < 0 ? `${Math.abs(diff)}m不足` : `${diff}m超過`}しています。今回**必ず**各ブロックの距離×本数を積み上げて合計が${targetDist - DISTANCE_TOLERANCE}〜${targetDist + DISTANCE_TOLERANCE}mになるように設計してください。${allocStr}\n\n`;
+      console.log('[custom-menu] Distance out of range, retry', retryCount + 1, { targetDist, calculatedTotal, diff });
+      retryCount++;
+      const retryContent = await doGenerate(retryHint, 0.2);
       if (retryContent) {
         const retryResult = parseAndNormalize(retryContent);
         if (retryResult) {
@@ -506,7 +527,10 @@ ${conditionInstructions}
           if (Math.abs(retryTotal - targetDist) <= DISTANCE_TOLERANCE) {
             result = retryResult;
             calculatedTotal = retryTotal;
+            break;
           }
+          result = retryResult;
+          calculatedTotal = retryTotal;
         }
       }
     }

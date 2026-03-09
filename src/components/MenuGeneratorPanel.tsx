@@ -887,47 +887,47 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
         </>
         )}
 
-        {/* カスタム生成中：全画面アニメーション（高級感・プロフェッショナル） */}
+        {/* カスタム生成中：ワクワク感のあるポップなアニメーション */}
         {customIsGenerating && (
-          <div className="generate-loading-in fixed inset-0 z-50 flex items-center justify-center bg-[#f8fafc]">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_40%,rgba(14,165,233,0.04),transparent)]" aria-hidden />
-            <div className="relative flex flex-col items-center gap-12 px-6">
-              {/* 回転リング + 内側の呼吸オーブ */}
+          <div className="generate-loading-in fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-cyan-50/95 via-white to-teal-50/95 backdrop-blur-sm">
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_60%_at_50%_35%,rgba(6,182,212,0.12),transparent_60%)]" aria-hidden />
+            <div className="relative flex flex-col items-center gap-10 px-6">
+              {/* 水の雫風オーブ + 回転リング */}
               <div className="relative flex items-center justify-center">
-                <svg className="generate-loading-ring h-24 w-24 md:h-28 md:w-28 text-slate-300/90" viewBox="0 0 64 64" fill="none">
+                <svg className="generate-loading-ring h-28 w-28 md:h-32 md:w-32 text-cyan-400/80" viewBox="0 0 64 64" fill="none">
                   <circle
                     cx="32"
                     cy="32"
                     r="28"
                     stroke="currentColor"
-                    strokeWidth="1.5"
+                    strokeWidth="2"
                     strokeLinecap="round"
-                    strokeDasharray="132 44"
+                    strokeDasharray="120 56"
                     className="generate-loading-ring-dash"
                   />
                 </svg>
-                <div className="generate-loading-orb absolute h-5 w-5 md:h-6 md:w-6 rounded-full bg-gradient-to-br from-slate-300/50 to-slate-400/40 shadow-inner" />
+                <div className="generate-loading-orb absolute h-8 w-8 md:h-10 md:w-10 rounded-full bg-gradient-to-br from-cyan-400 to-teal-500 shadow-lg shadow-cyan-400/40" />
               </div>
-              <div className="text-center space-y-1">
-                <p className="text-slate-600 font-medium tracking-wide text-base md:text-lg">
+              <div className="text-center space-y-1.5">
+                <p className="generate-loading-wave text-slate-700 font-semibold tracking-wide text-base md:text-lg">
                   {LOADING_MESSAGES[loadingMessageIndex]}
                 </p>
-                <p className="text-slate-400 text-xs md:text-sm">しばらくお待ちください</p>
+                <p className="text-slate-500 text-xs md:text-sm">まもなく完成します</p>
               </div>
               <div className="flex flex-wrap justify-center gap-2">
                 {['W-up', 'Drill', 'Kick', 'Main'].map((label, i) => (
                   <span
                     key={label}
-                    className="generate-loading-pill rounded-full border border-slate-200/80 bg-white/80 px-4 py-1.5 text-xs font-medium text-slate-500 backdrop-blur-sm md:px-5 md:py-2 md:text-sm"
-                    style={{ animationDelay: `${i * 0.12}s` }}
+                    className="generate-loading-pill rounded-2xl border-2 border-cyan-200/80 bg-white/90 px-4 py-2 text-xs font-semibold text-cyan-700/90 shadow-sm backdrop-blur-sm md:px-5 md:py-2.5 md:text-sm"
+                    style={{ animationDelay: `${i * 0.15}s` }}
                   >
                     {label}
                   </span>
                 ))}
               </div>
-              {/* シンプルなインディケータバー */}
-              <div className="w-full max-w-[280px] h-px overflow-hidden rounded-full bg-slate-200/50">
-                <div className="generate-loading-progress h-full w-1/4 rounded-full bg-gradient-to-r from-transparent via-sky-400/60 to-transparent" />
+              {/* プログレスバー */}
+              <div className="w-full max-w-[260px] h-1 overflow-hidden rounded-full bg-cyan-100/80">
+                <div className="generate-loading-progress h-full w-1/3 rounded-full bg-gradient-to-r from-transparent via-cyan-400 to-teal-400" />
               </div>
             </div>
           </div>
