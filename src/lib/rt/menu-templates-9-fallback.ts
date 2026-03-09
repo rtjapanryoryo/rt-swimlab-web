@@ -5,7 +5,7 @@
 export const menuTemplates9Fallback = {
   S: [
     {
-      purpose: '【目的】ショート向け①｜力みを抜き、最もスムーズに進むポジション再確認',
+      purpose: '力みを抜き、最もスムーズに進むポジション再確認',
       warmUp: 'W-up 200m（A1）',
       drill: 'IM order（Drill/Swim） 4×100m（EN1）',
       kick: 'Kick cho 6×50m（EN2）｜good kick',
@@ -22,7 +22,7 @@ export const menuTemplates9Fallback = {
       expectedEffect: 'ショート種目での推進効率と加速感の改善。',
     },
     {
-      purpose: '【目的】ショート向け②｜スピードを上げても崩れない低抵抗ポジション定着',
+      purpose: 'スピードを上げても崩れない低抵抗ポジション定着',
       warmUp: 'W-up 200m（A1）',
       drill: 'IM order 4×100m（EN1）',
       kick: 'Kick S1 3×100m（EN2）｜good kick',
@@ -39,7 +39,7 @@ export const menuTemplates9Fallback = {
       expectedEffect: '短距離でのフォーム維持力・スピードアップ時の安定性向上。',
     },
     {
-      purpose: '【目的】ショート向け③｜最大スピード局面でもフォームを崩さず推進力に変える',
+      purpose: '最大スピード局面でもフォームを崩さず推進力に変える',
       warmUp: 'W-up 200m（A1）',
       drill: 'IM re 50m Drill/50m Swim 4×100m（EN1）',
       kick: 'Kick S1 10×50m（EN2）｜1-4 Dec, 5 Hard Alt',
@@ -58,7 +58,7 @@ export const menuTemplates9Fallback = {
   ],
   M: [
     {
-      purpose: '【目的】ミドル向け①｜「楽に速く泳ぐ」効率フォーム再確認',
+      purpose: '「楽に速く泳ぐ」効率フォーム再確認',
       warmUp: 'W-up 400m（A1）',
       drill: 'IM odd: pull / even: kick 6×50m（EN1）',
       kick: 'Kick cho 8×50m（EN2）｜good kick',
@@ -75,7 +75,7 @@ export const menuTemplates9Fallback = {
       expectedEffect: '100〜400mのレース対応力（効率×安定）の向上。',
     },
     {
-      purpose: '【目的】ミドル向け②｜距離を泳いでも崩れない低抵抗姿勢の定着',
+      purpose: '距離を泳いでも崩れない低抵抗姿勢の定着',
       warmUp: 'W-up 600m（A1）｜mixed(200m Swim/200m Kick/200m Pull)',
       drill: 'IM odd: Drill / even: Swim 8×50m（EN1）',
       kick: 'Kick S1 4×100m（EN2）｜good kick',
@@ -92,7 +92,7 @@ export const menuTemplates9Fallback = {
       expectedEffect: 'ミドル域でのフォーム持久力と効率の底上げ。',
     },
     {
-      purpose: '【目的】ミドル向け③｜心拍が上がっても無駄を抑え、安定して泳ぎ続ける',
+      purpose: '心拍が上がっても無駄を抑え、安定して泳ぎ続ける',
       warmUp: 'W-up 400m（A1）',
       drill: 'IM reverse 1×200m（EN1）',
       kick: 'Kick S1 15×50m（EN2）｜1-4 Dec, 5 Hard Alt',
@@ -111,7 +111,7 @@ export const menuTemplates9Fallback = {
   ],
   D: [
     {
-      purpose: '【目的】ディスタンス向け①｜低燃費フォームを取り戻し、長距離でも楽にスピード維持',
+      purpose: '低燃費フォームを取り戻し、長距離でも楽にスピード維持',
       warmUp: 'W-up 400m（A1）',
       drill: 'IM order(25m drill/25m swim) 8×50m（EN1）',
       kick: 'Kick cho 10×50m（EN2）｜good kick',
@@ -128,7 +128,7 @@ export const menuTemplates9Fallback = {
       expectedEffect: '長距離での省エネ泳法と巡航スピードの改善。',
     },
     {
-      purpose: '【目的】ディスタンス向け②｜低抵抗フォームを"維持し続ける力"を養う',
+      purpose: '低抵抗フォームを"維持し続ける力"を養う',
       warmUp: 'W-up 400m（A1）',
       drill: 'IM reverse 1×200m（EN1）',
       kick: 'Kick S1 6×100m（EN2）｜good kick',
@@ -145,7 +145,7 @@ export const menuTemplates9Fallback = {
       expectedEffect: '長距離の巡航でのフォーム再現性・効率維持力アップ。',
     },
     {
-      purpose: '【目的】ディスタンス向け③｜速いペースでもフォームを崩さず安定して泳ぎ続ける',
+      purpose: '速いペースでもフォームを崩さず安定して泳ぎ続ける',
       warmUp: 'W-up 200m（A1）',
       drill: 'IM scull / swim 2×100m（EN1）',
       kick: 'Kick S1 20×50m（EN2）｜1-4 Dec, 5 Hard Alt',

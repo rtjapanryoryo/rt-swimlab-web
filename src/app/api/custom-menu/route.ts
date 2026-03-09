@@ -81,6 +81,7 @@ const CORE_SYSTEM_PROMPT = `【コーチ思想の核心（50問インタビュ�
 
 【「内容」列の必須ルール】
 各セクションに具体的な指示を必ず含めること。共有参照資料のパターン（SKPS, IM Order, Des, Variable, DPS, Ac/CA, Negative split 等）を積極的に使い、同じ表現の繰り返しを避ける。
+- **Br・FlyのDrillで「左右交互」は使用禁止**。BrはBrキック・Brプル・タイミング等、Flyは片キック・ドルフィンキック等、種目に合ったドリル名を書く。
 - **kick と pull のブロック名は英語で書く**: 「キック」→「Kick」、「プル」→「Pull」とする。例: Kick 4×50m（EN1）、Pull 6×50m（DPS）（EN2）。
 - W-up / Down: 種目は Cho 固定。warmUp と down の文字列に Fr/Fly/Ba/Br/IM を一切含めない。
 - Dive: 期が調整期・テーパー期のときのみ。それ以外の期では空文字。
@@ -196,20 +197,20 @@ function buildConditionInstructions(
   };
 
   const periodGuide: Record<string, string> = {
-    '1': `①リカバリー期: 回復・感覚維持。Mainは③まで（④禁止）。③は短時間アクセントのみ。内容軽め、他期より負荷を下げる。Diveなし。距離未達時はW-up・Pullで積み増し。${targetDist ? `目標距離: 約${targetDist}m` : ''}`,
-    '2': `②基礎形成期: EN1〜EN2中心に安定。Mainは③を中心に④は補助的に。Diveなし。耐乳酸MAX禁止。距離未達時はKick・Pullで距離追加。${targetDist ? `目標距離: 約${targetDist}m` : ''}`,
-    '3': `③発展形成期: 質と量の両立。EN表記と強度番号を一致させる。Kick・Pullは2構成必須。Diveなし。距離未達時はPre-Main・Mainで増やす。${targetDist ? `目標距離: 約${targetDist}m` : ''}`,
-    '4': `④スピード持久期: ⑤を入れるならMainで明確に使う（④止まりにしない）。Pre-Mainは④までで抑えMain最大化。Diveなし。耐乳酸MAX禁止。距離未達時はMain前後で積み増し。${targetDist ? `目標距離: 約${targetDist}m` : ''}`,
-    '5': `⑤耐乳酸期: 全体5000m前後を確保。高強度内容なら強度欄を⑤または⑥に正しく記載（①のままにしない）。⑥は短距離・低本数で管理。距離未達時は数百m追加して5000m前後に。${targetDist ? `目標距離: 約${targetDist}m` : ''}`,
-    '6': `⑥調整期: 距離と強度を明確に下げる。強度欄を実際の内容に合わせる（EN5等はAN1（⑤）に修正）。段階的疲労除去。Dive導入可。距離未達時は削りすぎず5000m前後に調整。${targetDist ? `目標距離: 約${targetDist}m` : ''}`,
-    '7': `⑦テーパー期: 量より質を優先。疲労を抜きキレを出す。距離配分を他期より軽く。距離未達時（例: 3000m指定）は質を落とさず距離を少し追加。${targetDist ? `目標距離: 約${targetDist}m` : ''}`,
+    '1': `①リカバリー期: 回復・感覚維持。Mainは③まで（④禁止）。Diveなし。**距離未達時（例: 4000m目標）はW-up・Pullで必ず積み増しして目標に届かせる。**`,
+    '2': `②基礎形成期: EN1〜EN2中心。Mainは③中心に④は補助。Diveなし。**距離未達時（例: 5000m目標）はKick・Pullで必ず距離を追加して目標に届かせる。**`,
+    '3': `③発展形成期: 質と量の両立。Kick・Pullは2構成必須。Diveなし。**距離未達時（例: 5000m目標）はPre-Main・Mainの距離をやや増やして目標に届かせる。**`,
+    '4': `④スピード持久期: ⑤をMainで明確に使う。Pre-Mainは④までで抑えMain最大化。Diveなし。**距離未達時（例: 5000m目標）はMain前後（Pre-Main・Main）で必ず積み増しして目標に届かせる。**`,
+    '5': `⑤耐乳酸期: 量の中で耐乳酸。**距離未達時（例: 5000m目標）はあと数百mを各ブロックで追加して必ず5000m前後に届かせる。**`,
+    '6': `⑥調整期: 距離・強度を下げる。Dive導入可。**距離未達時（例: 5000m目標）は削りすぎず、必ず5000m前後に調整して届かせる。**`,
+    '7': `⑦テーパー期: 量より質。**距離未達時（例: 3000m目標）は質を落とさず距離を少し追加して必ず目標に届かせる。**`,
   };
   const strokeGuide: Record<string, string> = {
-    Fr: '自由形: W-upはFR・IM多め。Drillは片手・キャッチアップ等。Kick/PullはFR中心。Pullは効率づくり（DPS等）を優先、Swim寄りにしない。',
-    Ba: '背泳ぎ: 専門種目をW-upで少なめに。Ba専門のドリル・キック・プルを入れる。',
-    Br: '平泳ぎ: Brは専門Pullを多め。キックはBrキックの目的を明示。',
-    Fly: 'バタフライ: Fly専門ドリル・キック。強度はフォームを崩さない範囲で。',
-    IM: '個人メドレー: 4泳法のバランス。W-upでIM多め。ドリルは泳法別に分けてもよい。',
+    Fr: '自由形: W-upはFR・IM多め。Drillは片手・キャッチアップ等（左右交互可）。Kick/PullはFR中心。Pullは効率づくり（DPS等）を優先、Swim寄りにしない。',
+    Ba: '背泳ぎ: 専門種目をW-upで少なめに。Ba専門のドリル（片手・左右交互等）・キック・プルを入れる。',
+    Br: '平泳ぎ: **Drillは「左右交互」を使わない**。Brキックドリル・プルドリル・タイミングドリル・フィンBr等、Brに特化したドリル名を書く。',
+    Fly: 'バタフライ: **Drillは「左右交互」を使わない**。片キック・ドルフィンキック・ショルダードリル等、Flyに特化したドリル名を書く。',
+    IM: '個人メドレー: 4泳法のバランス。W-upでIM多め。ドリルは泳法別（Fr片手、Brキック等）に分けて具体的に。',
     S1: 'スタイル1: メイン種目に合わせたドリル・キック・プル。種目名はS1のままでよい。',
   };
   const conditionGuide: Record<string, string> = {
@@ -333,21 +334,33 @@ export async function POST(request: NextRequest) {
     const distanceAllocationSection = alloc
       ? `
 【距離配分（絶対遵守・設計の最優先軸）】
-目標総距離: ${targetDist}m。以下の各ブロック距離を必ず満たすこと。合計が${targetDist}mの前後±100mに収まらないメニューは不可。
-| ブロック | 目標距離 |
-| W-up | ${alloc.warmUp}m |
-| Drill | ${alloc.drill}m |
-| Kick | ${alloc.kick}m |
-| Pull | ${alloc.pull}m |
-| Pre-Main | ${alloc.preMain}m |
-| Main | ${alloc.main}m |
-| Down | ${alloc.down}m |
-→ 合計: ${alloc.warmUp + alloc.drill + alloc.kick + alloc.pull + alloc.preMain + alloc.main + alloc.down}m
+目標総距離: **${targetDist}m**。以下の各ブロック距離を満たさないと不合格。合計が${targetDist - 100}〜${targetDist + 100}mに収まらないメニューは出さないこと。
+| ブロック | 必達距離 | 例 |
+| W-up | ${alloc.warmUp}m | Cho 200m→200m→100m 等 |
+| Drill | ${alloc.drill}m | 本数×距離で合計${alloc.drill}m |
+| Kick | ${alloc.kick}m | 本数×距離で合計${alloc.kick}m |
+| Pull | ${alloc.pull}m | 本数×距離で合計${alloc.pull}m |
+| Pre-Main | ${alloc.preMain}m | 本数×距離で合計${alloc.preMain}m |
+| Main | ${alloc.main}m | 本数×距離で合計${alloc.main}m |
+| Down | ${alloc.down}m | Easy Swim ${alloc.down}m 等 |
+→ 合計が${targetDist}mになるよう、各ブロックの距離×本数を設計すること。
+
+【距離未達時の積み増し先】${{
+      '1': '①リカバリー: W-up・Pullで積み増し',
+      '2': '②基礎形成: Kick・Pullで距離追加',
+      '3': '③発展形成: Pre-Main・Mainで増やす',
+      '4': '④スピード持久: Main前後で積み増し',
+      '5': '⑤耐乳酸: あと数百m追加して5000m前後に',
+      '6': '⑥調整: 削りすぎず5000m前後に調整',
+      '7': '⑦テーパー: 質を落とさず距離を少し追加',
+    }[period] || ''}
 `
       : '';
 
-    const userPrompt = `以下の「入力条件」と「反映ルール」に従い、この8条件から導いた水泳練習メニューを1つだけ生成してください。
+    const buildUserPrompt = (distanceRetryHint?: string) =>
+      `以下の「入力条件」と「反映ルール」に従い、この8条件から導いた水泳練習メニューを1つだけ生成してください。
 **必須**：8条件すべてを設計の根拠とし、**距離配分を最優先**に設計すること。出力は必ず指定のJSONのみ（説明文は不要）。
+${distanceRetryHint ?? ''}
 ${distanceAllocationSection}
 
 【入力条件（8項目すべてを満たすこと）】
@@ -367,13 +380,13 @@ ${conditionInstructions}
 - main には必ずMainカテゴリを明記すること（ベースメイン／ベストアベレージ／ダイハード／耐乳酸MAX／Standard Main のいずれか）。
 - intention / coachingPoint / caution は必ずこの8条件に合わせてカスタマイズすること。汎用表現のコピペ禁止。
 【intention（今日の狙い）】期・目的・状況・距離タイプ・年齢を反映した2〜4行。このメニュー固有の狙いを具体的に書く。
-【coachingPoint（指導ポイント）】このメニューのブロック（Drill/Kick/Pull/Main等）に即した箇条書き3つ。このメニューで「どこを意識するか」を具体化する。
-【caution（注意点）】状況・年齢・疲労・月経期等を反映した箇条書き3つ。この選手・この日に必要な注意を書く。
+【coachingPoint（指導ポイント）】このメニューのDrill/Kick/Pull/Main等に即した箇条書き3つ。
+【caution（注意点）】状況・年齢・疲労・月経期等を反映した箇条書き3つ。
 【expectedEffect】このメニューで得られる効果を2〜3行で。
 {
   "purpose": "【目的】1行で明確に（目的・期・状況を反映）",
   "warmUp": "2〜3段階。→で区切り。**上記距離配分のW-up目標距離を満たす**距離×本数×セット。例: Cho 200m（A1）→ Cho 200m SKPS（A1）→ Cho 100m Build（EN1）",
-  "drill": "ドリル名 本数×距離m（内容）。**Drill目標距離を満たす**。例: 片手ドリル 6×50m（左右交互）",
+  "drill": "ドリル名 本数×距離m（内容）。**Drill目標距離を満たす**。Fr/Baは片手・左右交互可。**Br/Flyは「左右交互」禁止**。Br例: Brキックドリル 6×50m（フィン）、Fly例: 片キック 6×50m",
   "kick": "発展形成期以降は2構成。→で区切る。**Kick目標距離を満たす**。例: Kick 4×50m（Des）（EN1）→ Kick 4×50m（Fins）（EN2）",
   "pull": "Pull 2構成。Fr中心で効率づくり。**Pull目標距離を満たす**。→で区切る。例: Pull Fr 4×50m（DPS）（EN1）→ Pull Fr 4×100m（EN2）",
   "preMain": "Pre-Main 本数×距離m（強度）。**Pre-Main目標距離を満たす**。Mainより一段階抑えた橋渡し。例: Pre-Main 4×50m（EN2）",
@@ -386,7 +399,7 @@ ${conditionInstructions}
   "coachingPoint": "指導ポイント（箇条書き3つ。改行または・で区切り1つに。このメニューのブロックに即した具体的な意識点）",
   "caution": "注意点（箇条書き3つ。改行または・で区切り1つに。状況・年齢・疲労・月経期等を反映した、この選手・この日に必要な注意）",
   "expectedEffect": "期待効果（2〜3行。このメニューで得られる効果）"
-}`;
+}${targetDist ? `\n\n**最終確認**: 各ブロックの距離×本数を合計すると必ず${targetDist}mの前後±100mになること。${alloc ? `上記の距離配分表を満たすこと。` : ''}少なければW-up・Kick・Pull・Main等で距離を追加する。` : ''}`;
 
     let protocolContent = '';
     let promptContent = '';
@@ -403,10 +416,11 @@ ${conditionInstructions}
     }
 
     let systemContent = '';
-    // 1. プロトコル（思想）※最優先。docs/RT_MENU_GENERATION_RULES_JA.md の内容をそのまま注入
+    // 1. プロトコル（思想）※最優先。高城直基コーチ50問インタビュー＋RTルール
     if (protocolContent) {
       systemContent +=
-        '【プロトコル＝ジェネレート（必ず従うこと。思想・定義・絶対ルールの正本）】\n\n' +
+        '【プロトコル＝ジェネレート（必ず従うこと。立石諒・高城直基監修の思想・定義・絶対ルールの正本）】\n\n' +
+        '※以下のコーチ思想（50問インタビュー）とRT_MENU_GENERATION_RULESを最優先に反映すること。\n\n' +
         protocolContent +
         '\n\n---\n\n';
     }
@@ -429,44 +443,88 @@ ${conditionInstructions}
     // 4. 出力形式・補足ルール（プロトコルに含まれない部分）
     systemContent += CORE_SYSTEM_PROMPT;
 
+    const keys = [
+      'purpose', 'warmUp', 'drill', 'kick', 'pull', 'preMain', 'dive', 'rest',
+      'main', 'down', 'total', 'intention', 'coachingPoint', 'caution', 'expectedEffect',
+    ];
+    const DISTANCE_TOLERANCE = 100;
     const openai = new OpenAI({ apiKey });
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: systemContent },
-        { role: 'user', content: userPrompt },
-      ],
-      temperature: 0.6,
-      max_tokens: 4096,
-      response_format: { type: 'json_object' },
-    });
 
-    const content = completion.choices[0]?.message?.content?.trim();
+    const doGenerate = async (retryHint?: string): Promise<string | null> => {
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemContent },
+          { role: 'user', content: buildUserPrompt(retryHint) },
+        ],
+        temperature: retryHint ? 0.4 : 0.6,
+        max_tokens: 4096,
+        response_format: { type: 'json_object' },
+      });
+      return completion.choices[0]?.message?.content?.trim() ?? null;
+    };
+
+    let content = await doGenerate();
     if (!content) {
       console.error('[custom-menu] Empty completion content');
       return NextResponse.json(INTERNAL_ERROR_JSON, { status: 500, headers: { 'Content-Type': 'application/json; charset=utf-8' } });
     }
 
-    const keys = [
-      'purpose', 'warmUp', 'drill', 'kick', 'pull', 'preMain', 'dive', 'rest',
-      'main', 'down', 'total', 'intention', 'coachingPoint', 'caution', 'expectedEffect',
-    ];
-    try {
-      const parsed = JSON.parse(content) as Record<string, unknown>;
-      const hasAll = keys.every((k) => typeof parsed[k] === 'string');
-      if (hasAll) {
+    const parseAndNormalize = (raw: string): Record<string, string> | null => {
+      try {
+        const parsed = JSON.parse(raw) as Record<string, unknown>;
+        if (!keys.every((k) => typeof parsed[k] === 'string')) return null;
         const result = Object.fromEntries(keys.map((k) => [k, String(parsed[k] ?? '')]));
-        // 各セッションの距離を自動合算し、総距離欄に反映（設計の正確性・信頼性）
         const calculatedTotal = sumMenuDistance(result);
         if (calculatedTotal > 0) {
           result.total = `合計距離：${calculatedTotal.toLocaleString()}m`;
         }
-        return NextResponse.json({ result, menu: null });
+        return result;
+      } catch {
+        return null;
       }
-    } catch {
-      /* JSONでない場合はテキストとして返す */
+    };
+
+    let result = parseAndNormalize(content);
+    if (!result) {
+      return NextResponse.json({ menu: content, result: null });
     }
-    return NextResponse.json({ menu: content, result: null });
+
+    let calculatedTotal = sumMenuDistance(result);
+    const isWithinRange =
+      targetDist == null || targetDist < 2000 || targetDist > 8000 ||
+      Math.abs(calculatedTotal - targetDist) <= DISTANCE_TOLERANCE;
+
+    if (!isWithinRange && targetDist != null) {
+      const diff = calculatedTotal - targetDist;
+      const retryHint = `【重要・再生成】前回の生成で総距離が目標${targetDist}mより${Math.abs(diff)}m${diff < 0 ? '不足' : '超過'}していました。今回**必ず**${targetDist - DISTANCE_TOLERANCE}〜${targetDist + DISTANCE_TOLERANCE}mに収めてください。各ブロックの距離×本数を積み上げて合計が目標になるように設計し直してください。\n\n`;
+      console.log('[custom-menu] Distance out of range, retrying:', { targetDist, calculatedTotal, diff });
+      const retryContent = await doGenerate(retryHint);
+      if (retryContent) {
+        const retryResult = parseAndNormalize(retryContent);
+        if (retryResult) {
+          const retryTotal = sumMenuDistance(retryResult);
+          if (Math.abs(retryTotal - targetDist) <= DISTANCE_TOLERANCE) {
+            result = retryResult;
+            calculatedTotal = retryTotal;
+          }
+        }
+      }
+    }
+
+    // 最終的に範囲外の場合、コーチメモで警告を付与
+    if (targetDist != null && targetDist >= 2000 && targetDist <= 8000) {
+      const finalTotal = sumMenuDistance(result);
+      const finalDiff = finalTotal - targetDist;
+      if (Math.abs(finalDiff) > DISTANCE_TOLERANCE) {
+        const coachNote = `※総距離が目標${targetDist}mより${Math.abs(finalDiff)}m${finalDiff < 0 ? '不足' : '超過'}しています。必要に応じて再生成をお試しください。`;
+        const existing = (result.expectedEffect ?? '').trim();
+        result.expectedEffect = existing ? `${existing}\n\n${coachNote}` : coachNote;
+        console.log('[custom-menu] Distance still out of range after retry, added coachNote:', { targetDist, finalTotal });
+      }
+    }
+
+    return NextResponse.json({ result, menu: null });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     console.error('[custom-menu] POST error (HTTP 500):', message, err);

@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import type { TrainingInput, TrainingResult } from '@/lib/rt/generator';
+import { sumMenuDistance } from '@/lib/rt/menu-distance';
 
 type MenuSheetRow = {
   section: string;
@@ -141,7 +142,7 @@ function parsePartToRow(
   if (section !== 'Rest' && intensity === '-') intensity = '①';
 
   const distMatch = text.match(/(\d+)\s*m(?!\w)/);
-  const countDistMatch = text.match(/(\d+)\s*[×x]\s*(\d+)\s*m(?!\w)/);
+  const countDistMatch = text.match(/(\d+)\s*[×x]\s*(\d+)\s*m?(?!\w)/);
   if (countDistMatch) {
     count = countDistMatch[1];
     distance = countDistMatch[2];
@@ -528,14 +529,21 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
               value={
                 sumFromRows > 0
                   ? `${sumFromRows.toLocaleString()}m`
-                  : (result.total ?? '').replace(/合計距離：|総距離：?/g, '').trim()
+                  : (() => {
+                      const fromTotal = (result.total ?? '').replace(/合計距離：|総距離：?/g, '').trim();
+                      if (fromTotal && fromTotal !== '-') return fromTotal;
+                      const fromBlocks = sumMenuDistance(result as unknown as Record<string, string>);
+                      return fromBlocks > 0 ? `${fromBlocks.toLocaleString()}m` : '-';
+                    })()
               }
             />
           </span>
         </div>
         <div className="flex items-start">
           <span className="font-semibold text-gray-700 w-24">今日の狙い:</span>
-          <span className="text-gray-900 flex-1">{result.purpose || result.intention}</span>
+          <span className="text-gray-900 flex-1">
+            {(result.intention || result.purpose || '').replace(/^【目的】(?:[^｜]*｜|[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬])\s*/, '')}
+          </span>
         </div>
         <div className="flex items-start">
           <span className="font-semibold text-gray-700 w-24">指導ポイント:</span>
