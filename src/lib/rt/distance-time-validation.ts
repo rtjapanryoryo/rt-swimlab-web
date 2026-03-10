@@ -1,0 +1,118 @@
+/**
+ * 距離と練習時間の整合性チェック
+ *
+ * 水泳練習の現実的な密度（m/分）に基づき、
+ * 選択された組み合わせが設計上問題ないか判定する。
+ */
+
+const PRACTICE_TIMES = [60, 90, 120] as const;
+const DISTANCES = [2000, 3000, 4000, 5000, 6000, 7000, 8000] as const;
+
+export type DistanceTimeStatus = 'optimal' | 'feasible' | 'dense' | 'not_recommended';
+
+export interface DistanceTimeResult {
+  status: DistanceTimeStatus;
+  message: string;
+  /** 推奨練習時間（分）。現在の組み合わせが dense/not_recommended の場合に提案 */
+  suggestedPracticeTime?: string;
+  /** m/分。密度の目安 */
+  densityPerMin: number;
+}
+
+/**
+ * 距離と練習時間の整合性を判定
+ *
+ * - optimal: 余裕を持って設計できる
+ * - feasible: 問題なく設計できる
+ * - dense: 高密度。可能だが注意
+ * - not_recommended: 非推奨。より長い時間を推奨
+ */
+export function validateDistanceTime(
+  distance: string,
+  practiceTime: string
+): DistanceTimeResult | null {
+  const dist = parseInt(distance, 10);
+  const time = parseInt(practiceTime, 10);
+  if (!distance || !practiceTime || Number.isNaN(dist) || Number.isNaN(time)) {
+    return null;
+  }
+  if (!DISTANCES.includes(dist as (typeof DISTANCES)[number])) return null;
+  if (!PRACTICE_TIMES.includes(time as (typeof PRACTICE_TIMES)[number])) return null;
+
+  const density = dist / time;
+
+  // 目安: 50-70 m/分 = 余裕あり, 70-90 = 通常, 90-110 = 高密度, 110+ = 非推奨
+  if (time === 60) {
+    if (dist <= 3500) {
+      return { status: 'optimal', message: '余裕を持って設計できます。', densityPerMin: density };
+    }
+    if (dist <= 4500) {
+      return { status: 'feasible', message: 'この組み合わせで問題なく設計できます。', densityPerMin: density };
+    }
+    if (dist <= 5500) {
+      return {
+        status: 'dense',
+        message: 'やや高密度になります。余裕を持って取り組むには90分がおすすめです。',
+        suggestedPracticeTime: '90',
+        densityPerMin: density,
+      };
+    }
+    return {
+      status: 'not_recommended',
+      message: '60分では高強度になります。90分以上を推奨します。',
+      suggestedPracticeTime: '90',
+      densityPerMin: density,
+    };
+  }
+
+  if (time === 90) {
+    if (dist <= 4500) {
+      return { status: 'optimal', message: '余裕を持って設計できます。', densityPerMin: density };
+    }
+    if (dist <= 6000) {
+      return { status: 'feasible', message: 'この組み合わせで問題なく設計できます。', densityPerMin: density };
+    }
+    if (dist <= 7000) {
+      return {
+        status: 'dense',
+        message: 'やや高密度になります。余裕を持って取り組むには120分がおすすめです。',
+        suggestedPracticeTime: '120',
+        densityPerMin: density,
+      };
+    }
+    return {
+      status: 'not_recommended',
+      message: '90分では高強度になります。120分を推奨します。',
+      suggestedPracticeTime: '120',
+      densityPerMin: density,
+    };
+  }
+
+  if (time === 120) {
+    if (dist <= 6000) {
+      return { status: 'optimal', message: '余裕を持って設計できます。', densityPerMin: density };
+    }
+    if (dist <= 8000) {
+      return { status: 'feasible', message: 'この組み合わせで問題なく設計できます。', densityPerMin: density };
+    }
+    return {
+      status: 'dense',
+      message: '120分では高密度になります。',
+      densityPerMin: density,
+    };
+  }
+
+  return null;
+}
+
+/** 指定した練習時間で無理のない距離の範囲（目安） */
+export function getSuggestedDistanceRange(practiceTime: string): { min: number; max: number; label: string } | null {
+  const time = parseInt(practiceTime, 10);
+  if (!PRACTICE_TIMES.includes(time as (typeof PRACTICE_TIMES)[number])) return null;
+  const ranges: Record<number, { min: number; max: number; label: string }> = {
+    60: { min: 2000, max: 4500, label: '2,000〜4,500m' },
+    90: { min: 2500, max: 6000, label: '2,500〜6,000m' },
+    120: { min: 3500, max: 8000, label: '3,500〜8,000m' },
+  };
+  return ranges[time] ?? null;
+}

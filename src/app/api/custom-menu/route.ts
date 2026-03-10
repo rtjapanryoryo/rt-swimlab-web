@@ -6,6 +6,7 @@ import { getEffectiveUser } from '@/lib/supabase/server';
 import OpenAI from 'openai';
 import { getCommonContent, getProtocolContent, getPromptContent, getRTMenuProtocolContent } from '@/lib/rt/content';
 import { sumMenuDistance } from '@/lib/rt/menu-distance';
+import { validateDistanceTime } from '@/lib/rt/distance-time-validation';
 import {
   buildProfessionalSearchQueries,
   searchMultiple,
@@ -114,6 +115,9 @@ Pre-Main は Main を最大化するための橋渡し。**Pre-Main は必ず Ma
 - Kick: 発展形成期以降は2構成
 - Pull: Fr中心で2構成。**効率づくりを優先**（Swim寄りにしない）。フォームと出力の安定が目的。
 - Main: 基礎形成期以降は Pre-Main を含めて3段階程度
+
+【ブロック間の連動（内容の一貫性）】
+各ブロックはバラバラではなく、Main に向けた流れで設計する。W-upで全身をほぐす→Drillで今日の技術テーマを入れる→Kickで下半身の土台→Pullで効率づくり→Pre-MainでMain−1強度のリハーサル→Mainで本題。この順序で「次のブロックにつながる」ように内容を選ぶこと。
 
 【耐乳酸期の特別ルール】
 - 120分では全体約5000m前後を確保。Main 以外のブロックでも距離を積む。
@@ -343,37 +347,27 @@ export async function POST(request: NextRequest) {
 
     const distanceAllocationSection = alloc && targetDist != null
       ? `
-【距離配分（絶対遵守・設計の最優先軸）】
-★ 目標総距離: **${targetDist}m** ★
-${isDenseSession ? `※${timeNum}分で${targetDist}mは高密度になるが、**距離を絶対優先**。レスト短縮・効率化で対応。総距離を削減してはいけない。\n` : ''}
-以下のブロック別距離を**厳守**すること。各ブロックは必ず「本数×距離m」（例: 4×50m）または「〇〇m」（例: 200m）の形式で書くこと。合計が${targetDist - 100}〜${targetDist + 100}mに収まらないメニューは不合格。
-| ブロック | 必達距離(m) | 設計例（距離は必ず「本数×距離m」または「〇〇m」で書く） |
-| W-up | ${alloc.warmUp} | Cho 200m→Cho 200m→Cho ${Math.max(100, alloc.warmUp - 400)}m 等で合計${alloc.warmUp}m |
-| Drill | ${alloc.drill} | 例: 6×50m、8×50m 等で合計${alloc.drill}m |
-| Kick | ${alloc.kick} | 例: Kick 4×50m→Kick 4×50m 等で合計${alloc.kick}m |
-| Pull | ${alloc.pull} | 例: Pull 4×50m→Pull 4×100m 等で合計${alloc.pull}m |
-| Pre-Main | ${alloc.preMain} | 例: Pre-Main 4×50m で合計${alloc.preMain}m |
-| Main | ${alloc.main} | 例: Main 8×25m、Main 4×100m 等で合計${alloc.main}m |
-| Down | ${alloc.down} | Easy Swim ${alloc.down}m |
-→ 検算: ${alloc.warmUp}+${alloc.drill}+${alloc.kick}+${alloc.pull}+${alloc.preMain}+${alloc.main}+${alloc.down} = **${targetDist}m**
-
+【最重要・距離は変更禁止】以下の数値を**そのまま**warmUpM, drillM, kickM, pullM, preMainM, mainM, downM に出力すること。推測や調整をしてはいけない。
+| warmUpM | drillM | kickM | pullM | preMainM | mainM | downM | 合計 |
+| ${alloc.warmUp} | ${alloc.drill} | ${alloc.kick} | ${alloc.pull} | ${alloc.preMain} | ${alloc.main} | ${alloc.down} | **${targetDist}m** |
+各ブロックのテキスト（warmUp, drill, kick...）は、上記の距離に**届くまで**セグメントを増やすこと。「少なめでよい」は禁止。例: W-upが${alloc.warmUp}mなら、Cho 200m→Cho 200m だけでは不足。合計${alloc.warmUp}mになるよう追加（例: Cho 200m→Cho 200m→Cho ${Math.max(150, alloc.warmUp - 400)}m等）。
+${isDenseSession ? `※${timeNum}分で${targetDist}mは高密度。距離を絶対優先。レスト短縮で対応。\n` : ''}
 【距離未達時の積み増し先】${{
-      '1': '①リカバリー: W-up・Pullで積み増し',
-      '2': '②基礎形成: Kick・Pullで距離追加',
-      '3': '③発展形成: Pre-Main・Mainで増やす',
-      '4': '④スピード持久: Main前後で積み増し',
-      '5': '⑤耐乳酸: あと数百m追加して5000m前後に',
-      '6': '⑥調整: 削りすぎず5000m前後に調整',
-      '7': '⑦テーパー: 質を落とさず距離を少し追加',
+      '1': '①リカバリー: W-up・Pull',
+      '2': '②基礎形成: Kick・Pull',
+      '3': '③発展形成: Pre-Main・Main',
+      '4': '④スピード持久: Main前後',
+      '5': '⑤耐乳酸: 数百m追加',
+      '6': '⑥調整: 削りすぎず',
+      '7': '⑦テーパー: 質を落とさず追加',
     }[period] || ''}
 `
       : '';
 
     const buildUserPrompt = (distanceRetryHint?: string) =>
-      `以下の「入力条件」と「反映ルール」に従い、この8条件から導いた水泳練習メニューを1つだけ生成してください。
-**必須**：8条件すべてを設計の根拠とし、**距離配分を最優先**に設計すること。出力は必ず指定のJSONのみ（説明文は不要）。
-${distanceRetryHint ?? ''}
-${distanceAllocationSection}
+      `${distanceRetryHint ?? ''}${distanceAllocationSection ? `\n${distanceAllocationSection}\n` : ''}
+以下の「入力条件」と「反映ルール」に従い、この8条件から導いた水泳練習メニューを1つだけ生成してください。
+**必須**：上記の距離配分表の数値を**そのまま**使用すること。内容は距離に合わせて設計し、距離に合わせて内容を増やす。出力は必ず指定のJSONのみ（説明文は不要）。
 
 【入力条件（8項目すべてを満たすこと）】
 1. 目的（期）: ${periodLabels[period] || period}
@@ -398,7 +392,7 @@ ${conditionInstructions}
 【出力形式】以下のキーをすべて含むJSONオブジェクト1つのみ。順序・省略禁止。
 - main には必ずMainカテゴリを明記すること（ベースメイン／ベストアベレージ／ダイハード／耐乳酸MAX／Standard Main のいずれか）。
 - intention / coachingPoint / caution は必ずこの8条件に合わせてカスタマイズすること。汎用表現のコピペ禁止。
-- **距離紐づき（重要）**: 目標距離指定時は warmUpM, drillM, kickM, pullM, preMainM, mainM, downM を**数値**で必ず出力すること。各ブロックの内容と一致する距離(m)を入れる。これら7つの合計＝目標距離±100m にすること。テキストのパースに依存しないため、この数値で総距離を確定する。
+- **距離紐づき（絶対）**: warmUpM, drillM, kickM, pullM, preMainM, mainM, downM は上記の距離配分表の数値を**そのままコピー**すること。変更・推測・四捨五入禁止。各ブロックのテキスト内容はこの数値に届くよう設計する。
 【intention（今日の狙い）】期・目的・状況・距離タイプ・年齢を反映した2〜4行。このメニュー固有の狙いを具体的に書く。
 【coachingPoint（指導ポイント）】このメニューのDrill/Kick/Pull/Main等に即した箇条書き3つ。
 【caution（注意点）】状況・年齢・疲労・月経期等を反映した箇条書き3つ。
@@ -427,7 +421,7 @@ ${conditionInstructions}
   "mainM": ${alloc.main},
   "downM": ${alloc.down}
 }` : ''}
-}${targetDist ? `\n\n**最終確認**: warmUpM+drillM+kickM+pullM+preMainM+mainM+downM＝${targetDist}±100m であること。各ブロックのテキスト内容と一致する数値を入れること。${alloc ? `上記の距離配分表を満たすこと。` : ''}` : ''}`;
+}${targetDist && alloc ? `\n\n**最終確認**: warmUpM=${alloc.warmUp}, drillM=${alloc.drill}, kickM=${alloc.kick}, pullM=${alloc.pull}, preMainM=${alloc.preMain}, mainM=${alloc.main}, downM=${alloc.down} をそのまま出力。テキストはこれら距離に届くようセグメントを十分に入れる。` : ''}`;
 
     const serperKey = (process.env.SERPER_API_KEY || '').trim();
     const queries = buildProfessionalSearchQueries({ period, stroke, distanceType });
@@ -521,7 +515,7 @@ ${conditionInstructions}
           { role: 'system', content: systemContent },
           { role: 'user', content: buildUserPrompt(retryHint) },
         ],
-        temperature: temp ?? (retryHint ? 0.25 : 0.5),
+        temperature: temp ?? (retryHint ? 0.1 : 0.3),
         max_tokens: 4096,
         response_format: { type: 'json_object' },
       });
@@ -556,9 +550,22 @@ ${conditionInstructions}
         if (!keys.every((k) => typeof parsed[k] === 'string')) return null;
         const result = Object.fromEntries(keys.map((k) => [k, String(parsed[k] ?? '')])) as Record<string, string>;
         const structuredTotal = getTotalFromStructured(parsed);
-        const calculatedTotal = structuredTotal ?? sumMenuDistance(result);
+        const parsedTotal = sumMenuDistance(result);
+        const calculatedTotal = structuredTotal ?? parsedTotal;
         if (calculatedTotal > 0) {
           result.total = `合計距離：${calculatedTotal.toLocaleString()}m`;
+        }
+        // M値は正しいがテキストのパースが大幅に少ない場合、AIが内容を十分に書けていない可能性
+        if (
+          structuredTotal != null &&
+          structuredTotal >= (targetDist ?? 0) - 100 &&
+          parsedTotal > 0 &&
+          parsedTotal < structuredTotal * 0.85
+        ) {
+          const existing = (result.expectedEffect ?? '').trim();
+          result.expectedEffect = existing
+            ? `${existing}\n\n※ブロック記載内容の距離が目標に届いていない可能性があります。必要に応じて再生成をお試しください。`
+            : '※ブロック記載内容の距離が目標に届いていない可能性があります。必要に応じて再生成をお試しください。';
         }
         return result;
       } catch {
@@ -600,10 +607,10 @@ ${conditionInstructions}
       const exactAllocHint = alloc && diff < -500
         ? `\n【数値の直接使用】warmUpM=${alloc.warmUp}, drillM=${alloc.drill}, kickM=${alloc.kick}, pullM=${alloc.pull}, preMainM=${alloc.preMain}, mainM=${alloc.main}, downM=${alloc.down} をそのまま出力し、各ブロックのテキスト内容をこれに合わせて設計すること。`
         : '';
-      const retryHint = `【最重要・再生成 #${retryCount + 1}】前回の総距離は${calculatedTotal}mでした。目標は${targetDist}mです。${diff < 0 ? `${Math.abs(diff)}m不足` : `${diff}m超過`}しています。${scaleNote}今回**必ず**：①warmUpM+drillM+kickM+pullM+preMainM+mainM+downM＝${targetDist}±100m。②各ブロックのテキスト内容と数値を一致させる。③合計が目標に収まること。${allocStr}${exactAllocHint}\n\n`;
+      const retryHint = `【最重要・再生成 #${retryCount + 1}】前回${calculatedTotal}m。目標${targetDist}m。${diff < 0 ? `${Math.abs(diff)}m不足` : `${diff}m超過`}。${scaleNote}今回**必ず**：①warmUpM=${alloc?.warmUp ?? 0}, drillM=${alloc?.drill ?? 0}, kickM=${alloc?.kick ?? 0}, pullM=${alloc?.pull ?? 0}, preMainM=${alloc?.preMain ?? 0}, mainM=${alloc?.main ?? 0}, downM=${alloc?.down ?? 0} を**そのまま**出力。②各ブロックのテキストはこの距離に届くよう十分なセグメントを入れる。${allocStr}${exactAllocHint}\n\n`;
       console.log('[custom-menu] Distance out of range, retry', retryCount + 1, { targetDist, calculatedTotal, diff });
       retryCount++;
-      const retryContent = await doGenerate(retryHint, 0.15);
+      const retryContent = await doGenerate(retryHint, 0.1);
       if (retryContent) {
         const retryResult = parseAndNormalize(retryContent);
         if (retryResult) {
@@ -629,6 +636,17 @@ ${conditionInstructions}
         result.expectedEffect = existing ? `${existing}\n\n${coachNote}` : coachNote;
         console.log('[custom-menu] Distance still out of range after retry, added coachNote:', { targetDist, finalTotal });
       }
+    }
+
+    // 距離・時間の整合性：高密度の組み合わせの場合にコーチメモを付与
+    const dtValidation = validateDistanceTime(distance, practiceTime);
+    if (dtValidation && (dtValidation.status === 'dense' || dtValidation.status === 'not_recommended')) {
+      const suggestion = dtValidation.suggestedPracticeTime
+        ? `余裕を持って取り組むには${dtValidation.suggestedPracticeTime}分を推奨します。`
+        : '体調に合わせて調整してください。';
+      const coachNote = `※${timeNum}分で${targetDist}mは高強度設計です。${suggestion}`;
+      const existing = (result.expectedEffect ?? '').trim();
+      result.expectedEffect = existing ? `${existing}\n\n${coachNote}` : coachNote;
     }
 
     return NextResponse.json({ result, menu: null });

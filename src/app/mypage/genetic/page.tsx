@@ -91,8 +91,11 @@ export default function GeneticPage() {
         return res.blob();
       })
       .then((blob) => {
-        if (!cancelled && blob.type === 'application/pdf') {
+        // 200 OK かつ Blob に内容があれば表示（type が空の環境でも動作するよう緩和）
+        if (!cancelled && blob.size > 0) {
           setPdfBlobUrl(URL.createObjectURL(blob));
+        } else if (!cancelled) {
+          setError('PDFの取得に失敗しました。ファイルが空の可能性があります。');
         }
       })
       .catch(() => {

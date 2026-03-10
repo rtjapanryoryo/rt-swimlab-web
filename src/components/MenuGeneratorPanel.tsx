@@ -10,6 +10,7 @@ import {
 import { menuTemplates9Fallback } from '@/lib/rt/menu-templates-9-fallback';
 import { useViewMode } from '@/app/viewMode';
 import { MenuSheet } from '@/components/MenuSheet';
+import { DistanceTimeField } from '@/components/DistanceTimeField';
 import Link from 'next/link';
 
 /** クイック用テンプレ（API不要・常にメニュー生成可能） */
@@ -34,8 +35,6 @@ function isLineInAppBrowser(): boolean {
 function savedInputKey(userId: string): string {
   return `${SAVED_INPUT_KEY_PREFIX}-${userId}`;
 }
-
-const DISTANCE_OPTIONS = ['2000', '3000', '4000', '5000', '6000', '7000', '8000'] as const;
 
 const EMPTY_INPUT: TrainingInput = {
   period: '',
@@ -722,14 +721,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">2. 距離</label>
-                  <select value={input.distance} onChange={(e) => handleInputChange('distance', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
-                    <option value="">選択してください</option>
-                    {DISTANCE_OPTIONS.map((d) => <option key={d} value={d}>{d}m</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">3. 距離タイプ</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">2. 距離タイプ</label>
                   <select value={input.distanceType} onChange={(e) => handleInputChange('distanceType', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
                     <option value="">選択してください</option>
                     <option value="S">S（スプリント）</option>
@@ -737,14 +729,15 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                     <option value="D">D（ディスタンス）</option>
                   </select>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">4. 練習時間</label>
-                  <select value={input.practiceTime} onChange={(e) => handleInputChange('practiceTime', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
-                    <option value="">選択してください</option>
-                    <option value="60">60分</option>
-                    <option value="90">90分</option>
-                    <option value="120">120分</option>
-                  </select>
+                <div className="sm:col-span-2">
+                  <DistanceTimeField
+                    distance={input.distance}
+                    practiceTime={input.practiceTime}
+                    onDistanceChange={(v) => handleInputChange('distance', v)}
+                    onPracticeTimeChange={(v) => handleInputChange('practiceTime', v)}
+                    distanceLabel="3. 距離"
+                    practiceTimeLabel="4. 練習時間"
+                  />
                 </div>
               </div>
               <div className="mt-6">
@@ -846,21 +839,15 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                         <option value="D">D（ディスタンス）</option>
                       </select>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">7. 距離</label>
-                      <select value={input.distance} onChange={(e) => handleInputChange('distance', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
-                        <option value="">選択してください</option>
-                        {DISTANCE_OPTIONS.map((d) => <option key={d} value={d}>{d}m</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">8. 練習時間</label>
-                      <select value={input.practiceTime} onChange={(e) => handleInputChange('practiceTime', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
-                        <option value="">選択してください</option>
-                        <option value="60">60分</option>
-                        <option value="90">90分</option>
-                        <option value="120">120分</option>
-                      </select>
+                    <div className="sm:col-span-2">
+                      <DistanceTimeField
+                        distance={input.distance}
+                        practiceTime={input.practiceTime}
+                        onDistanceChange={(v) => handleInputChange('distance', v)}
+                        onPracticeTimeChange={(v) => handleInputChange('practiceTime', v)}
+                        distanceLabel="7. 距離"
+                        practiceTimeLabel="8. 練習時間"
+                      />
                     </div>
                   </div>
                   <div className="mt-6 flex flex-wrap gap-3">
