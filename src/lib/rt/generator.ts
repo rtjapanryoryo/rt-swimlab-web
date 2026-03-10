@@ -767,13 +767,25 @@ function scoreTemplateMatch(c: TrainingResult, input: TrainingInput): number {
   }
   if (input.stroke === 'IM' && text.includes('IM')) score += 1;
 
-  // 距離: total の距離とユーザー選択距離の近さ
+  // 距離: total の距離とユーザー選択距離の近さ（Quick では最重要）
   const totalMatch = c.total?.match(/(\d[\d,]*)\s*m/);
   const totalM = totalMatch ? parseInt(totalMatch[1].replace(/,/g, ''), 10) : 0;
   const targetM = parseInt(input.distance || '4000', 10);
-  if (targetM > 0 && totalM >= targetM - 500 && totalM <= targetM + 500) score += 2;
+  if (targetM > 0 && totalM > 0) {
+    const diff = Math.abs(totalM - targetM);
+    if (diff <= 200) score += 10;       // ±200m: ほぼ一致
+    else if (diff <= 400) score += 6;   // ±400m: 良い一致
+    else if (diff <= 600) score += 3;   // ±600m: 許容範囲
+    else if (diff <= 1000) score += 1;  // ±1000m: やや離れている
+  }
 
   return score;
+}
+
+/** テンプレの total から距離（m）を抽出 */
+function parseTemplateTotalM(c: TrainingResult): number {
+  const match = c.total?.match(/(\d[\d,]*)\s*m/);
+  return match ? parseInt(match[1].replace(/,/g, ''), 10) : 0;
 }
 
 function selectFrom9Templates(input: TrainingInput, templates: MenuTemplates9): TrainingResult | null {
@@ -788,16 +800,28 @@ function selectFrom9Templates(input: TrainingInput, templates: MenuTemplates9): 
   });
   if (!list.length) return null;
 
-  // スコアでソート（降順）。同点は元の並び順を維持
-  const scored = list.map((c, i) => ({ template: c, score: scoreTemplateMatch(c, input), index: i }));
+  const targetM = parseInt(input.distance || '4000', 10);
+
+  // スコア＋距離差でソート。スコア優先、同点時は距離差が小さい方を優先
+  const scored = list.map((c, i) => {
+    const score = scoreTemplateMatch(c, input);
+    const totalM = parseTemplateTotalM(c);
+    const distanceDiff = targetM > 0 ? Math.abs(totalM - targetM) : 0;
+    return { template: c, score, distanceDiff, index: i };
+  });
   scored.sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score;
+    // 同点時: 選択距離に近いテンプレを優先
+    if (a.distanceDiff !== b.distanceDiff) return a.distanceDiff - b.distanceDiff;
     return a.index - b.index;
   });
 
-  // 最高スコアのテンプレを同点で複数ある場合、シードで1つ選ぶ（決定論）
+  // 最高スコアかつ距離差最小の同点候補から、シードで1つ選ぶ（決定論）
   const maxScore = scored[0]?.score ?? 0;
-  const topCandidates = scored.filter((s) => s.score === maxScore);
+  const minDiff = scored[0]?.distanceDiff ?? 0;
+  const topCandidates = scored.filter(
+    (s) => s.score === maxScore && s.distanceDiff === minDiff
+  );
   const seed = [
     input.period, input.stroke, input.distance, input.age, input.distanceType,
     input.level, input.condition, input.practiceTime,

@@ -6,18 +6,18 @@
  */
 
 const PRACTICE_TIMES = [60, 90, 120] as const;
-const ALL_DISTANCES = [2000, 3000, 4000, 5000, 6000, 7000, 8000] as const;
+const ALL_DISTANCES = [2000, 3000, 4000, 5000, 5500, 6000, 6500, 7000, 7500, 8000] as const;
 
 /**
  * 距離タイプ別の選択可能な距離範囲（設計: docs/RT_MENU_GENERATION_RULES_JA.md）
  * - S: 2000〜6000m（スプリントは量より質）
  * - M: 3000〜7000m（ミドルは中間）
- * - D: 6000〜8000m（ディスタンスは量を確保）
+ * - D: 6000〜8000m（ディスタンスは量を確保、7500mで8,000mに近づける）
  */
 export const DISTANCE_OPTIONS_BY_TYPE: Record<string, readonly number[]> = {
   S: [2000, 3000, 4000, 5000, 6000],
   M: [3000, 4000, 5000, 6000, 7000],
-  D: [6000, 7000, 8000],
+  D: [6000, 6500, 7000, 7500, 8000],
 };
 
 export type DistanceTimeStatus = 'optimal' | 'feasible' | 'dense' | 'not_recommended';

@@ -23,13 +23,18 @@
 - **Fly**: 片キック 6×50m、ドルフィンキック 6×50m、ショルダードリル 6×50m
 - **IM**: オーダー 4×50m、25m種目 8×25m
 
+## 距離単位の柔軟性
+25m・50mに限定せず、100m・200m・400m等を混ぜてよい。例: Kick 4×100m、Pull 3×200m、Main 4×400m。総距離に合わせて本数・距離を調整。
+
 ## Kick バリエーション
 - Kick 4×50m（Des）（EN1）→ Kick 4×50m（Fins）（EN2）
+- Kick 4×100m（Des）（EN1）→ Kick 3×200m（EN2）
 - Kick 6×50m DPS（EN1）→ Kick 4×100m Variable（EN2）
 - Kick 4×50m フィン（EN1）→ Kick 4×50m 板（EN2）
 
 ## Pull バリエーション
 - Pull Fr 4×50m（DPS）（EN1）→ Pull Fr 4×100m（EN2）
+- Pull Fr 3×200m（DPS）（EN1）→ Pull Fr 4×100m（EN2）
 - Pull Fr 6×50m DPS（EN1）→ Pull Fr 4×100m Variable（EN2）
 - Pull Fr 4×75m Ac/CA（EN1）→ Pull Fr 4×100m Negative split（EN2）
 

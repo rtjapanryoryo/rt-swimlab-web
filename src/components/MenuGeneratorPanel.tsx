@@ -10,7 +10,7 @@ import {
 import { menuTemplates9Fallback } from '@/lib/rt/menu-templates-9-fallback';
 import { useViewMode } from '@/app/viewMode';
 import { MenuSheet } from '@/components/MenuSheet';
-import { DistanceTimeField } from '@/components/DistanceTimeField';
+import { PracticeVolumeField } from '@/components/PracticeVolumeField';
 import { isDistanceValidForType } from '@/lib/rt/distance-time-validation';
 import Link from 'next/link';
 
@@ -721,7 +721,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
           {mode === 'quick' && (
             <>
               <h2 className="text-lg font-semibold text-slate-900 mb-4">基本条件（4項目）</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="space-y-5">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">1. 目的</label>
                   <select value={input.period} onChange={(e) => handleInputChange('period', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
@@ -735,26 +735,15 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                     <option value="7">⑦ テーパー期</option>
                   </select>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">2. 距離タイプ</label>
-                  <select value={input.distanceType} onChange={(e) => handleInputChange('distanceType', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
-                    <option value="">選択してください</option>
-                    <option value="S">S（スプリント）</option>
-                    <option value="M">M（ミドル）</option>
-                    <option value="D">D（ディスタンス）</option>
-                  </select>
-                </div>
-                <div className="sm:col-span-2">
-                  <DistanceTimeField
-                    distance={input.distance}
-                    practiceTime={input.practiceTime}
-                    onDistanceChange={(v) => handleInputChange('distance', v)}
-                    onPracticeTimeChange={(v) => handleInputChange('practiceTime', v)}
-                    distanceType={input.distanceType}
-                    distanceLabel="3. 距離"
-                    practiceTimeLabel="4. 練習時間"
-                  />
-                </div>
+                <PracticeVolumeField
+                  distanceType={input.distanceType}
+                  distance={input.distance}
+                  practiceTime={input.practiceTime}
+                  onDistanceTypeChange={(v) => handleInputChange('distanceType', v)}
+                  onDistanceChange={(v) => handleInputChange('distance', v)}
+                  onPracticeTimeChange={(v) => handleInputChange('practiceTime', v)}
+                  itemNumberPrefix="2."
+                />
               </div>
               <div className="mt-6">
                 <button onClick={generateMenuLocal} disabled={!isQuickFormValid()} className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-bold rounded-2xl shadow-lg shadow-cyan-500/25 hover:from-cyan-600 hover:to-teal-600 disabled:from-slate-400 disabled:to-slate-400 disabled:cursor-not-allowed transition-all">
@@ -832,7 +821,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                 <>
                   <h2 className="text-lg font-semibold text-slate-900 mb-4">ステップ2: 練習計画（4項目）</h2>
                   <p className="text-sm text-slate-600 mb-4">今日の狙いと練習条件を入力してください。距離と時間のバランスで、適切なメニューが設計されます。</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div className="space-y-5">
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">5. 目的</label>
                       <select value={input.period} onChange={(e) => handleInputChange('period', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
@@ -846,26 +835,15 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                         <option value="7">⑦ テーパー期</option>
                       </select>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">6. 距離タイプ</label>
-                      <select value={input.distanceType} onChange={(e) => handleInputChange('distanceType', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
-                        <option value="">選択してください</option>
-                        <option value="S">S（スプリント）</option>
-                        <option value="M">M（ミドル）</option>
-                        <option value="D">D（ディスタンス）</option>
-                      </select>
-                    </div>
-                    <div className="sm:col-span-2">
-                      <DistanceTimeField
-                        distance={input.distance}
-                        practiceTime={input.practiceTime}
-                        onDistanceChange={(v) => handleInputChange('distance', v)}
-                        onPracticeTimeChange={(v) => handleInputChange('practiceTime', v)}
-                        distanceType={input.distanceType}
-                        distanceLabel="7. 距離"
-                        practiceTimeLabel="8. 練習時間"
-                      />
-                    </div>
+                    <PracticeVolumeField
+                      distanceType={input.distanceType}
+                      distance={input.distance}
+                      practiceTime={input.practiceTime}
+                      onDistanceTypeChange={(v) => handleInputChange('distanceType', v)}
+                      onDistanceChange={(v) => handleInputChange('distance', v)}
+                      onPracticeTimeChange={(v) => handleInputChange('practiceTime', v)}
+                      itemNumberPrefix="6"
+                    />
                   </div>
                   <div className="mt-6 flex flex-wrap gap-3">
                     <button onClick={() => setCustomStep(1)} className="px-6 py-3 border border-slate-200 bg-white text-slate-700 font-semibold rounded-xl shadow-sm hover:bg-slate-50">
