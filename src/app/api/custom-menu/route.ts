@@ -4,8 +4,13 @@ import path from 'path';
 import { config as loadEnv } from 'dotenv';
 import { getEffectiveUser } from '@/lib/supabase/server';
 import OpenAI from 'openai';
-import { getCommonContent, getProtocolContent, getPromptContent } from '@/lib/rt/content';
+import { getCommonContent, getProtocolContent, getPromptContent, getRTMenuProtocolContent } from '@/lib/rt/content';
 import { sumMenuDistance } from '@/lib/rt/menu-distance';
+import {
+  buildProfessionalSearchQueries,
+  searchMultiple,
+  formatSearchResultsForPrompt,
+} from '@/lib/web-search';
 
 // APIルートでも .env.ai を読む（next.config 経由で読めない場合のフォールバック）。失敗してもルートは登録する
 try {
@@ -80,7 +85,7 @@ const CORE_SYSTEM_PROMPT = `【コーチ思想の核心（50問インタビュ�
 - caution（注意点）: 状況（疲労・月経期等）・年齢を必ず反映。フォームを崩さない範囲での取り組みを促す注意を3つ。汎用文禁止。
 
 【「内容」列の必須ルール】
-各セクションに具体的な指示を必ず含めること。共有参照資料のパターン（SKPS, IM Order, Des, Variable, DPS, Ac/CA, Negative split 等）を積極的に使い、**毎回同じメニューにならないよう多様な内容・表現を選ぶ**。同じ表現の繰り返しを避ける。
+各セクションに具体的な指示を必ず含めること。**チープ・汎用表現は禁止。差別化要因を必ず入れる。** 共有参照資料（menu-dictionary）のパターン（SKPS, IM Order, Des, Variable, DPS, Ac/CA, Negative split 等）を積極的に使い、種目・期・距離タイプに特化した固有の内容にする。毎回同じメニューにならないよう多様な内容・表現を選ぶ。
 - **Br・FlyのDrillで「左右交互」は使用禁止**。BrはBrキック・Brプル・タイミング等、Flyは片キック・ドルフィンキック等、種目に合ったドリル名を書く。
 - **kick と pull のブロック名は英語で書く**: 「キック」→「Kick」、「プル」→「Pull」とする。例: Kick 4×50m（EN1）、Pull 6×50m（DPS）（EN2）。
 - W-up / Down: 種目は Cho 固定。warmUp と down の文字列に Fr/Fly/Ba/Br/IM を一切含めない。
@@ -273,7 +278,8 @@ export async function POST(request: NextRequest) {
 
     try {
     const apiKey = (process.env.OPENAI_API_KEY || '').trim().replace(/\r?\n/g, '');
-    console.log('[custom-menu] POST: OPENAI_API_KEY exists:', apiKey.length > 0, 'keyPrefix:', apiKey ? `${apiKey.slice(0, 7)}...` : 'none');
+    const model = (process.env.OPENAI_MODEL || 'gpt-4o-mini').trim() || 'gpt-4o-mini';
+    console.log('[custom-menu] POST: OPENAI_API_KEY exists:', apiKey.length > 0, 'model:', model);
     if (!apiKey || apiKey === 'YOUR_API_KEY_HERE') {
       console.error('[custom-menu] OPENAI_API_KEY not configured');
       return ensureJson500();
@@ -335,14 +341,14 @@ export async function POST(request: NextRequest) {
       ? `
 【距離配分（絶対遵守・設計の最優先軸）】
 ★ 目標総距離: **${targetDist}m** ★
-以下のブロック別距離を**厳守**すること。各ブロックの「本数×距離」を積み上げた合計が${targetDist - 150}〜${targetDist + 150}mに収まらないメニューは不合格です。
-| ブロック | 必達距離(m) | 設計例 |
-| W-up | ${alloc.warmUp} | Cho 200m→200m→${Math.max(100, alloc.warmUp - 400)}m 等で合計${alloc.warmUp}m |
-| Drill | ${alloc.drill} | 例: 6×50m=300m、8×50m=400m 等で合計${alloc.drill}m |
-| Kick | ${alloc.kick} | 例: 4×50m→4×50m 等で合計${alloc.kick}m |
-| Pull | ${alloc.pull} | 例: 4×50m→4×100m 等で合計${alloc.pull}m |
-| Pre-Main | ${alloc.preMain} | 本数×距離で合計${alloc.preMain}m |
-| Main | ${alloc.main} | 本数×距離で合計${alloc.main}m（メインはここでしっかり距離を確保） |
+以下のブロック別距離を**厳守**すること。各ブロックは必ず「本数×距離m」（例: 4×50m）または「〇〇m」（例: 200m）の形式で書くこと。合計が${targetDist - 100}〜${targetDist + 100}mに収まらないメニューは不合格。
+| ブロック | 必達距離(m) | 設計例（距離は必ず「本数×距離m」または「〇〇m」で書く） |
+| W-up | ${alloc.warmUp} | Cho 200m→Cho 200m→Cho ${Math.max(100, alloc.warmUp - 400)}m 等で合計${alloc.warmUp}m |
+| Drill | ${alloc.drill} | 例: 6×50m、8×50m 等で合計${alloc.drill}m |
+| Kick | ${alloc.kick} | 例: Kick 4×50m→Kick 4×50m 等で合計${alloc.kick}m |
+| Pull | ${alloc.pull} | 例: Pull 4×50m→Pull 4×100m 等で合計${alloc.pull}m |
+| Pre-Main | ${alloc.preMain} | 例: Pre-Main 4×50m で合計${alloc.preMain}m |
+| Main | ${alloc.main} | 例: Main 8×25m、Main 4×100m 等で合計${alloc.main}m |
 | Down | ${alloc.down} | Easy Swim ${alloc.down}m |
 → 検算: ${alloc.warmUp}+${alloc.drill}+${alloc.kick}+${alloc.pull}+${alloc.preMain}+${alloc.main}+${alloc.down} = **${targetDist}m**
 
@@ -393,7 +399,7 @@ ${conditionInstructions}
 【expectedEffect】このメニューで得られる効果を2〜3行で。
 {
   "purpose": "【目的】1行で明確に（目的・期・状況を反映）",
-  "warmUp": "2〜3段階。**複数内容を1行にまとめない。** 内容・強度が変わるたびに「→」でセッション分け。例: Cho 200m（A1）→ Cho 200m SKPS（A1）→ Cho 100m Build（EN1）。上記W-up目標距離を満たすこと。",
+  "warmUp": "2〜3段階。**複数内容を1行にまとめない。** 距離は必ず「本数×距離m」または「〇〇m」で書く。例: Cho 200m（A1）→ Cho 200m SKPS（A1）→ Cho 100m Build（EN1）。上記W-up目標距離を満たすこと。",
   "drill": "ドリル名 本数×距離m（内容）。**Drill目標距離を満たす**。Fr/Baは片手・左右交互可。**Br/Flyは「左右交互」禁止**。Br例: Brキックドリル 6×50m（フィン）、Fly例: 片キック 6×50m",
   "kick": "発展形成期以降は2構成。**複数内容を1行にまとめない。** 強度が変わるごとに「→」でセッション分け。例: Kick 4×50m（Des）（EN1）→ Kick 4×50m（Fins）（EN2）。Kick目標距離を満たすこと。",
   "pull": "Pull 2構成。Fr中心で効率づくり。**複数内容を1行にまとめない。** 強度が変わるごとに「→」でセッション分け。例: Pull Fr 4×50m（DPS）（EN1）→ Pull Fr 4×100m（EN2）。Pull目標距離を満たすこと。",
@@ -409,50 +415,79 @@ ${conditionInstructions}
   "expectedEffect": "期待効果（2〜3行。このメニューで得られる効果）"
 }${targetDist ? `\n\n**最終確認**: 各ブロックの距離×本数を合計すると必ず${targetDist}mの前後±100mになること。${alloc ? `上記の距離配分表を満たすこと。` : ''}少なければW-up・Kick・Pull・Main等で距離を追加する。` : ''}`;
 
+    const serperKey = (process.env.SERPER_API_KEY || '').trim();
+    const queries = buildProfessionalSearchQueries({ period, stroke, distanceType });
+
     let protocolContent = '';
+    let rtMenuContent = '';
     let promptContent = '';
     let commonContent = '';
+    let webSearchText = '';
+
+    const contentPromise = Promise.all([
+      getProtocolContent(),
+      getRTMenuProtocolContent(),
+      getPromptContent(),
+      getCommonContent(),
+    ]).then(([a, b, c, d]) => ({ protocolContent: a, rtMenuContent: b, promptContent: c, commonContent: d }));
+
+    const searchPromise =
+      serperKey && queries.length > 0
+        ? searchMultiple(queries, serperKey, 10).then(formatSearchResultsForPrompt)
+        : Promise.resolve('');
+
     try {
-      [protocolContent, promptContent, commonContent] = await Promise.all([
-        getProtocolContent(),
-        getPromptContent(),
-        getCommonContent(),
-      ]);
+      const [contentResult, searchResult] = await Promise.all([contentPromise, searchPromise]);
+      protocolContent = contentResult.protocolContent;
+      rtMenuContent = contentResult.rtMenuContent;
+      promptContent = contentResult.promptContent;
+      commonContent = contentResult.commonContent;
+      webSearchText = searchResult;
     } catch (contentErr) {
-      console.error('[custom-menu] getProtocolContent/getPromptContent/getCommonContent error:', contentErr);
-      // コンテンツ取得失敗時は空のまま続行（メニュー生成は可能）
+      console.error('[custom-menu] content load error:', contentErr);
     }
 
     let systemContent = '';
     // 0. 距離の最優先通知（目標がある場合）
     if (targetDist != null && targetDist >= 2000 && targetDist <= 8000) {
       systemContent +=
-        `【最優先・距離】今回の目標総距離は **${targetDist}m** です。生成するメニューの warmUp+drill+kick+pull+preMain+main+down の合計は必ず ${targetDist - 150}〜${targetDist + 150}m に収めること。距離不足・超過は不合格。\n\n`;
+        `【最優先・距離】今回の目標総距離は **${targetDist}m** です。各ブロックは「本数×距離m」（例: 4×50m）または「〇〇m」（例: 200m）の形式で書き、合計を必ず ${targetDist - 100}〜${targetDist + 100}m に収めること。距離不足・超過は不合格。\n\n`;
     }
-    // 1. プロトコル（思想）※最優先
+    // 1. コーチ思想（高代コーチ50問インタビュー）
     if (protocolContent) {
       systemContent +=
-        '【プロトコル＝ジェネレート（必ず従うこと。思想・定義・絶対ルールの正本）】\n\n' +
+        '【コーチ思想（必ず反映すること）】\n\n' +
         protocolContent +
         '\n\n---\n\n';
     }
-    // 2. プロンプト用オーバーライド（content/common/prompt.pdf 等。あれば追加）
+    // 2. プロトコル＝ジェネレート（演習ルール・期別・強度・構造の正本）
+    if (rtMenuContent) {
+      systemContent +=
+        '【プロトコル＝ジェネレート（演習内容の質を担保する正本。必ず従うこと）】\n\n' +
+        rtMenuContent +
+        '\n\n---\n\n';
+    }
+    // 3. プロンプト用オーバーライド（content/common/prompt.pdf 等。あれば追加）
     if (promptContent) {
       systemContent +=
         '【追加プロンプト】\n' +
         promptContent +
         '\n\n---\n\n';
     }
-    // 3. 共有参照資料（辞書・実施例）
+    // 4. 共有参照資料（辞書・実施例）※チープ回避のため必須参照
     if (commonContent) {
       systemContent +=
-        '【共有参照資料（内容パターン・実施例・用語）】\n' +
-        '以下の表現・パターン（SKPS, IM Order, Des, Variable, DPS, Ac/CA, Negative split など）を積極的に取り入れ、' +
-        '内容のレパートリーを豊かにしてください。同じ文言の繰り返しを避け、条件に合うバリエーションを選んでください。\n\n' +
+        '【共有参照資料（差別化必須・menu-dictionaryを必ず参照）】\n' +
+        'チープ・汎用表現は禁止。以下の表現・パターン（SKPS, IM Order, Des, Variable, DPS, Ac/CA, Negative split 等）を積極的に使い、' +
+        '種目・期・距離タイプに特化した固有の内容にすること。同じ文言の繰り返しを避け、条件に合うバリエーションを選ぶ。\n\n' +
         commonContent +
         '\n\n---\n\n';
     }
-    // 4. 出力形式・補足ルール（プロトコルに含まれない部分）
+    // 5. ネット検索結果（SERPER_API_KEY が設定されている場合のみ）
+    if (webSearchText) {
+      systemContent += webSearchText + '\n---\n\n';
+    }
+    // 6. 出力形式・補足ルール（上記プロトコルに含まれない部分）
     systemContent += CORE_SYSTEM_PROMPT;
 
     const keys = [
@@ -460,12 +495,12 @@ ${conditionInstructions}
       'main', 'down', 'total', 'intention', 'coachingPoint', 'caution', 'expectedEffect',
     ];
     const DISTANCE_TOLERANCE = 100;
-    const MAX_DISTANCE_RETRIES = 3;
+    const MAX_DISTANCE_RETRIES = 5;
     const openai = new OpenAI({ apiKey });
 
     const doGenerate = async (retryHint?: string, temp?: number): Promise<string | null> => {
       const completion = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model,
         messages: [
           { role: 'system', content: systemContent },
           { role: 'user', content: buildUserPrompt(retryHint) },

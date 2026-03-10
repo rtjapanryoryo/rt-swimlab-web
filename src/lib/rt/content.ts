@@ -14,6 +14,8 @@ const PROJECT_ROOT = process.cwd();
 
 /** プロンプト用ファイル名（common 内で別読み。このファイルは getCommonContent からは除外する） */
 const PROMPT_FILES = ['prompt.pdf', 'prompt.md', 'prompt.txt'];
+/** 設定ファイル（getCommonContent から除外） */
+const CONFIG_FILES = ['web-sources.json'];
 
 async function extractPdfText(fullPath: string): Promise<string> {
   try {
@@ -78,6 +80,7 @@ export async function getCommonContent(): Promise<string> {
       (e) =>
         e.isFile() &&
         !PROMPT_FILES.includes(e.name) &&
+        !CONFIG_FILES.includes(e.name) &&
         ALLOWED_EXT.includes(path.extname(e.name).toLowerCase())
     )
     .map((e) => e.name)
@@ -96,11 +99,20 @@ export async function getCommonContent(): Promise<string> {
 }
 
 /**
- * プロトコル＝ジェネレート（docs/RT_MENU_GENERATION_RULES_JA.md）
- * カスタム作成時にシステムプロンプトの冒頭に注入。思想・ルールの唯一の正本。
+ * コーチ思想（高代コーチ50問インタビュー）
+ * カスタム作成時に思想の土台として注入。
  */
 export async function getProtocolContent(): Promise<string> {
   const fullPath = path.join(PROJECT_ROOT, 'docs', 'COACH_INTERVIEW_50_QA.md');
+  return fs.readFile(fullPath, 'utf-8').catch(() => '');
+}
+
+/**
+ * プロトコル＝ジェネレート（RT_MENU_GENERATION_RULES_JA.md）
+ * 期別ルール・強度・構造・出力形式の正式定義。演習内容の質を担保する正本。
+ */
+export async function getRTMenuProtocolContent(): Promise<string> {
+  const fullPath = path.join(PROJECT_ROOT, 'docs', 'RT_MENU_GENERATION_RULES_JA.md');
   return fs.readFile(fullPath, 'utf-8').catch(() => '');
 }
 

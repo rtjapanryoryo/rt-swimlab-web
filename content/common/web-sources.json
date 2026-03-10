@@ -1,0 +1,25 @@
+{
+  "urls": [
+    {
+      "url": "https://www.usms.org/fitness-and-training/articles-and-videos",
+      "label": "USMS Fitness & Training",
+      "enabled": false
+    },
+    {
+      "url": "https://360swim.com/blog/most-useful-drill-for-each-stroke",
+      "label": "360swim Most Useful Drill Each Stroke",
+      "enabled": false
+    },
+    {
+      "url": "https://swimswam.com/tag/drills/",
+      "label": "SwimSwam Drills",
+      "enabled": false
+    },
+    {
+      "url": "https://www.swimmingworldmagazine.com/news/",
+      "label": "Swimming World News",
+      "enabled": false
+    }
+  ],
+  "note": "enabled: true にしたURLを node scripts/fetch-web-sources.mjs で取得し、content/common/web-sourced.md に保存。カスタム生成時に getCommonContent 経由で読み込まれる。参照したいURLを追加し、enabled: true にしてください。"
+}
