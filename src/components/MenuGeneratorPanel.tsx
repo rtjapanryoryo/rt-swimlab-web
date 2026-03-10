@@ -706,7 +706,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
           {mode === 'quick' && (
             <>
               <h2 className="text-lg font-semibold text-slate-900 mb-4">基本条件（4項目）</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">1. 目的</label>
                   <select value={input.period} onChange={(e) => handleInputChange('period', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
@@ -815,8 +815,8 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
               {customStep === 2 && (
                 <>
                   <h2 className="text-lg font-semibold text-slate-900 mb-4">ステップ2: 練習計画（4項目）</h2>
-                  <p className="text-sm text-slate-600 mb-4">今日の狙いと練習条件を入力してください。</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <p className="text-sm text-slate-600 mb-4">今日の狙いと練習条件を入力してください。距離と時間のバランスで、適切なメニューが設計されます。</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">5. 目的</label>
                       <select value={input.period} onChange={(e) => handleInputChange('period', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
