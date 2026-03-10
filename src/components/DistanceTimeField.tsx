@@ -1,14 +1,14 @@
 'use client';
 
-import { validateDistanceTime, getSuggestedDistanceRange } from '@/lib/rt/distance-time-validation';
-
-const DISTANCE_OPTIONS = ['2000', '3000', '4000', '5000', '6000', '7000', '8000'] as const;
+import { validateDistanceTime, getSuggestedDistanceRange, getDistanceOptionsForType } from '@/lib/rt/distance-time-validation';
 
 export interface DistanceTimeFieldProps {
   distance: string;
   practiceTime: string;
   onDistanceChange: (v: string) => void;
   onPracticeTimeChange: (v: string) => void;
+  /** 距離タイプ（S/M/D）。指定時はそのタイプに合う距離のみ表示 */
+  distanceType?: string;
   /** ラベルプレフィックス（クイック: "距離", カスタム: "7. 距離" 等） */
   distanceLabel?: string;
   practiceTimeLabel?: string;
@@ -25,10 +25,12 @@ export function DistanceTimeField({
   practiceTime,
   onDistanceChange,
   onPracticeTimeChange,
+  distanceType,
   distanceLabel = '距離',
   practiceTimeLabel = '練習時間',
   fullWidth = false,
 }: DistanceTimeFieldProps) {
+  const distanceOptions = getDistanceOptionsForType(distanceType ?? '');
   const validation = distance && practiceTime ? validateDistanceTime(distance, practiceTime) : null;
   const showSuggestion = validation && (validation.status === 'dense' || validation.status === 'not_recommended');
   const rangeHint = practiceTime ? getSuggestedDistanceRange(practiceTime) : null;
@@ -55,7 +57,7 @@ export function DistanceTimeField({
             <label className="block text-sm font-medium text-slate-700 mb-1">{distanceLabel}</label>
             <select value={distance} onChange={(e) => onDistanceChange(e.target.value)} className={fieldClass}>
               <option value="">選択してください</option>
-              {DISTANCE_OPTIONS.map((d) => (
+              {distanceOptions.map((d) => (
                 <option key={d} value={d}>
                   {Number(d).toLocaleString()}m
                 </option>

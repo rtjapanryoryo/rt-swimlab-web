@@ -11,6 +11,7 @@ import { menuTemplates9Fallback } from '@/lib/rt/menu-templates-9-fallback';
 import { useViewMode } from '@/app/viewMode';
 import { MenuSheet } from '@/components/MenuSheet';
 import { DistanceTimeField } from '@/components/DistanceTimeField';
+import { isDistanceValidForType } from '@/lib/rt/distance-time-validation';
 import Link from 'next/link';
 
 /** クイック用テンプレ（API不要・常にメニュー生成可能） */
@@ -136,6 +137,13 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
     setIsInLineBrowser(isLineInAppBrowser());
   }, []);
 
+  // 距離タイプと距離の整合：保存データで無効な組み合わせなら距離をリセット
+  useEffect(() => {
+    if (input.distanceType && input.distance && !isDistanceValidForType(input.distance, input.distanceType)) {
+      setInput((prev) => ({ ...prev, distance: '' }));
+    }
+  }, [input.distanceType, input.distance]);
+
   useEffect(() => {
     setMenuSavedAt(null);
   }, [result, apiMenuText]);
@@ -257,7 +265,14 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
   }, []);
 
   const handleInputChange = (field: keyof TrainingInput, value: string) => {
-    setInput((prev) => ({ ...prev, [field]: value }));
+    setInput((prev) => {
+      const next = { ...prev, [field]: value };
+      // 距離タイプ変更時、現在の距離が無効ならリセット
+      if (field === 'distanceType' && prev.distance && !isDistanceValidForType(prev.distance, value)) {
+        next.distance = '';
+      }
+      return next;
+    });
     setApiError(null);
     setApiErrorKind(null);
   };
@@ -735,6 +750,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                     practiceTime={input.practiceTime}
                     onDistanceChange={(v) => handleInputChange('distance', v)}
                     onPracticeTimeChange={(v) => handleInputChange('practiceTime', v)}
+                    distanceType={input.distanceType}
                     distanceLabel="3. 距離"
                     practiceTimeLabel="4. 練習時間"
                   />
@@ -845,6 +861,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                         practiceTime={input.practiceTime}
                         onDistanceChange={(v) => handleInputChange('distance', v)}
                         onPracticeTimeChange={(v) => handleInputChange('practiceTime', v)}
+                        distanceType={input.distanceType}
                         distanceLabel="7. 距離"
                         practiceTimeLabel="8. 練習時間"
                       />

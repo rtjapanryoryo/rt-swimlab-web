@@ -39,3 +39,11 @@ DATABASE_URL="postgresql://..." npm run db:migrate
 2. サイドバーから「RT GENE PROFILE」をクリック
 3. PDFをアップロード
 4. 一覧から「表示」をクリックしてプレビューを確認
+
+## 4. トラブルシューティング
+
+### PDF が表示されない（500 Internal Server Error）
+
+**原因**: HTTP ヘッダーは ByteString（ASCII のみ）である必要がある。`Content-Disposition` の `filename` に日本語（例: ユーザー名）をそのまま入れると、`TypeError: Cannot convert argument to a ByteString because the character at index N has a value of XXXXX which is greater than 255` が発生する。
+
+**対策**: `src/lib/content-disposition.ts` の `safeContentDisposition()` を使うこと。RFC 5987 に従い、`filename=`（ASCII フォールバック）と `filename*=UTF-8''`（エンコード済み UTF-8）の両方を指定する。他の API でダウンロードファイル名をヘッダーに載せる場合も同様に `safeContentDisposition` を使用すること。

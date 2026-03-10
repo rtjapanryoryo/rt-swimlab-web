@@ -49,7 +49,7 @@ export default function GeneticPage() {
   function fetchProfiles() {
     setLoading(true);
     setError(null);
-    fetch('/api/gene-profiles', { credentials: 'include' })
+    fetch('/api/gene-profiles', { credentials: 'include', cache: 'no-store' })
       .then(async (res) => {
         const data = await parseJsonOrText(res);
         if (!res.ok) {
@@ -85,21 +85,40 @@ export default function GeneticPage() {
     let cancelled = false;
     setPdfLoading(true);
     setPdfBlobUrl(null);
-    fetch(`/api/gene-profiles/${viewingId}/pdf`, { credentials: 'include' })
-      .then((res) => {
-        if (!res.ok) throw new Error('PDF取得失敗');
-        return res.blob();
-      })
-      .then((blob) => {
-        // 200 OK かつ Blob に内容があれば表示（type が空の環境でも動作するよう緩和）
+    setError(null);
+    fetch(`/api/gene-profiles/${viewingId}/pdf`, {
+      credentials: 'include',
+      cache: 'no-store',
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const status = res.status;
+          let msg = 'PDFの表示に失敗しました。';
+          if (status === 401) msg = 'セッションが切れています。再ログインしてください。';
+          else if (status === 404) msg = 'PDFが見つかりません。削除された可能性があります。';
+          else if (status >= 500) msg = 'サーバーエラーが発生しました。しばらく経ってからお試しください。';
+          try {
+            const data = await res.json();
+            if (data._debug) msg += ` (${data._debug})`;
+          } catch {
+            /* レスポンスがJSONでない場合は無視 */
+          }
+          throw new Error(msg);
+        }
+        const blob = await res.blob();
+        // 200 OK なので API は PDF を返している。blob.type は環境により空や不定になるため、size > 0 を信頼する
         if (!cancelled && blob.size > 0) {
           setPdfBlobUrl(URL.createObjectURL(blob));
+          setError(null);
         } else if (!cancelled) {
           setError('PDFの取得に失敗しました。ファイルが空の可能性があります。');
         }
       })
-      .catch(() => {
-        if (!cancelled) setError('PDFの表示に失敗しました。ログイン状態を確認してください。');
+      .catch((e: unknown) => {
+        if (!cancelled) {
+          const msg = e instanceof Error ? e.message : 'PDFの表示に失敗しました。ネットワークを確認してください。';
+          setError(msg);
+        }
       })
       .finally(() => {
         if (!cancelled) setPdfLoading(false);
@@ -155,7 +174,10 @@ export default function GeneticPage() {
     if (!viewingId) return;
     setError(null);
     try {
-      const res = await fetch(`/api/gene-profiles/${viewingId}/pdf`, { credentials: 'include' });
+      const res = await fetch(`/api/gene-profiles/${viewingId}/pdf`, {
+        credentials: 'include',
+        cache: 'no-store',
+      });
       if (!res.ok) {
         throw new Error(res.status >= 500 ? 'PDFの取得に失敗しました。しばらく経ってからお試しください。' : '取得に失敗しました');
       }

@@ -6,11 +6,15 @@
 - 「Cho 200m」「Kick 4×50m」「Pull 4×100m」など中身のない汎用表現のみで構成しない
 - パターン名（SKPS, DPS, Variable 等）を必ず1つ以上入れる
 
-## W-up バリエーション
+## W-up バリエーション（毎回異なるものを選び、同じ並びのコピペ禁止）
+
 - Cho 200m（A1）→ Cho 200m SKPS（A1）→ Cho 100m Build（EN1）
 - Cho 300m（A1）→ Cho 4×50m IM Order（A1）→ Cho 100m Des 25（EN1）
 - Cho 200m（A1）→ Cho 200m Variable（A1）→ Cho 2×50m Ac/CA（EN1）
 - Cho 400m（A1）→ Cho 4×50m DPS（A1）→ Cho 100m Negative split（EN1）
+- Cho 200m（A1）→ Cho 4×50m 1kick/2pull（A1）→ Cho 100m IM（EN1）
+- Cho 300m（A1）→ Cho 2×150m SKPS（A1）→ Cho 100m Des（EN1）
+- Cho 400m（A1）→ Cho 200m mixed（A1）→ Cho 4×50m Variable（EN1）
 
 ## Drill バリエーション（種目別）
 - **Fr**: 片手キャッチアップ 6×50m、左右交互 6×50m、SKPS 8×50m、DPS 6×50m

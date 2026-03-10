@@ -6,7 +6,7 @@ import { getEffectiveUser } from '@/lib/supabase/server';
 import OpenAI from 'openai';
 import { getCommonContent, getProtocolContent, getPromptContent, getRTMenuProtocolContent } from '@/lib/rt/content';
 import { sumMenuDistance } from '@/lib/rt/menu-distance';
-import { validateDistanceTime } from '@/lib/rt/distance-time-validation';
+import { validateDistanceTime, isDistanceValidForType } from '@/lib/rt/distance-time-validation';
 import {
   buildProfessionalSearchQueries,
   searchMultiple,
@@ -90,6 +90,7 @@ const CORE_SYSTEM_PROMPT = `【コーチ思想の核心（50問インタビュ�
 - **Br・FlyのDrillで「左右交互」は使用禁止**。BrはBrキック・Brプル・タイミング等、Flyは片キック・ドルフィンキック等、種目に合ったドリル名を書く。
 - **kick と pull のブロック名は英語で書く**: 「キック」→「Kick」、「プル」→「Pull」とする。例: Kick 4×50m（EN1）、Pull 6×50m（DPS）（EN2）。
 - W-up / Down: 種目は Cho 固定。warmUp と down の文字列に Fr/Fly/Ba/Br/IM を一切含めない。
+- **W-upの多様性（必須）**: 直近で出したものと同じ内容を繰り返さない。毎回「Cho 400m（A1）」のみなどの単一パターン禁止。SKPS、IM Order、Variable、Des、Build、1kick/2pull 等をローテーションし、2〜3段階構成で異なる組み合わせを選ぶ。menu-dictionary の W-up バリエーションから毎回別のものを採用すること。
 - Dive: 期が調整期・テーパー期のときのみ。それ以外の期では空文字。
 - Rest 以外は強度を ①〜⑦ に対応（A1/EN1/EN2 等）で書く。
 - **強度の天井**: 期ごとにメイン・非メインの上限がある。リカバリー**③③**（Mainは③まで、④禁止）、基礎形成④③、発展形成④④、スピード持久⑤④、耐乳酸⑥④、調整⑤④、テーパー④③。これを超えないこと。
@@ -319,6 +320,16 @@ export async function POST(request: NextRequest) {
       condition,
       practiceTime,
     } = body as Record<string, string>;
+
+    // 距離タイプ×距離の整合チェック（S: 2000-6000 / M: 3000-7000 / D: 6000-8000）
+    if (distance && distanceType && !isDistanceValidForType(distance, distanceType)) {
+      return NextResponse.json(
+        {
+          error: '距離と距離タイプの組み合わせが無効です。スプリントは2000-6000m、ミドルは3000-7000m、ディスタンスは6000-8000mの範囲で選択してください。',
+        },
+        { status: 400 }
+      );
+    }
 
     const conditionInstructions = buildConditionInstructions(
       period,

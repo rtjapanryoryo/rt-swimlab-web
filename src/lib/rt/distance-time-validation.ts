@@ -6,7 +6,19 @@
  */
 
 const PRACTICE_TIMES = [60, 90, 120] as const;
-const DISTANCES = [2000, 3000, 4000, 5000, 6000, 7000, 8000] as const;
+const ALL_DISTANCES = [2000, 3000, 4000, 5000, 6000, 7000, 8000] as const;
+
+/**
+ * 距離タイプ別の選択可能な距離範囲（設計: docs/RT_MENU_GENERATION_RULES_JA.md）
+ * - S: 2000〜6000m（スプリントは量より質）
+ * - M: 3000〜7000m（ミドルは中間）
+ * - D: 6000〜8000m（ディスタンスは量を確保）
+ */
+export const DISTANCE_OPTIONS_BY_TYPE: Record<string, readonly number[]> = {
+  S: [2000, 3000, 4000, 5000, 6000],
+  M: [3000, 4000, 5000, 6000, 7000],
+  D: [6000, 7000, 8000],
+};
 
 export type DistanceTimeStatus = 'optimal' | 'feasible' | 'dense' | 'not_recommended';
 
@@ -36,7 +48,7 @@ export function validateDistanceTime(
   if (!distance || !practiceTime || Number.isNaN(dist) || Number.isNaN(time)) {
     return null;
   }
-  if (!DISTANCES.includes(dist as (typeof DISTANCES)[number])) return null;
+  if (!ALL_DISTANCES.includes(dist as (typeof ALL_DISTANCES)[number])) return null;
   if (!PRACTICE_TIMES.includes(time as (typeof PRACTICE_TIMES)[number])) return null;
 
   const density = dist / time;
@@ -103,6 +115,22 @@ export function validateDistanceTime(
   }
 
   return null;
+}
+
+/** 距離タイプに対して選択中の距離が有効か */
+export function isDistanceValidForType(distance: string, distanceType: string): boolean {
+  const dist = parseInt(distance, 10);
+  if (!distance || Number.isNaN(dist)) return false;
+  const opts = distanceType ? DISTANCE_OPTIONS_BY_TYPE[distanceType] : null;
+  if (!opts) return ALL_DISTANCES.includes(dist as (typeof ALL_DISTANCES)[number]);
+  return (opts as number[]).includes(dist);
+}
+
+/** 距離タイプに応じた選択肢（文字列配列）。未指定時は全距離 */
+export function getDistanceOptionsForType(distanceType: string): readonly string[] {
+  const opts = distanceType ? DISTANCE_OPTIONS_BY_TYPE[distanceType] : null;
+  if (!opts) return ALL_DISTANCES.map(String);
+  return opts.map(String);
 }
 
 /** 指定した練習時間で無理のない距離の範囲（目安） */
