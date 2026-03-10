@@ -15,6 +15,8 @@ export default function GeneticPage() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [viewingId, setViewingId] = useState<string | null>(null);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -73,6 +75,40 @@ export default function GeneticPage() {
       setViewingId(profiles[0].id);
     }
   }, [profiles, viewingId]);
+
+  // PDFを fetch で取得し Blob URL にして表示（iframe の認証問題を回避）
+  useEffect(() => {
+    if (!viewingId) {
+      setPdfBlobUrl(null);
+      return;
+    }
+    let cancelled = false;
+    setPdfLoading(true);
+    setPdfBlobUrl(null);
+    fetch(`/api/gene-profiles/${viewingId}/pdf`, { credentials: 'include' })
+      .then((res) => {
+        if (!res.ok) throw new Error('PDF取得失敗');
+        return res.blob();
+      })
+      .then((blob) => {
+        if (!cancelled && blob.type === 'application/pdf') {
+          setPdfBlobUrl(URL.createObjectURL(blob));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setError('PDFの表示に失敗しました。ログイン状態を確認してください。');
+      })
+      .finally(() => {
+        if (!cancelled) setPdfLoading(false);
+      });
+    return () => {
+      cancelled = true;
+      setPdfBlobUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
+    };
+  }, [viewingId]);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -150,6 +186,7 @@ export default function GeneticPage() {
       }
       if (viewingId === id) {
         setViewingId(null);
+        setPdfBlobUrl(null);
       }
       fetchProfiles();
     } catch (e) {
@@ -275,14 +312,22 @@ export default function GeneticPage() {
                   </button>
                 </div>
               </div>
-              {/* PDFビューア（iframeでブラウザネイティブ表示・確実に表示） */}
-              <div className="bg-slate-50/50 rounded-xl border-2 border-slate-200/60 overflow-hidden min-h-[500px] h-[calc(100vh-320px)]">
-                {viewingId ? (
+              {/* PDFビューア（fetch→Blob URL で認証を確実に、表示を安定化） */}
+              <div className="bg-slate-50/50 rounded-xl border-2 border-slate-200/60 overflow-hidden min-h-[500px] h-[calc(100vh-320px)] relative">
+                {pdfLoading ? (
+                  <div className="absolute inset-0 flex items-center justify-center bg-slate-50/80 text-slate-500 text-sm z-10">
+                    PDFを読み込み中...
+                  </div>
+                ) : pdfBlobUrl ? (
                   <iframe
-                    src={`/api/gene-profiles/${viewingId}/pdf`}
+                    src={pdfBlobUrl}
                     title="RT GENE PROFILE"
                     className="w-full h-full min-h-[500px] border-0"
                   />
+                ) : viewingId ? (
+                  <div className="flex items-center justify-center py-24 text-slate-500 text-sm">
+                    PDFの読み込みに失敗しました
+                  </div>
                 ) : (
                   <div className="flex items-center justify-center py-24 text-slate-500 text-sm">
                     読み込み中...

@@ -6,14 +6,14 @@
 /** 1つの文字列から全距離を抽出して合計（本数×距離m / 距離m の複数対応） */
 function sumPartDistances(part: string): number {
   let sum = 0;
-  // 本数×距離m または 距離×本数m（4×50m, 50×4m, 4x50m 等）
-  const cdRegex = /(\d+)\s*[×xX]\s*(\d+)\s*m(?!\w)/g;
+  // 本数×距離m または 距離×本数m（4×50m, 50×4m, 4x50m, 4*50m, 8×25 等）
+  const cdRegex = /(\d+)\s*[×xX*・]\s*(\d+)\s*m?(?!\d)/g;
   for (const m of part.matchAll(cdRegex)) {
     const a = parseInt(m[1], 10);
     const b = parseInt(m[2], 10);
-    sum += a * b; // どちらも本数×距離なので積
+    sum += a * b;
   }
-  // 本数×距離m にマッチした部分を一時置換し、残りの単独距離を拾う
+  // 本数×距離 にマッチした部分を一時置換し、残りの単独距離を拾う
   const withoutCd = part.replace(cdRegex, ' __USED__ ');
   const dRegex = /(\d+)\s*m(?!\w)/g;
   for (const m of withoutCd.matchAll(dRegex)) {

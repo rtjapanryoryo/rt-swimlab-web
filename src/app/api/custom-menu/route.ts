@@ -250,7 +250,7 @@ function buildConditionInstructions(
     `5. 距離タイプ: ${distanceGuide[distanceType] || `距離タイプ=${distanceType}: Mainセットの距離・本数・レストをそれに合わせる。`}`,
     `6. レベル: ${levelGuide[level] || (isMasters ? levelGuide['マスターズ（記録狙い）'] : `レベル=${level}: 育成〜初級は技術・フォーム優先、全国〜代表は量・強度高め。`)}`,
     `7. 状況: ${conditionGuide[condition] || `状況=${condition}: 疲労・コンディションに合わせて強度・量・休息を調整する。`}`,
-    `8. 練習時間: ${timeNum}分。総距離は目標${distance}mに合わせる。レベルと状況で増減。`,
+    `8. 練習時間: ${timeNum}分。総距離は目標${distance}mに必ず合わせる。練習時間より距離を優先し、時間が短くても総距離を削減しない。`,
   ];
   return lines.join('\n');
 }
@@ -337,10 +337,15 @@ export async function POST(request: NextRequest) {
       '4': '④ 強化期 (スピード持久力)', '5': '⑤ 強化期 (耐乳酸)', '6': '⑥ 調整期', '7': '⑦ テーパー期',
     };
 
+    const timeNum = parseInt(practiceTime, 10) || 90;
+    const distPerMin = targetDist != null && timeNum > 0 ? targetDist / timeNum : 0;
+    const isDenseSession = targetDist != null && timeNum > 0 && distPerMin > 100;
+
     const distanceAllocationSection = alloc && targetDist != null
       ? `
 【距離配分（絶対遵守・設計の最優先軸）】
 ★ 目標総距離: **${targetDist}m** ★
+${isDenseSession ? `※${timeNum}分で${targetDist}mは高密度になるが、**距離を絶対優先**。レスト短縮・効率化で対応。総距離を削減してはいけない。\n` : ''}
 以下のブロック別距離を**厳守**すること。各ブロックは必ず「本数×距離m」（例: 4×50m）または「〇〇m」（例: 200m）の形式で書くこと。合計が${targetDist - 100}〜${targetDist + 100}mに収まらないメニューは不合格。
 | ブロック | 必達距離(m) | 設計例（距離は必ず「本数×距離m」または「〇〇m」で書く） |
 | W-up | ${alloc.warmUp} | Cho 200m→Cho 200m→Cho ${Math.max(100, alloc.warmUp - 400)}m 等で合計${alloc.warmUp}m |
@@ -390,9 +395,10 @@ ${distanceAllocationSection}
 【反映ルール】
 ${conditionInstructions}
 
-【出力形式】以下のキーをすべて含むJSONオブジェクト1つのみ。各値は文字列。順序・省略禁止。
+【出力形式】以下のキーをすべて含むJSONオブジェクト1つのみ。順序・省略禁止。
 - main には必ずMainカテゴリを明記すること（ベースメイン／ベストアベレージ／ダイハード／耐乳酸MAX／Standard Main のいずれか）。
 - intention / coachingPoint / caution は必ずこの8条件に合わせてカスタマイズすること。汎用表現のコピペ禁止。
+- **距離紐づき（重要）**: 目標距離指定時は warmUpM, drillM, kickM, pullM, preMainM, mainM, downM を**数値**で必ず出力すること。各ブロックの内容と一致する距離(m)を入れる。これら7つの合計＝目標距離±100m にすること。テキストのパースに依存しないため、この数値で総距離を確定する。
 【intention（今日の狙い）】期・目的・状況・距離タイプ・年齢を反映した2〜4行。このメニュー固有の狙いを具体的に書く。
 【coachingPoint（指導ポイント）】このメニューのDrill/Kick/Pull/Main等に即した箇条書き3つ。
 【caution（注意点）】状況・年齢・疲労・月経期等を反映した箇条書き3つ。
@@ -412,8 +418,16 @@ ${conditionInstructions}
   "intention": "今日の狙い（2〜4行。期・目的・状況・距離タイプ・年齢を反映した、このメニュー固有の狙い）",
   "coachingPoint": "指導ポイント（箇条書き3つ。改行または・で区切り1つに。このメニューのブロックに即した具体的な意識点）",
   "caution": "注意点（箇条書き3つ。改行または・で区切り1つに。状況・年齢・疲労・月経期等を反映した、この選手・この日に必要な注意）",
-  "expectedEffect": "期待効果（2〜3行。このメニューで得られる効果）"
-}${targetDist ? `\n\n**最終確認**: 各ブロックの距離×本数を合計すると必ず${targetDist}mの前後±100mになること。${alloc ? `上記の距離配分表を満たすこと。` : ''}少なければW-up・Kick・Pull・Main等で距離を追加する。` : ''}`;
+  "expectedEffect": "期待効果（2〜3行。このメニューで得られる効果）"${targetDist && alloc ? `,
+  "warmUpM": ${alloc.warmUp},
+  "drillM": ${alloc.drill},
+  "kickM": ${alloc.kick},
+  "pullM": ${alloc.pull},
+  "preMainM": ${alloc.preMain},
+  "mainM": ${alloc.main},
+  "downM": ${alloc.down}
+}` : ''}
+}${targetDist ? `\n\n**最終確認**: warmUpM+drillM+kickM+pullM+preMainM+mainM+downM＝${targetDist}±100m であること。各ブロックのテキスト内容と一致する数値を入れること。${alloc ? `上記の距離配分表を満たすこと。` : ''}` : ''}`;
 
     const serperKey = (process.env.SERPER_API_KEY || '').trim();
     const queries = buildProfessionalSearchQueries({ period, stroke, distanceType });
@@ -451,7 +465,9 @@ ${conditionInstructions}
     // 0. 距離の最優先通知（目標がある場合）
     if (targetDist != null && targetDist >= 2000 && targetDist <= 8000) {
       systemContent +=
-        `【最優先・距離】今回の目標総距離は **${targetDist}m** です。各ブロックは「本数×距離m」（例: 4×50m）または「〇〇m」（例: 200m）の形式で書き、合計を必ず ${targetDist - 100}〜${targetDist + 100}m に収めること。距離不足・超過は不合格。\n\n`;
+        `【最優先・距離】今回の目標総距離は **${targetDist}m** です。
+- **練習時間より距離を絶対優先する**。60分指定でも8000m指定なら総距離は必ず8000m±100m。時間に合わせて距離を削ってはいけない。
+- 各ブロックは「本数×距離m」または「〇〇m」で書き、合計を必ず ${targetDist - 100}〜${targetDist + 100}m に収めること。距離不足のメニューは不合格。\n\n`;
     }
     // 1. コーチ思想（高代コーチ50問インタビュー）
     if (protocolContent) {
@@ -495,7 +511,7 @@ ${conditionInstructions}
       'main', 'down', 'total', 'intention', 'coachingPoint', 'caution', 'expectedEffect',
     ];
     const DISTANCE_TOLERANCE = 100;
-    const MAX_DISTANCE_RETRIES = 5;
+    const MAX_DISTANCE_RETRIES = 8;
     const openai = new OpenAI({ apiKey });
 
     const doGenerate = async (retryHint?: string, temp?: number): Promise<string | null> => {
@@ -512,12 +528,35 @@ ${conditionInstructions}
       return completion.choices[0]?.message?.content?.trim() ?? null;
     };
 
+    const M_KEYS = ['warmUpM', 'drillM', 'kickM', 'pullM', 'preMainM', 'mainM', 'downM'] as const;
+
+    /** 表示用 total 文字列から数値を取り出す（構造化 or パース由来の一貫した値を返す） */
+    const getDisplayedTotal = (r: Record<string, string>): number => {
+      const m = r.total?.match(/[\d,]+/);
+      if (m) {
+        const n = parseInt(m[0].replace(/,/g, ''), 10);
+        if (Number.isFinite(n) && n > 0) return n;
+      }
+      return sumMenuDistance(r);
+    };
+
+    const getTotalFromStructured = (parsed: Record<string, unknown>): number | null => {
+      let sum = 0;
+      for (const k of M_KEYS) {
+        const v = parsed[k];
+        if (typeof v !== 'number' || v < 0 || !Number.isFinite(v)) return null;
+        sum += v;
+      }
+      return sum;
+    };
+
     const parseAndNormalize = (raw: string): Record<string, string> | null => {
       try {
         const parsed = JSON.parse(raw) as Record<string, unknown>;
         if (!keys.every((k) => typeof parsed[k] === 'string')) return null;
-        const result = Object.fromEntries(keys.map((k) => [k, String(parsed[k] ?? '')]));
-        const calculatedTotal = sumMenuDistance(result);
+        const result = Object.fromEntries(keys.map((k) => [k, String(parsed[k] ?? '')])) as Record<string, string>;
+        const structuredTotal = getTotalFromStructured(parsed);
+        const calculatedTotal = structuredTotal ?? sumMenuDistance(result);
         if (calculatedTotal > 0) {
           result.total = `合計距離：${calculatedTotal.toLocaleString()}m`;
         }
@@ -538,7 +577,7 @@ ${conditionInstructions}
       return NextResponse.json({ menu: content, result: null });
     }
 
-    let calculatedTotal = sumMenuDistance(result);
+    let calculatedTotal = getDisplayedTotal(result);
     let retryCount = 0;
 
     while (
@@ -549,17 +588,26 @@ ${conditionInstructions}
       retryCount < MAX_DISTANCE_RETRIES
     ) {
       const diff = calculatedTotal - targetDist;
+      const shortfallRatio = targetDist > 0 && calculatedTotal < targetDist
+        ? Math.round((calculatedTotal / targetDist) * 100)
+        : null;
       const allocStr = alloc
         ? `\n上記の距離配分表を厳守: W-up ${alloc.warmUp}m, Drill ${alloc.drill}m, Kick ${alloc.kick}m, Pull ${alloc.pull}m, Pre-Main ${alloc.preMain}m, Main ${alloc.main}m, Down ${alloc.down}m → 合計=${targetDist}m`
         : '';
-      const retryHint = `【最重要・再生成 #${retryCount + 1}】前回の総距離は${calculatedTotal}mでした。目標は${targetDist}mです。${diff < 0 ? `${Math.abs(diff)}m不足` : `${diff}m超過`}しています。今回**必ず**各ブロックの距離×本数を積み上げて合計が${targetDist - DISTANCE_TOLERANCE}〜${targetDist + DISTANCE_TOLERANCE}mになるように設計してください。${allocStr}\n\n`;
+      const scaleNote = shortfallRatio != null && shortfallRatio < 80
+        ? `前回は目標の約${shortfallRatio}%です。各ブロックを${Math.ceil(100 / shortfallRatio)}倍程度に増やしてください。`
+        : '';
+      const exactAllocHint = alloc && diff < -500
+        ? `\n【数値の直接使用】warmUpM=${alloc.warmUp}, drillM=${alloc.drill}, kickM=${alloc.kick}, pullM=${alloc.pull}, preMainM=${alloc.preMain}, mainM=${alloc.main}, downM=${alloc.down} をそのまま出力し、各ブロックのテキスト内容をこれに合わせて設計すること。`
+        : '';
+      const retryHint = `【最重要・再生成 #${retryCount + 1}】前回の総距離は${calculatedTotal}mでした。目標は${targetDist}mです。${diff < 0 ? `${Math.abs(diff)}m不足` : `${diff}m超過`}しています。${scaleNote}今回**必ず**：①warmUpM+drillM+kickM+pullM+preMainM+mainM+downM＝${targetDist}±100m。②各ブロックのテキスト内容と数値を一致させる。③合計が目標に収まること。${allocStr}${exactAllocHint}\n\n`;
       console.log('[custom-menu] Distance out of range, retry', retryCount + 1, { targetDist, calculatedTotal, diff });
       retryCount++;
-      const retryContent = await doGenerate(retryHint, 0.2);
+      const retryContent = await doGenerate(retryHint, 0.15);
       if (retryContent) {
         const retryResult = parseAndNormalize(retryContent);
         if (retryResult) {
-          const retryTotal = sumMenuDistance(retryResult);
+          const retryTotal = getDisplayedTotal(retryResult);
           if (Math.abs(retryTotal - targetDist) <= DISTANCE_TOLERANCE) {
             result = retryResult;
             calculatedTotal = retryTotal;
@@ -573,7 +621,7 @@ ${conditionInstructions}
 
     // 最終的に範囲外の場合、コーチメモで警告を付与
     if (targetDist != null && targetDist >= 2000 && targetDist <= 8000) {
-      const finalTotal = sumMenuDistance(result);
+      const finalTotal = getDisplayedTotal(result);
       const finalDiff = finalTotal - targetDist;
       if (Math.abs(finalDiff) > DISTANCE_TOLERANCE) {
         const coachNote = `※総距離が目標${targetDist}mより${Math.abs(finalDiff)}m${finalDiff < 0 ? '不足' : '超過'}しています。必要に応じて再生成をお試しください。`;
