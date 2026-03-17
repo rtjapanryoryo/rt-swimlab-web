@@ -514,8 +514,9 @@ ${conditionInstructions}
     // 4. 共有参照資料（辞書・実施例）※チープ回避のため必須参照
     if (commonContent) {
       systemContent +=
-        '【共有参照資料（差別化必須・menu-dictionaryを必ず参照）】\n' +
-        'チープ・汎用表現は禁止。以下の表現・パターン（SKPS, IM Order, Des, Variable, DPS, Ac/CA, Negative split 等）を積極的に使い、' +
+        '【共有参照資料（差別化必須・menu-dictionary と menu-patterns を必ず参照）】\n' +
+        'チープ・汎用表現は禁止。menu-patterns のセット構成・ドリル変形パターンから**必ず1つ以上**を選んで内容に含めること。' +
+        'SKPS, IM Order, Des, Variable, DPS, Ac/CA, Negative split, odd/even 等を積極的に使い、' +
         '種目・期・距離タイプに特化した固有の内容にすること。同じ文言の繰り返しを避け、条件に合うバリエーションを選ぶ。\n\n' +
         commonContent +
         '\n\n---\n\n';

@@ -1,5 +1,9 @@
 # Custom メニュー品質向上・プロポーザル
 
+**実装状況（2025年3月）**: 実装タスク 1〜4 は完了。menu-patterns.md を追加し、プロンプトで必須参照に。
+
+---
+
 ## 現状の課題
 
 1. **カスタム出力が Quick よりチープ**
@@ -65,19 +69,20 @@
 
 ## 実装タスク（優先順）
 
-1. **buildBlockAllocation の調整**
+1. **buildBlockAllocation の調整** ✅ 完了
    - W-up: 12% → 8%、上限 500m
    - 差分を Main にシフト
 
-2. **プロンプトの追加・修正**
+2. **プロンプトの追加・修正** ✅ 完了
    - W-up: 「1〜2セグメントで十分。SKPS/IM Order/Variable 等を必ず含む。距離を稼ぐ目的でセグメントを増やさない」
    - 本数: 「少ない本数×長い距離を優先。50m×20本より 200m×4本、400m×2本」
-   - Quick テンプレの出力例を「参照スタイル」として system に含める（1〜2例）
+   - RT Japan を主軸として参照（rt-japan-practice-samples.md）
 
-3. **menu-dictionary の拡充**
-   - Quick テンプレから抜粋した良い表現を追加
+3. **menu-dictionary の拡充** ✅ 完了
+   - Quick テンプレ・RT Japan から抜粋した良い表現を追加
    - コーチングキュー（｜1-4 Dec、｜good kick）の使用を推奨
+   - **menu-patterns.md** を新規作成（セット構成・ドリル変形パターン辞書）
 
-4. **CORE_SYSTEM_PROMPT の文言更新**
+4. **CORE_SYSTEM_PROMPT の文言更新** ✅ 完了
    - 「チープ禁止」をより具体的に（Quick との比較を明示）
    - ブロック構成の「2〜3段階」を「1〜2セッションで目的を持たせる」に調整（W-up に限定）
