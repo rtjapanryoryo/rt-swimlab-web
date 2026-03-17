@@ -22,13 +22,8 @@ const PERIOD_OPTIONS = [
  */
 export function PurposeField({ value, onChange, itemNumber = '1' }: PurposeFieldProps) {
   return (
-    <div className="relative rounded-2xl border-2 border-teal-300/90 bg-gradient-to-br from-teal-50/80 to-white p-5 sm:p-6 shadow-md shadow-teal-500/10">
-      {/* まずここ・コアであることを示すバッジ */}
-      <div className="absolute -top-2.5 left-4 px-3 py-0.5 rounded-full bg-teal-500 text-white text-xs font-bold tracking-wide shadow-sm">
-        まずここを決める
-      </div>
-
-      <div className="pt-1">
+    <div className="rounded-2xl border-2 border-teal-300/90 bg-gradient-to-br from-teal-50/80 to-white p-5 sm:p-6 shadow-md shadow-teal-500/10">
+      <div>
         <h3 className="text-base font-bold text-slate-800 mb-0.5">
           {itemNumber}. 今日の目的（期）
         </h3>

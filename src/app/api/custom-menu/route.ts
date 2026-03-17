@@ -4,7 +4,7 @@ import path from 'path';
 import { config as loadEnv } from 'dotenv';
 import { getEffectiveUser } from '@/lib/supabase/server';
 import OpenAI from 'openai';
-import { getCommonContent, getProtocolContent, getPromptContent, getRTMenuProtocolContent } from '@/lib/rt/content';
+import { getCommonContent, getProtocolContent, getPromptContent, getRTMenuProtocolContent, getRTJapanPracticeContent } from '@/lib/rt/content';
 import { sumMenuDistance } from '@/lib/rt/menu-distance';
 import { validateDistanceTime, isDistanceValidForType } from '@/lib/rt/distance-time-validation';
 import {
@@ -86,11 +86,11 @@ const CORE_SYSTEM_PROMPT = `【コーチ思想の核心（50問インタビュ�
 - caution（注意点）: 状況（疲労・月経期等）・年齢を必ず反映。フォームを崩さない範囲での取り組みを促す注意を3つ。汎用文禁止。
 
 【「内容」列の必須ルール】
-各セクションに具体的な指示を必ず含めること。**チープ・汎用表現は禁止。差別化要因を必ず入れる。** 共有参照資料（menu-dictionary）のパターン（SKPS, IM Order, Des, Variable, DPS, Ac/CA, Negative split 等）を積極的に使い、種目・期・距離タイプに特化した固有の内容にする。毎回同じメニューにならないよう多様な内容・表現を選ぶ。
+**RT Japan練習内容を主軸とする。** 各セクションにRT Japanレベルの具体性（1〜3:Fin 4〜6:Finなし、Des to fast、25mFast/25mEasy、o:Fast e:Easy、ヘッドアップ、スカーリング、Form & Des 等）を必ず含めること。**チープ・汎用表現（「Cho 200m」「Kick 4×50m」のみ等）は禁止。** menu-dictionary と RT Japan のパターンを積極的に使い、種目・期・距離タイプに特化した固有の内容にする。本数は**少なめ×長い距離**を優先（4×100m、3×200m、2×400m 等）。
 - **Br・FlyのDrillで「左右交互」は使用禁止**。BrはBrキック・Brプル・タイミング等、Flyは片キック・ドルフィンキック等、種目に合ったドリル名を書く。
 - **kick と pull のブロック名は英語で書く**: 「キック」→「Kick」、「プル」→「Pull」とする。例: Kick 4×50m（EN1）、Pull 6×50m（DPS）（EN2）。
 - W-up / Down: 種目は Cho 固定。warmUp と down の文字列に Fr/Fly/Ba/Br/IM を一切含めない。
-- **W-upの多様性（必須）**: 直近で出したものと同じ内容を繰り返さない。毎回「Cho 400m（A1）」のみなどの単一パターン禁止。SKPS、IM Order、Variable、Des、Build、1kick/2pull 等をローテーションし、2〜3段階構成で異なる組み合わせを選ぶ。menu-dictionary の W-up バリエーションから毎回別のものを採用すること。
+- **W-upの簡潔さ（必須）**: W-up は「ほぐし」が目的。**1〜2セグメントで十分**。SKPS、IM Order、Variable、Des、Build 等を必ず1つ含む。距離稼ぎでセグメントを増やさない。例: Cho 400m（A1）、Cho 200m SKPS（A1）→ Cho 200m Build（EN1）。menu-dictionary の W-up バリエーションから選ぶ。
 - Dive: 期が調整期・テーパー期のときのみ。それ以外の期では空文字。
 - Rest 以外は強度を ①〜⑦ に対応（A1/EN1/EN2 等）で書く。
 - **強度の天井**: 期ごとにメイン・非メインの上限がある。リカバリー**③③**（Mainは③まで、④禁止）、基礎形成④③、発展形成④④、スピード持久⑤④、耐乳酸⑥④、調整⑤④、テーパー④③。これを超えないこと。
@@ -115,10 +115,10 @@ Pre-Main は Main を最大化するための橋渡し。**Pre-Main は必ず Ma
 各ブロックの距離単位は25m・50mに限定しない。100m、200m、400m、800mなど、目的・期・総距離に応じて柔軟に使い分ける。例: Kick 4×100m、Pull 3×200m、Main 4×400m、Main 2×800m等。**目標7000m以上では特に100m・200m・400m単位を積極的に使い、総距離に確実に届くこと。**
 
 【ブロックの複数構成（必須）】
-- W-up: 2〜3段階に分けた構成。距離×本数×セットを再確認。
-- Kick: 発展形成期以降は2構成
-- Pull: Fr中心で2構成。**効率づくりを優先**（Swim寄りにしない）。フォームと出力の安定が目的。
-- Main: 基礎形成期以降は Pre-Main を含めて3段階程度
+- W-up: **1〜2セグメント**。距離稼ぎ目的で複数に分けない。SKPS/IM/Variable等を必ず含む。
+- Kick: 発展形成期以降は2構成。**少ない本数×長い距離**を優先（例: 4×100m、4×200m）。
+- Pull: Fr中心で2構成。**効率づくりを優先**（Swim寄りにしない）。200m・400m単位を積極的に。
+- Main: 基礎形成期以降は Pre-Main を含めて3段階程度。50m×20本より 100m×8本、200m×4本 等を優先。
 
 【ブロック間の連動（内容の一貫性）】
 各ブロックはバラバラではなく、Main に向けた流れで設計する。W-upで全身をほぐす→Drillで今日の技術テーマを入れる→Kickで下半身の土台→Pullで効率づくり→Pre-MainでMain−1強度のリハーサル→Mainで本題。この順序で「次のブロックにつながる」ように内容を選ぶこと。
@@ -142,20 +142,21 @@ const REQUIRED_KEYS: { key: string; label: string }[] = [
 /** 目標距離に基づくブロック配分を算出（50m単位で丸め、合計が目標に一致） */
 function buildBlockAllocation(targetDist: number): { warmUp: number; drill: number; kick: number; pull: number; preMain: number; main: number; down: number } {
   const round50 = (n: number) => Math.round(n / 50) * 50;
-  // 割合: W-up 12%, Drill 12%, Kick 12%, Pull 17%, Pre-Main 12%, Main 33%, Down 5%
-  const wu = round50(targetDist * 0.12);
+  // W-up: 8%、上限500m（過剰防止・Quickテンプレは200–600m程度）
+  // Drill 12%, Kick 12%, Pull 17%, Pre-Main 12%, Main 残り, Down 5%
+  const wuRaw = round50(targetDist * 0.08);
+  const wu = Math.min(Math.max(200, wuRaw), 500);
   const dr = round50(targetDist * 0.12);
   const kk = round50(targetDist * 0.12);
   const pl = round50(targetDist * 0.17);
   const pm = round50(targetDist * 0.12);
   const dn = round50(targetDist * 0.05);
-  const main = Math.max(round50(targetDist * 0.30), 400); // Main は最低400m
+  const main = Math.max(round50(targetDist * 0.32), 400); // W-up減らした分を Main にシフト
   let sum = wu + dr + kk + pl + pm + main + dn;
   const diff = targetDist - sum;
-  // 差分は Main で調整（±200m程度まで）
   const mainAdjusted = Math.max(400, main + (Math.abs(diff) <= 250 ? diff : diff > 0 ? 200 : -200));
   return {
-    warmUp: Math.max(200, wu),
+    warmUp: wu,
     drill: Math.max(150, dr),
     kick: Math.max(150, kk),
     pull: Math.max(200, pl),
@@ -364,7 +365,7 @@ export async function POST(request: NextRequest) {
 【最重要・距離は変更禁止】以下の数値を**そのまま**warmUpM, drillM, kickM, pullM, preMainM, mainM, downM に出力すること。推測や調整をしてはいけない。
 | warmUpM | drillM | kickM | pullM | preMainM | mainM | downM | 合計 |
 | ${alloc.warmUp} | ${alloc.drill} | ${alloc.kick} | ${alloc.pull} | ${alloc.preMain} | ${alloc.main} | ${alloc.down} | **${targetDist}m** |
-各ブロックのテキスト（warmUp, drill, kick...）は、上記の距離に**届くまで**セグメントを増やすこと。「少なめでよい」は禁止。例: W-upが${alloc.warmUp}mなら、Cho 200m→Cho 200m だけでは不足。合計${alloc.warmUp}mになるよう追加（例: Cho 200m→Cho 200m→Cho ${Math.max(150, alloc.warmUp - 400)}m等）。
+各ブロックのテキストは上記の距離に届くこと。**ただし W-up は1〜2セグメントに抑え、距離稼ぎで細かく分けない。** 距離を満たすには本数を増やすより**距離単位を大きく**する（例: 50m×20本より 200m×4本、400m×2本）。W-up例: Cho ${alloc.warmUp}m（A1）、または Cho 200m SKPS（A1）→ Cho ${Math.max(200, alloc.warmUp - 200)}m Build（EN1）。
 ${isDenseSession ? `※${timeNum}分で${targetDist}mは高密度。距離を絶対優先。レスト短縮で対応。\n` : ''}
 【距離未達時の積み増し先】${{
       '1': '①リカバリー: W-up・Pull',
@@ -413,10 +414,10 @@ ${conditionInstructions}
 【expectedEffect】このメニューで得られる効果を2〜3行で。
 {
   "purpose": "【目的】1行で明確に（目的・期・状況を反映）",
-  "warmUp": "2〜3段階。**複数内容を1行にまとめない。** 距離は必ず「本数×距離m」または「〇〇m」で書く。例: Cho 200m（A1）→ Cho 200m SKPS（A1）→ Cho 100m Build（EN1）。上記W-up目標距離を満たすこと。",
-  "drill": "ドリル名 本数×距離m（内容）。**Drill目標距離を満たす**。Fr/Baは片手・左右交互可。**Br/Flyは「左右交互」禁止**。Br例: Brキックドリル 6×50m（フィン）、Fly例: 片キック 6×50m",
-  "kick": "発展形成期以降は2構成。**複数内容を1行にまとめない。** 強度が変わるごとに「→」でセッション分け。例: Kick 4×50m（Des）（EN1）→ Kick 4×50m（Fins）（EN2）。Kick目標距離を満たすこと。",
-  "pull": "Pull 2構成。Fr中心で効率づくり。**複数内容を1行にまとめない。** 強度が変わるごとに「→」でセッション分け。例: Pull Fr 4×50m（DPS）（EN1）→ Pull Fr 4×100m（EN2）。Pull目標距離を満たすこと。",
+  "warmUp": "**1〜2セグメント**。SKPS/IM Order/Variable等を必ず含む。例: Cho 400m（A1）、または Cho 200m SKPS（A1）→ Cho 200m Build（EN1）。上記W-up目標距離を満たすこと。距離稼ぎで3つ以上に分けない。",
+  "drill": "**具体的ドリル名** 本数×距離m（内容）。例: Cho S1 drill 8×50m（EN1）、IM Order 8×50m（EN1）、Brキックドリル 6×50m（フィン）。**Drill目標距離を満たす**。Br/Flyは「左右交互」禁止。",
+  "kick": "発展形成期以降は2構成。Des、Fins、DPS等のパターン名を含む。**4×100m、4×200m 等の長距離セットを優先**。例: Kick 4×100m（Des）（EN1）→ Kick 4×100m（Fins）（EN2）。Kick目標距離を満たす。",
+  "pull": "Pull 2構成。Fr中心。**4×100m、3×200m、3×400m 等の長距離を優先**。DPS、Variable、Negative split を内容に含める。例: Pull Fr 4×100m（DPS）（EN1）→ Pull Fr 3×200m（EN2）。Pull目標距離を満たす。",
   "preMain": "Pre-Main 本数×距離m（強度）。**Pre-Main目標距離を満たす**。Mainより一段階抑えた橋渡し。例: Pre-Main 4×50m（EN2）",
   "dive": "Dive 本数×距離m（A1）。不要時は空文字",
   "rest": "Rest / Free time（5~10min）。不要時は空文字",
@@ -442,6 +443,7 @@ ${conditionInstructions}
 
     let protocolContent = '';
     let rtMenuContent = '';
+    let rtJapanContent = '';
     let promptContent = '';
     let commonContent = '';
     let webSearchText = '';
@@ -449,9 +451,10 @@ ${conditionInstructions}
     const contentPromise = Promise.all([
       getProtocolContent(),
       getRTMenuProtocolContent(),
+      getRTJapanPracticeContent(),
       getPromptContent(),
       getCommonContent(),
-    ]).then(([a, b, c, d]) => ({ protocolContent: a, rtMenuContent: b, promptContent: c, commonContent: d }));
+    ]).then(([a, b, c, d, e]) => ({ protocolContent: a, rtMenuContent: b, rtJapanContent: c, promptContent: d, commonContent: e }));
 
     const searchPromise =
       serperKey && queries.length > 0
@@ -462,6 +465,7 @@ ${conditionInstructions}
       const [contentResult, searchResult] = await Promise.all([contentPromise, searchPromise]);
       protocolContent = contentResult.protocolContent;
       rtMenuContent = contentResult.rtMenuContent;
+      rtJapanContent = contentResult.rtJapanContent;
       promptContent = contentResult.promptContent;
       commonContent = contentResult.commonContent;
       webSearchText = searchResult;
@@ -489,6 +493,15 @@ ${conditionInstructions}
       systemContent +=
         '【プロトコル＝ジェネレート（演習内容の質を担保する正本。必ず従うこと）】\n\n' +
         rtMenuContent +
+        '\n\n---\n\n';
+    }
+    // 2.5. RT Japan 練習内容（メニュー作成の主軸・最優先参照）
+    if (rtJapanContent) {
+      systemContent +=
+        '【RT Japan 練習内容（メニュー作成の主軸。この内容を最優先で参照すること）】\n\n' +
+        '高城コーチ作成のRT Japan練習メニュー（強化選手向け・量的ハード期・質的ハード期）を主軸とする。' +
+        '以下のパターン・意図の書き方を必ず反映し、同レベルの具体性でメニューを生成すること。\n\n' +
+        rtJapanContent +
         '\n\n---\n\n';
     }
     // 3. プロンプト用オーバーライド（content/common/prompt.pdf 等。あれば追加）

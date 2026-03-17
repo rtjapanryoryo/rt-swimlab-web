@@ -133,6 +133,54 @@ export function getDistanceOptionsForType(distanceType: string): readonly string
   return opts.map(String);
 }
 
+/**
+ * Quick モード用：距離タイプ × 練習時間で絞った距離選択肢（「距離の目安」）
+ * テンプレのカバー範囲と密度（m/分）を考慮。Custom より選択肢を少なくする。
+ */
+export const QUICK_DISTANCE_OPTIONS: Record<
+  string,
+  Record<string, readonly number[]>
+> = {
+  S: {
+    '60': [2000, 3000],
+    '90': [2000, 3000],
+    '120': [2000, 3000],
+  },
+  M: {
+    '60': [3000, 4000],
+    '90': [3000, 4000, 5000],
+    '120': [3000, 4000, 5000],
+  },
+  D: {
+    '60': [4000],
+    '90': [4000, 5000],
+    '120': [4000, 5000],
+  },
+};
+
+/** Quick モードで距離タイプ・練習時間から選択肢を取得 */
+export function getQuickDistanceOptions(
+  distanceType: string,
+  practiceTime: string
+): readonly string[] {
+  const typeMap = (distanceType === 'S' || distanceType === 'M' || distanceType === 'D')
+    ? QUICK_DISTANCE_OPTIONS[distanceType]
+    : null;
+  const opts = typeMap?.[practiceTime];
+  if (!opts) return [];
+  return opts.map(String);
+}
+
+/** Quick モードで距離が有効か（距離タイプ × 練習時間の組み合わせ） */
+export function isQuickDistanceValid(
+  distance: string,
+  distanceType: string,
+  practiceTime: string
+): boolean {
+  const opts = getQuickDistanceOptions(distanceType, practiceTime);
+  return opts.includes(distance);
+}
+
 /** 指定した練習時間で無理のない距離の範囲（目安） */
 export function getSuggestedDistanceRange(practiceTime: string): { min: number; max: number; label: string } | null {
   const time = parseInt(practiceTime, 10);

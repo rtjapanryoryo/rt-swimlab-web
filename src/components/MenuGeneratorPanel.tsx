@@ -12,7 +12,7 @@ import { useViewMode } from '@/app/viewMode';
 import { MenuSheet } from '@/components/MenuSheet';
 import { PracticeVolumeField } from '@/components/PracticeVolumeField';
 import { PurposeField } from '@/components/PurposeField';
-import { isDistanceValidForType } from '@/lib/rt/distance-time-validation';
+import { isDistanceValidForType, isQuickDistanceValid } from '@/lib/rt/distance-time-validation';
 import Link from 'next/link';
 
 /** クイック用テンプレ（API不要・常にメニュー生成可能） */
@@ -138,12 +138,18 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
     setIsInLineBrowser(isLineInAppBrowser());
   }, []);
 
-  // 距離タイプと距離の整合：保存データで無効な組み合わせなら距離をリセット
+  // 距離の整合：無効な組み合わせなら距離をリセット
+  // Quick = 距離タイプ×練習時間、Custom = 距離タイプのみ
   useEffect(() => {
-    if (input.distanceType && input.distance && !isDistanceValidForType(input.distance, input.distanceType)) {
+    if (!input.distance) return;
+    const valid =
+      mode === 'quick'
+        ? isQuickDistanceValid(input.distance, input.distanceType, input.practiceTime)
+        : isDistanceValidForType(input.distance, input.distanceType);
+    if (!valid) {
       setInput((prev) => ({ ...prev, distance: '' }));
     }
-  }, [input.distanceType, input.distance]);
+  }, [mode, input.distanceType, input.distance, input.practiceTime]);
 
   useEffect(() => {
     setMenuSavedAt(null);
@@ -268,9 +274,14 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
   const handleInputChange = (field: keyof TrainingInput, value: string) => {
     setInput((prev) => {
       const next = { ...prev, [field]: value };
-      // 距離タイプ変更時、現在の距離が無効ならリセット
-      if (field === 'distanceType' && prev.distance && !isDistanceValidForType(prev.distance, value)) {
-        next.distance = '';
+      const nextType = field === 'distanceType' ? value : prev.distanceType;
+      const nextTime = field === 'practiceTime' ? value : prev.practiceTime;
+      if (prev.distance) {
+        const valid =
+          mode === 'quick'
+            ? isQuickDistanceValid(prev.distance, nextType, nextTime)
+            : isDistanceValidForType(prev.distance, nextType);
+        if (!valid) next.distance = '';
       }
       return next;
     });
@@ -736,6 +747,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                   onDistanceChange={(v) => handleInputChange('distance', v)}
                   onPracticeTimeChange={(v) => handleInputChange('practiceTime', v)}
                   itemNumberPrefix="2."
+                  mode="quick"
                 />
               </div>
               <div className="mt-6">

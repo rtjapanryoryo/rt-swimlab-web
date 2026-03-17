@@ -16,6 +16,8 @@ const PROJECT_ROOT = process.cwd();
 const PROMPT_FILES = ['prompt.pdf', 'prompt.md', 'prompt.txt'];
 /** 設定ファイル（getCommonContent から除外） */
 const CONFIG_FILES = ['web-sources.json'];
+/** 別途優先読み込みするファイル（getCommonContent から除外） */
+const PRIORITY_CONTENT_FILES = ['rt-japan-practice-samples.md'];
 
 async function extractPdfText(fullPath: string): Promise<string> {
   try {
@@ -81,6 +83,7 @@ export async function getCommonContent(): Promise<string> {
         e.isFile() &&
         !PROMPT_FILES.includes(e.name) &&
         !CONFIG_FILES.includes(e.name) &&
+        !PRIORITY_CONTENT_FILES.includes(e.name) &&
         ALLOWED_EXT.includes(path.extname(e.name).toLowerCase())
     )
     .map((e) => e.name)
@@ -113,6 +116,15 @@ export async function getProtocolContent(): Promise<string> {
  */
 export async function getRTMenuProtocolContent(): Promise<string> {
   const fullPath = path.join(PROJECT_ROOT, 'docs', 'RT_MENU_GENERATION_RULES_JA.md');
+  return fs.readFile(fullPath, 'utf-8').catch(() => '');
+}
+
+/**
+ * RT Japan 練習内容（高城コーチ作成メニュー）
+ * カスタム生成の主軸。量的ハード期・質的ハード期のパターン・意図を参照。
+ */
+export async function getRTJapanPracticeContent(): Promise<string> {
+  const fullPath = path.join(PROJECT_ROOT, 'content', 'common', 'rt-japan-practice-samples.md');
   return fs.readFile(fullPath, 'utf-8').catch(() => '');
 }
 

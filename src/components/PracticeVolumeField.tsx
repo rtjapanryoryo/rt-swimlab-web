@@ -1,6 +1,11 @@
 'use client';
 
-import { validateDistanceTime, getSuggestedDistanceRange, getDistanceOptionsForType } from '@/lib/rt/distance-time-validation';
+import {
+  validateDistanceTime,
+  getSuggestedDistanceRange,
+  getDistanceOptionsForType,
+  getQuickDistanceOptions,
+} from '@/lib/rt/distance-time-validation';
 
 const DISTANCE_TYPE_LABELS: Record<string, string> = {
   S: 'S（スプリント）',
@@ -14,6 +19,13 @@ const DISTANCE_TYPE_RANGES: Record<string, string> = {
   D: '6,000〜8,000m',
 };
 
+/** Quick モード用：距離タイプ×練習時間で絞った範囲の説明 */
+const QUICK_DISTANCE_TYPE_RANGES: Record<string, Record<string, string>> = {
+  S: { '': '2,000〜3,000m', '60': '2,000〜3,000m', '90': '2,000〜3,000m', '120': '2,000〜3,000m' },
+  M: { '': '3,000〜5,000m', '60': '3,000〜4,000m', '90': '3,000〜5,000m', '120': '3,000〜5,000m' },
+  D: { '': '4,000〜5,000m', '60': '4,000m', '90': '4,000〜5,000m', '120': '4,000〜5,000m' },
+};
+
 export interface PracticeVolumeFieldProps {
   distanceType: string;
   distance: string;
@@ -23,6 +35,8 @@ export interface PracticeVolumeFieldProps {
   onPracticeTimeChange: (v: string) => void;
   /** クイック: "2." / カスタム: "5." 等、前の項目番号 */
   itemNumberPrefix?: string;
+  /** quick: 距離タイプ×練習時間で絞った選択肢。custom: 全距離タイプ別選択肢 */
+  mode?: 'quick' | 'custom';
 }
 
 /**
@@ -37,11 +51,23 @@ export function PracticeVolumeField({
   onDistanceChange,
   onPracticeTimeChange,
   itemNumberPrefix = '',
+  mode = 'custom',
 }: PracticeVolumeFieldProps) {
-  const distanceOptions = getDistanceOptionsForType(distanceType ?? '');
+  const isQuick = mode === 'quick';
+  const distanceOptions = isQuick
+    ? getQuickDistanceOptions(distanceType ?? '', practiceTime ?? '')
+    : getDistanceOptionsForType(distanceType ?? '');
+  const distanceSelectDisabled = isQuick
+    ? !distanceType || !practiceTime
+    : !distanceType;
   const validation = distance && practiceTime ? validateDistanceTime(distance, practiceTime) : null;
-  const showSuggestion = validation && (validation.status === 'dense' || validation.status === 'not_recommended');
+  const showSuggestion =
+    validation && (validation.status === 'dense' || validation.status === 'not_recommended');
   const rangeHint = practiceTime ? getSuggestedDistanceRange(practiceTime) : null;
+  const rangeLabel =
+    isQuick && distanceType
+      ? QUICK_DISTANCE_TYPE_RANGES[distanceType]?.[practiceTime || ''] ?? DISTANCE_TYPE_RANGES[distanceType]
+      : DISTANCE_TYPE_RANGES[distanceType];
 
   const handleApplySuggestion = () => {
     if (validation?.suggestedPracticeTime) {
@@ -73,7 +99,7 @@ export function PracticeVolumeField({
             {n1} 距離タイプ
             {distanceType && (
               <span className="ml-2 text-xs font-normal text-cyan-600">
-                → {DISTANCE_TYPE_RANGES[distanceType]}
+                → {rangeLabel}
               </span>
             )}
           </label>
@@ -97,15 +123,21 @@ export function PracticeVolumeField({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">{n2} 距離</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              {n2} 距離{isQuick && '（目安）'}
+            </label>
             <select
               value={distance}
               onChange={(e) => onDistanceChange(e.target.value)}
               className={fieldClass}
-              disabled={!distanceType}
+              disabled={distanceSelectDisabled}
             >
               <option value="">
-                {distanceType ? '選択してください' : '先に距離タイプを選択'}
+                {distanceSelectDisabled
+                  ? isQuick
+                    ? '距離タイプと練習時間を先に選択'
+                    : '先に距離タイプを選択'
+                  : '選択してください'}
               </option>
               {distanceOptions.map((d) => (
                 <option key={d} value={d}>
