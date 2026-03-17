@@ -135,14 +135,17 @@ function numOfStep(step: number): string {
 /**
  * 1セット距離×強度ステップから適切なレスト目安（秒）を計算し文字列で返す。
  * 完全にプログラム側で決定するため LLM に依存しない → 再現性保証。
+ * levelKey: 初級は+10秒（体力回復・怪我防止）
  */
-function computeRestHint(mPerSet: number, intensityStep: number): string {
+function computeRestHint(mPerSet: number, intensityStep: number, levelKey?: LevelKey): string {
   const byStep: Record<number, number> = { 1: 15, 2: 15, 3: 20, 4: 30, 5: 45, 6: 60, 7: 90 };
   let rest = byStep[Math.max(1, Math.min(7, intensityStep))] ?? 30;
   // 距離が長いほど絶対タイムが伸びるので休息も追加
   if (mPerSet >= 400) rest += 30;
   else if (mPerSet >= 200) rest += 20;
   else if (mPerSet >= 100) rest += 10;
+  // 初級は追加レスト（体力回復・安全確保）
+  if (levelKey === 'beginner') rest += 10;
   if (rest < 60) return `${rest}sec`;
   const mins = Math.floor(rest / 60);
   const secs = rest % 60;
@@ -242,18 +245,31 @@ interface BlockAlloc {
 }
 
 /**
+ * レベル別の距離配分調整（パーセンテージ差分）
+ * - 初級: ドリル・キック比率を増やし技術習得時間を確保 → main が減る
+ * - 上級: ドリル・キックを若干削ってメイン比率を上げる → 実践練習重視
+ * intermediate は調整なし（ALLOC_CONFIG のデフォルト値が基準）
+ */
+const LEVEL_ALLOC_DELTA: Record<LevelKey, { drill: number; kick: number }> = {
+  beginner:     { drill: +0.04, kick: +0.03 }, // +7% 技術 → main -7%
+  intermediate: { drill: 0,     kick: 0     },
+  advanced:     { drill: -0.02, kick: -0.01 }, // -3% 技術 → main +3%
+};
+
+/**
  * 各ブロックの距離配分を算出。main = targetDist - sum(others) で算術保証。
  * main が unit の倍数にならない場合、pull を ±unit 調整して整合させる。
  */
-function allocateBlocks(targetDist: number, distanceType: 'S' | 'M' | 'D'): BlockAlloc {
+function allocateBlocks(targetDist: number, distanceType: 'S' | 'M' | 'D', levelKey: LevelKey = 'intermediate'): BlockAlloc {
   const cfg = ALLOC_CONFIG[distanceType];
+  const delta = LEVEL_ALLOC_DELTA[levelKey];
   const { unit } = cfg;
 
   const r = (pct: number) => roundToUnit(targetDist * pct, unit);
 
   let warmUp  = Math.min(Math.max(r(cfg.wupPct),   cfg.wupMin),   cfg.wupMax);
-  let drill   = Math.max(r(cfg.drillPct),   unit * 2);
-  let kick    = Math.max(r(cfg.kickPct),    unit * 2);
+  let drill   = Math.max(r(cfg.drillPct + delta.drill),   unit * 2);
+  let kick    = Math.max(r(cfg.kickPct  + delta.kick),    unit * 2);
   let pull    = Math.max(r(cfg.pullPct),    unit * 2);
   let preMain = Math.max(r(cfg.preMainPct), unit * 1);
   let down    = Math.min(Math.max(r(cfg.downPct), cfg.downMin), cfg.downMax);
@@ -527,7 +543,9 @@ function getPatternPool(
     case 'pull':
       return PULL_POOLS[lk];
     case 'preMain':
-      // preMainはレベル問わず同一（期別のみ）
+      // preMain: レベルによって難易度を変える
+      if (lk === 'beginner')     return ['Des（フォーム確認）', 'Build（ペースを上げる）', 'Easy → Build'];
+      if (lk === 'advanced')     return ['Des（レースペース確認）', 'Negative split', 'Build up → Fast', 'レースペース @rest'];
       return ['Des（レースペース確認）', 'Negative split', 'レースペース', 'Build up'];
     case 'main': {
       let cat: string;
@@ -578,6 +596,7 @@ function buildBlockSpec(
   twoSegments?: boolean,
 ): BlockSpec {
   const lm = getLevelModifiers(level);
+  const lk = lm.key;
   const needsTwoSeg = twoSegments ?? (['kick', 'pull'].includes(blockType) && parseInt(period) >= 3);
   const structs = findSetStructures(targetM, blockType, distanceType, needsTwoSeg, lm.preferSmallSets);
   const patternPool = getPatternPool(blockType, period, stroke, level);
@@ -594,7 +613,7 @@ function buildBlockSpec(
         intensity: labelOfStep(intensityStep),
         intensityNum: numOfStep(intensityStep),
         patternPool,
-        restHint: computeRestHint(seg.mPerSet, intensityStep),
+        restHint: computeRestHint(seg.mPerSet, intensityStep, lk),
       }],
       totalM: actualM,
     };
@@ -612,13 +631,13 @@ function buildBlockSpec(
         sets: structs[0].sets, mPerSet: structs[0].mPerSet, totalM: seg1Actual,
         intensity: labelOfStep(intensityStep), intensityNum: numOfStep(intensityStep),
         patternPool: patternPool.slice(0, 2),
-        restHint: computeRestHint(structs[0].mPerSet, intensityStep),
+        restHint: computeRestHint(structs[0].mPerSet, intensityStep, lk),
       },
       {
         sets: structs[1].sets, mPerSet: structs[1].mPerSet, totalM: seg2Actual,
         intensity: labelOfStep(step2), intensityNum: numOfStep(step2),
         patternPool: patternPool.slice(2, 4).length ? patternPool.slice(2, 4) : patternPool.slice(0, 2),
-        restHint: computeRestHint(structs[1].mPerSet, step2),
+        restHint: computeRestHint(structs[1].mPerSet, step2, lk),
       },
     ],
     totalM: seg1Actual + seg2Actual,
@@ -638,7 +657,8 @@ export function generateMenuSkeleton(input: TrainingInput): MenuSkeleton {
     input.period, ageNum, input.condition, input.level,
   );
 
-  const alloc = allocateBlocks(targetDist, dt);
+  const lk = getLevelKey(input.level);
+  const alloc = allocateBlocks(targetDist, dt, lk);
 
   // 合計検証（バグ検出用）
   const allocTotal = alloc.warmUp + alloc.drill + alloc.kick + alloc.pull + alloc.preMain + alloc.main + alloc.down;
@@ -690,10 +710,41 @@ export function generateMenuSkeleton(input: TrainingInput): MenuSkeleton {
     }
   }
 
+  /**
+   * Main の2セグメント分割しきい値（レベル別）
+   * - 上級: 期③以上で分割（早期から強度変化に慣らす）
+   * - 中級: 期④以上で分割（現行通り）
+   * - 初級: 常に1セグメント（シンプルな構成で集中）
+   */
+  const mainTwoSeg = lk === 'advanced'
+    ? parseInt(input.period) >= 3
+    : lk === 'intermediate'
+      ? parseInt(input.period) >= 4
+      : false; // beginner: never split
+
   const main = buildBlockSpec(
     adjustedExactMain, 'main', dt, mainStep, input.period, input.stroke, level,
-    parseInt(input.period) >= 4,
+    mainTwoSeg,
   );
+
+  /**
+   * hasDive: ダイブ練習の対象レベル
+   * - 初級: なし（ダイブ未習得・安全優先）
+   * - 中級: 期⑥⑦のみ（調整・テーパー期）
+   * - 上級: 期⑤⑥⑦（強化・調整・テーパー）
+   */
+  const hasDive = lk === 'beginner' ? false
+    : lk === 'advanced' ? ['5', '6', '7'].includes(input.period)
+    : ['6', '7'].includes(input.period);
+
+  /**
+   * hasRest: 休憩時間の挿入
+   * - 初級: 常に挿入（体力回復・安全確保）
+   * - 中級/上級: 疲労状況または高強度期（期④⑤）のみ
+   */
+  const hasRest = lk === 'beginner'
+    ? true
+    : input.condition.includes('疲労') || ['4', '5'].includes(input.period);
 
   return {
     input,
@@ -702,8 +753,8 @@ export function generateMenuSkeleton(input: TrainingInput): MenuSkeleton {
 
     warmUp, drill, kick, pull, preMain, main, down: adjustedDown,
 
-    hasDive: ['6', '7'].includes(input.period),
-    hasRest: input.condition.includes('疲労') || ['4', '5'].includes(input.period),
+    hasDive,
+    hasRest,
 
     totalM: targetDist,
 
