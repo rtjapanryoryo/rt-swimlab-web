@@ -8,6 +8,27 @@ type MenuLog = {
   id: string;
   source: string;
   created_at: string;
+  input?: {
+    period?: string;
+    stroke?: string;
+    distance?: string;
+    distanceType?: string;
+    level?: string;
+  };
+};
+
+const PERIOD_SHORT: Record<string, string> = {
+  '1': '① リカバリー', '2': '② 基礎形成', '3': '③ 発展形成',
+  '4': '④ 強化(SL)', '5': '⑤ 強化(AN)', '6': '⑥ 調整', '7': '⑦ テーパー',
+};
+const PERIOD_COLOR: Record<string, string> = {
+  '1': 'bg-slate-100 text-slate-600',
+  '2': 'bg-blue-50 text-blue-700',
+  '3': 'bg-teal-50 text-teal-700',
+  '4': 'bg-orange-50 text-orange-700',
+  '5': 'bg-red-50 text-red-700',
+  '6': 'bg-violet-50 text-violet-700',
+  '7': 'bg-amber-50 text-amber-700',
 };
 
 export function MenuLogSection() {
@@ -107,20 +128,42 @@ export function MenuLogSection() {
             </Link>
           </div>
         ) : (
-          <div className="max-h-[280px] overflow-y-auto space-y-1.5">
-              {menus.map((m) => (
+          <div className="max-h-[360px] overflow-y-auto space-y-2">
+            {menus.map((m) => {
+              const period = m.input?.period ?? '';
+              const stroke = m.input?.stroke ?? '';
+              const distance = m.input?.distance;
+              const distType = m.input?.distanceType ?? '';
+              const periodLabel = PERIOD_SHORT[period] ?? '';
+              const periodCls = PERIOD_COLOR[period] ?? 'bg-slate-100 text-slate-600';
+              return (
                 <div
                   key={m.id}
-                  className="flex items-center justify-between py-2.5 px-4 rounded-xl border-2 border-slate-100 bg-cyan-50/30 hover:border-cyan-200 hover:bg-cyan-50/50 transition-colors"
+                  className="flex items-start gap-3 py-3 px-4 rounded-xl border border-slate-100 bg-white hover:border-cyan-200 hover:bg-cyan-50/30 transition-colors"
                 >
-                  <span className="text-sm font-medium text-slate-800 tabular-nums">
-                    {formatDate(m.created_at)}
-                  </span>
-                  <span className="text-xs text-slate-500">
-                    {m.source === 'custom' ? 'カスタム' : 'クイック'}
-                  </span>
+                  {/* 期バッジ */}
+                  {periodLabel ? (
+                    <span className={`flex-shrink-0 mt-0.5 px-2 py-0.5 rounded-lg text-xs font-semibold ${periodCls}`}>
+                      {periodLabel}
+                    </span>
+                  ) : (
+                    <span className="flex-shrink-0 mt-0.5 px-2 py-0.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-500">-</span>
+                  )}
+                  {/* 詳細 */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                      {stroke && <span className="text-sm font-semibold text-slate-800">{stroke}</span>}
+                      {distance && <span className="text-sm text-slate-600 tabular-nums">{parseInt(distance, 10).toLocaleString()}m</span>}
+                      {distType && <span className="text-xs text-slate-400">[{distType}]</span>}
+                      <span className={`text-xs px-1.5 py-0.5 rounded-md ${m.source === 'custom' ? 'bg-cyan-100 text-cyan-700' : 'bg-slate-100 text-slate-600'}`}>
+                        {m.source === 'custom' ? 'カスタム' : 'クイック'}
+                      </span>
+                    </div>
+                    <div className="text-xs text-slate-400 mt-0.5 tabular-nums">{formatDate(m.created_at)}</div>
+                  </div>
                 </div>
-              ))}
+              );
+            })}
           </div>
         )}
       </div>

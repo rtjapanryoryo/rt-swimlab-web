@@ -1000,7 +1000,22 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                 )
               ) : null}
             </div>
-            <div className="flex justify-center pt-6 pb-2 no-print">
+            <div className="flex flex-wrap justify-center gap-3 pt-6 pb-2 no-print">
+              {/* 同じ条件で再生成（カスタムのみ） */}
+              {resultSource === 'custom' && mode === 'custom' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResult(null);
+                    setApiMenuText(null);
+                    generateMenuWithAI();
+                  }}
+                  disabled={customIsGenerating}
+                  className="px-6 py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-semibold hover:from-cyan-600 hover:to-teal-600 disabled:opacity-50 shadow-lg shadow-cyan-500/25 transition-all"
+                >
+                  この条件で再生成
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => {
@@ -1009,7 +1024,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                 }}
                 className="px-6 py-3 rounded-2xl border-2 border-slate-200 bg-white text-slate-700 font-semibold hover:bg-cyan-50 hover:border-cyan-200 focus:outline-none focus:ring-2 focus:ring-cyan-400/30 transition-all shadow-sm"
               >
-                もう一度作る
+                条件を変えて作り直す
               </button>
             </div>
           </div>

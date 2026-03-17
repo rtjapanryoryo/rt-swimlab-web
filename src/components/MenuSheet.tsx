@@ -128,15 +128,23 @@ function parsePartToRow(
   let cycle = '-';
   let intensity = '-';
 
-  const intensityCodes = ['AN1', 'AN2', 'AN3', 'AN', 'EN1', 'EN2', 'EN3', 'EN4', 'A1', 'A2'];
-  const intensityToLegendMap: Record<string, string> = {
-    A1: '①', A2: '①', EN1: '②', EN2: '③', EN3: '④', EN4: '④', AN1: '⑤', AN2: '⑥', AN3: '⑦', AN: '⑦',
-  };
-  for (const code of intensityCodes) {
-    const m = text.match(new RegExp(`[(\（]${code}[)\）]`, 'i'));
-    if (m && intensityToLegendMap[m[0].replace(/[()（）]/g, '').toUpperCase()]) {
-      intensity = intensityToLegendMap[m[0].replace(/[()（）]/g, '').toUpperCase()];
-      break;
+  // ①②③④⑤⑥⑦ の丸数字を直接パース（骨格ジェネレータ出力に対応）
+  const circleMatch = text.match(/[（(][①②③④⑤⑥⑦][）)]/);
+  if (circleMatch) {
+    intensity = circleMatch[0].replace(/[()（）]/g, '');
+  } else {
+    // EN1/EN3/AN1 等のテキスト表記を丸数字にマップ
+    const intensityCodes = ['AN1', 'AN2', 'AN3', 'AN', 'EN1', 'EN2', 'EN3', 'EN4', 'A1', 'A2'];
+    const intensityToLegendMap: Record<string, string> = {
+      A1: '①', A2: '②', EN1: '③', EN2: '③', EN3: '④', EN4: '④', AN1: '⑤', AN2: '⑥', AN3: '⑦', AN: '⑦',
+    };
+    for (const code of intensityCodes) {
+      const m = text.match(new RegExp(`[(\（]${code}[)\）]`, 'i'));
+      if (m) {
+        const key = m[0].replace(/[()（）]/g, '').toUpperCase();
+        const mapped = intensityToLegendMap[key];
+        if (mapped) { intensity = mapped; break; }
+      }
     }
   }
   if (section !== 'Rest' && intensity === '-') intensity = '①';
@@ -152,10 +160,14 @@ function parsePartToRow(
   }
   if ((section === 'W-up' || section === 'Down') && count === '-') count = '1';
 
-  const atMatch = text.match(/@(\d+)\s*秒/);
-  if (atMatch?.[1]) cycle = `${atMatch[1]}秒`;
-  const timeMatch = text.match(/\b(\d{2}:\d{2})\b/);
-  if (timeMatch?.[1]) cycle = timeMatch[1];
+  // @30sec / @1:00 / @1:30 / @45秒 を全パターン対応
+  const restMatch = text.match(/@(\d+:\d{2}|\d+sec|\d+秒)/i);
+  if (restMatch?.[1]) {
+    cycle = restMatch[1];
+  } else {
+    const timeMatch = text.match(/\b(\d+:\d{2})\b/);
+    if (timeMatch?.[1]) cycle = timeMatch[1];
+  }
 
   let total = '-';
   const d = parseInt(distance, 10);
@@ -169,7 +181,7 @@ function parsePartToRow(
   const finalStyle =
     section === 'Rest' ? '-' : (section === 'W-up' || section === 'Down' || section === 'W-down' ? 'Cho' : (style && style !== '-' ? style : 'S1'));
   let content = text.trim();
-  if (content.length > 120) content = content.substring(0, 120) + '...';
+  if (content.length > 300) content = content.substring(0, 300) + '...';
   if (!content) content = '-';
   const displayContent = section === 'Pre-Main' || section === 'Dive' ? (content.trim() || '') : normalizeDash(content);
 
@@ -268,6 +280,23 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
     }
     if (prevSection) subs.push({ section: prevSection, dist: sectionSum });
     return { sumFromRows: sum, blockSubtotals: subs };
+  }, [rows]);
+
+  // 強度別負荷分布（80:20 ルールの可視化用）
+  const loadDistribution = useMemo(() => {
+    const byLevel: Record<string, number> = {};
+    let total = 0;
+    for (const row of rows) {
+      const m = parseRowTotalToNumber(row.total);
+      if (m > 0 && row.intensity && row.intensity !== '-') {
+        byLevel[row.intensity] = (byLevel[row.intensity] ?? 0) + m;
+        total += m;
+      }
+    }
+    const easyM = (byLevel['①'] ?? 0) + (byLevel['②'] ?? 0) + (byLevel['③'] ?? 0);
+    const hardM = total - easyM;
+    const easyPct = total > 0 ? Math.round((easyM / total) * 100) : 0;
+    return { byLevel, total, easyPct, hardM };
   }, [rows]);
 
   // 日付を取得
@@ -431,6 +460,12 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
                         <span className="ml-1 font-semibold text-slate-800">{row.style}</span>
                       </span>
                     )}
+                    {row.cycle !== '-' && (
+                      <span className="text-slate-600">
+                        <span className="text-slate-400 font-medium">サークル</span>
+                        <span className="ml-1 font-semibold text-slate-800">{row.cycle}</span>
+                      </span>
+                    )}
                   </div>
                   {row.content !== '-' && (
                     <p className="mt-2 text-slate-700 text-sm leading-relaxed break-words">
@@ -452,12 +487,12 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
           <table className="min-w-full border-collapse text-xs print:text-sm pdf-capture-table">
             <colgroup>
               <col style={{ width: '9%' }} />
-              <col style={{ width: '11%' }} />
-              <col style={{ width: '6%' }} />
-              <col style={{ width: '6%' }} />
+              <col style={{ width: '10%' }} />
+              <col style={{ width: '5%' }} />
               <col style={{ width: '7%' }} />
-              <col style={{ width: '36%' }} />
-              <col style={{ width: '7%' }} />
+              <col style={{ width: '35%' }} />
+              <col style={{ width: '6%' }} />
+              <col style={{ width: '10%' }} />
               <col style={{ width: '18%' }} />
             </colgroup>
             <thead>
@@ -465,10 +500,10 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
                 <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300 text-center whitespace-nowrap">セクション</th>
                 <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300 text-center">距離(m)</th>
                 <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300 text-center">本数</th>
-                <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300 text-center">セット</th>
                 <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300 text-center">種目</th>
                 <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300 text-left">内容</th>
                 <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300 text-center">強度</th>
+                <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300 text-center whitespace-nowrap">サークル</th>
                 <th className="py-2 px-2 font-semibold text-gray-900 text-center">Total</th>
               </tr>
             </thead>
@@ -480,10 +515,10 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
                     <DistDisplay value={row.distance} addUnit />
                   </td>
                   <td className="py-2 px-2 text-gray-700 text-center tabular-nums border-r border-gray-200">{row.count}</td>
-                  <td className="py-2 px-2 text-gray-700 text-center tabular-nums border-r border-gray-200">{row.sets}</td>
                   <td className="py-2 px-2 text-gray-700 text-center border-r border-gray-200">{row.style}</td>
                   <td className="py-2 px-2 text-gray-700 text-left border-r border-gray-200 break-words">{row.content}</td>
                   <td className="py-2 px-2 text-gray-700 text-center border-r border-gray-200">{row.intensity}</td>
+                  <td className="py-2 px-2 text-gray-700 text-center tabular-nums border-r border-gray-200 text-slate-600">{row.cycle}</td>
                   <td className="py-2 px-2 text-gray-700 text-center border-r border-gray-200 font-semibold dist-td">
                     <DistDisplay value={row.total} />
                   </td>
@@ -496,15 +531,15 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
 
       {/* 強度の凡例 */}
       <div className="mb-6 pt-4 border-t border-gray-300 text-xs">
-        <div className="font-semibold text-gray-900 mb-2">強度の凡例:</div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1">
-          <div>① HR~120 (A1 Easy, Relax)</div>
-          <div>② HR 120~140 (EN1)</div>
-          <div>③ HR 140~160 (EN2)</div>
-          <div>④ HR 160~180 (EN3)</div>
-          <div>⑤ HR Max (AN1 耐乳酸)</div>
-          <div>⑥ HR Max (AN2 乳酸生成)</div>
-          <div>⑦ パワーやスピードなど</div>
+        <div className="font-semibold text-gray-900 mb-2">強度の凡例（RT Japan基準）:</div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 text-gray-700">
+          <div>① A1 — HR~120（Easy・Relax）</div>
+          <div>② A2 — HR~130（軽有酸素）</div>
+          <div>③ EN1 — HR 140~150（有酸素基盤）</div>
+          <div>④ EN3 — HR 160~180（有酸素パワー）</div>
+          <div>⑤ AN1 — HR Max（スピード持久）</div>
+          <div>⑥ AN2 — HR Max（乳酸生成・耐乳酸）</div>
+          <div>⑦ MAX — スプリント・パワー</div>
         </div>
       </div>
 
@@ -539,6 +574,51 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
             />
           </span>
         </div>
+        {/* 強度分布バー（80:20 可視化） */}
+        {loadDistribution.total > 0 && (
+          <div className="mb-2">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-semibold text-gray-700 text-xs">強度分布:</span>
+              {(() => {
+                const { byLevel, total, easyPct } = loadDistribution;
+                const levels = ['①','②','③','④','⑤','⑥','⑦'];
+                const colors = ['bg-slate-300','bg-slate-400','bg-blue-400','bg-teal-500','bg-orange-400','bg-red-500','bg-red-800'];
+                const is8020 = easyPct >= 75;
+                return (
+                  <>
+                    <div className="flex flex-1 h-3 rounded-full overflow-hidden gap-px">
+                      {levels.map((lvl, i) => {
+                        const m = byLevel[lvl] ?? 0;
+                        const pct = total > 0 ? (m / total) * 100 : 0;
+                        if (pct < 0.5) return null;
+                        return (
+                          <div
+                            key={lvl}
+                            className={`${colors[i]} flex-shrink-0`}
+                            style={{ width: `${pct}%` }}
+                            title={`${lvl}: ${m.toLocaleString()}m (${Math.round(pct)}%)`}
+                          />
+                        );
+                      })}
+                    </div>
+                    <span className={`text-xs font-semibold whitespace-nowrap ${is8020 ? 'text-teal-700' : 'text-orange-600'}`}>
+                      有酸素 {easyPct}% {is8020 ? '✓' : '↑'}
+                    </span>
+                  </>
+                );
+              })()}
+            </div>
+            <div className="flex flex-wrap gap-x-3 text-xs text-gray-500">
+              {['①','②','③','④','⑤','⑥','⑦'].map((lvl, i) => {
+                const m = loadDistribution.byLevel[lvl] ?? 0;
+                const colors = ['text-slate-500','text-slate-600','text-blue-600','text-teal-600','text-orange-600','text-red-600','text-red-800'];
+                if (!m) return null;
+                return <span key={lvl} className={colors[i]}>{lvl} {m.toLocaleString()}m</span>;
+              })}
+            </div>
+          </div>
+        )}
+
         <div className="flex items-start">
           <span className="font-semibold text-gray-700 w-24">今日の狙い:</span>
           <span className="text-gray-900 flex-1">
@@ -553,6 +633,12 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
           <span className="font-semibold text-gray-700 w-24">注意点:</span>
           <span className="text-gray-900 flex-1">{result.caution}</span>
         </div>
+        {result.expectedEffect && (
+          <div className="flex items-start">
+            <span className="font-semibold text-gray-700 w-24 flex-shrink-0">期待効果:</span>
+            <span className="text-gray-900 flex-1 whitespace-pre-wrap">{result.expectedEffect}</span>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -69,21 +69,22 @@ const CORE_SYSTEM_PROMPT = `【コーチ思想の核心（50問インタビュ�
 10. 【安全第一・怪我させない】年齢・疲労を最優先。マスターズは「怪我をさせないこと」が最重要。
 
 【コンテンツラベル品質ルール（必須）】
-- **テンプレートの {PLACEHOLDER} スロットのみ埋める。数値・本数・強度番号は変更禁止。**
-- Drill: Br/Flyの「左右交互」は禁止。Brはキックドリル/プルドリル/タイミング、Flyは片キック/ドルフィンキック等を使う。
-- Kick/Pull: ブロック名は英語（「キック」→「Kick」, 「プル」→「Pull」）。
-- W-up / Down: 種目は Cho 固定（Fr/Fly/Ba/Br/IMを入れない）。
-- W-up: SKPS, IM Order, Variable, Des, Build のいずれかを必ず含める。
-- Pull: DPS, Negative split, o:Fast e:Easy, Form & Des のいずれかを含める。
-- Main: 必ずカテゴリ名を明記（ベースメイン/ベストアベレージ/ダイハード/耐乳酸MAX/Standard Main）。
-- 強度表記: EN5・EN6は禁止。⑤=AN1、⑥=AN2のみ。
-- Dive: 期が⑥調整期・⑦テーパー期のときのみ。それ以外は空文字。
-- 強度番号の読み方: ①A1 ②A2 ③EN1 ④EN3 ⑤AN1 ⑥AN2 ⑦MAX
+- **テンプレートの {PLACEHOLDER} スロットのみ埋める。数値・本数・@rest・強度番号は変更禁止。**
+- 強度番号の正確な対応: ①=A1 ②=A2 ③=EN1 ④=EN3 ⑤=AN1 ⑥=AN2 ⑦=MAX（④と③は別強度。混同禁止）
+- {WU_PATTERN}: SKPS / IM Order / Variable / Des / Build / 1-4:Relax 5-6:上げる のいずれか
+- {DR_DRILL_N}: 種目固有ドリル名（Br=キックドリル/プルドリル/タイミング。Fly=片キック/ドルフィン/1キック1プル。Ba=片手/ドリルSwim交互）
+- {KI_PATTERN_N}: Des / 1-4 Dec / good kick / Fins / Des（後半Fins）のいずれか
+- {PL_PATTERN_N}: DPS / Negative split / o:Fast e:Easy / Form & Des 1→4 のいずれか（必ず具体的なパターン名で）
+- {PM_CONTENT}: レースペース確認内容（"@{rest}レースペース" / "Des（レースペース確認）" / "Negative split"）
+- W-up / Down: 種目は Cho 固定。Down は変更しない（テンプレートのまま出力）。
+- Main: カテゴリ名はテンプレート通りに出力（変更禁止）。@rest も変更禁止。
+- Dive: 期が⑥調整期・⑦テーパー期のときのみ出力。それ以外は空文字（""）。
 
-【intention・coachingPoint・cautionの必須カスタマイズ】
-- intention: 期・目的・状況・距離タイプ・年齢を必ず反映。汎用文のコピペ禁止。
-- coachingPoint: このメニューのDrill/Kick/Pull/Mainに即した具体的な意識点を3つ。TSS最小化・水感・ブレーキゼロの視点を含める。
-- caution: 状況・年齢・疲労・月経期等を必ず反映。汎用文禁止。`;
+【intention・coachingPoint・caution・expectedEffectの必須カスタマイズ】
+- intention: 期・目的・状況・距離タイプ・年齢を必ず反映。汎用文コピペ禁止。2〜4行で具体的に。
+- coachingPoint: このメニューのDrill/Kick/Pull/Mainに即した意識点を3つ。TSS最小化・水感・ブレーキゼロの視点を必ず含める。
+- caution: 状況・年齢・疲労・月経期等を必ず反映した固有の注意。3点。汎用文禁止。
+- expectedEffect: このメニューで何が得られるか。2〜3行。期別・強度別の具体的な効果を書く。`;
 
 /** 必須8項目 */
 const REQUIRED_KEYS: { key: string; label: string }[] = [
