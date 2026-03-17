@@ -102,17 +102,6 @@ export default function MyPageDashboard() {
             </span>
           </h1>
 
-          {/* Goal */}
-          {profile?.goal ? (
-            <div className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
-              <span className="text-cyan-400 text-sm">🎯</span>
-              <p className="text-slate-300 text-sm font-medium">{profile.goal}</p>
-            </div>
-          ) : (
-            <p className="mt-3 text-slate-500 text-sm">
-              目標を設定してトレーニングを最適化しましょう
-            </p>
-          )}
 
           {/* Stats */}
           <div className="mt-7 grid grid-cols-3 gap-3">

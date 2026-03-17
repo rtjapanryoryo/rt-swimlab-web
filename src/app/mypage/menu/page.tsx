@@ -57,42 +57,8 @@ export default function RTSwimLabMenuPage() {
 
           {/* Description */}
           <p className="text-slate-400 text-sm leading-relaxed max-w-md">
-            RTジャパンのコーチング哲学を内包した骨格優先アーキテクチャーにより、<br className="hidden sm:block" />
             距離・強度・インターバルを科学的に設計したメニューを即時生成します。
           </p>
-
-          {/* Feature pills */}
-          <div className="mt-5 flex flex-wrap gap-2">
-            {[
-              { icon: '⚡', text: 'クイック生成' },
-              { icon: '🎯', text: 'カスタム生成' },
-              { icon: '📊', text: '強度分析' },
-              { icon: '🔄', text: '再生成対応' },
-            ].map((f) => (
-              <span
-                key={f.text}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/8 border border-white/10 text-slate-300 text-xs font-medium backdrop-blur-sm hover:border-cyan-400/30 hover:text-white transition-colors"
-              >
-                <span>{f.icon}</span>
-                {f.text}
-              </span>
-            ))}
-          </div>
-
-          {/* Methodology badges */}
-          <div className="mt-5 pt-5 border-t border-white/8 flex flex-wrap items-center gap-x-6 gap-y-2">
-            {[
-              { label: '強度体系', value: 'RT Japan 公式' },
-              { label: '温度管理', value: 'temperature 0.1' },
-              { label: '距離保証', value: '数学的確定' },
-            ].map((b) => (
-              <div key={b.label} className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-                <span className="text-[11px] text-slate-500 font-medium">{b.label}</span>
-                <span className="text-[11px] text-cyan-400 font-bold">{b.value}</span>
-              </div>
-            ))}
-          </div>
         </div>
       </header>
 

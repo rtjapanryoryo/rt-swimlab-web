@@ -64,8 +64,8 @@ export interface MenuSkeleton {
 type LevelKey = 'beginner' | 'intermediate' | 'advanced';
 
 function getLevelKey(level: string): LevelKey {
-  if (level.includes('全国大会') || level.includes('上級')) return 'advanced';
-  if (level.includes('初級') || level.includes('健康志向')) return 'beginner';
+  if (level.includes('トップ選手') || level.includes('競技選手')) return 'advanced';
+  if (level.includes('フィットネス') || level.includes('初心者')) return 'beginner';
   return 'intermediate';
 }
 
@@ -698,9 +698,23 @@ function buildBlockSpec(
 // メイン：骨格生成
 // ============================================================
 
+/** 年齢グループ文字列 or 数値文字列 → 代表数値に変換 */
+function parseAgeNum(age: string): number {
+  const n = parseInt(age, 10);
+  if (!isNaN(n)) return n;
+  if (age.includes('小学生')) return 10;
+  if (age.includes('中学生')) return 14;
+  if (age.includes('高校生')) return 17;
+  if (age.includes('30〜39')) return 35;
+  if (age.includes('40歳以上')) return 45;
+  if (age.includes('大学生')) return 20;
+  if (age.includes('マスターズ')) return 45;
+  return 20;
+}
+
 export function generateMenuSkeleton(input: TrainingInput): MenuSkeleton {
   const targetDist = parseInt(input.distance, 10);
-  const ageNum = parseInt(input.age, 10) || 20;
+  const ageNum = parseAgeNum(input.age);
   const dt = (['S', 'M', 'D'].includes(input.distanceType) ? input.distanceType : 'M') as 'S' | 'M' | 'D';
 
   const { mainStep, nonMainStep, preMainStep, notes } = getAdjustedIntensities(

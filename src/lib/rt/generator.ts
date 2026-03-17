@@ -53,9 +53,16 @@ interface MainSetRule {
 // ============================================================
 
 function getAgeGroup(age: string): AgeGroup {
+  // グループ文字列対応
+  if (age.includes('小学生')) return '小学生';
+  if (age.includes('中学生')) return '中学生';
+  if (age.includes('高校生')) return '高校生';
+  if (age.includes('30〜39') || age.includes('40歳以上')) return '成人・マスターズ';
+  if (age.includes('大学生')) return '大学生以上';
+  if (age.includes('マスターズ')) return '成人・マスターズ';
+
   const ageNum = parseInt(age, 10);
   if (isNaN(ageNum)) return '高校生'; // デフォルト
-
   if (ageNum <= 12) return '小学生';
   if (ageNum <= 15) return '中学生';
   if (ageNum <= 18) return '高校生';

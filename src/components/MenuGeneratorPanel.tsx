@@ -109,11 +109,11 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
   const [menuSavedAt, setMenuSavedAt] = useState<Date | null>(null);
 
   const LOADING_MESSAGES = [
-    '条件を分析しています...',
-    '今日のメニューを紡いでいます',
-    '強度と距離を調整しています...',
-    'プールに届く準備を整えています',
-    'もうすぐ完成です',
+    'reading...',
+    'designing...',
+    'calibrating...',
+    'optimizing...',
+    'finalizing...',
   ];
 
   useEffect(() => {
@@ -786,21 +786,24 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                       <label className="block text-sm font-medium text-slate-700 mb-1">2. 年齢</label>
                       <select value={input.age} onChange={(e) => handleInputChange('age', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
                         <option value="">選択してください</option>
-                        {Array.from({ length: 94 }, (_, i) => 6 + i).map((n) => <option key={n} value={String(n)}>{n}歳</option>)}
+                        <option value="小学生（〜12歳）">小学生（〜12歳）</option>
+                        <option value="中学生（13〜15歳）">中学生（13〜15歳）</option>
+                        <option value="高校生（16〜18歳）">高校生（16〜18歳）</option>
+                        <option value="大学生・マスターズ（19〜29歳）">大学生・マスターズ（19〜29歳）</option>
+                        <option value="マスターズ（30〜39歳）">マスターズ（30〜39歳）</option>
+                        <option value="マスターズ（40歳以上）">マスターズ（40歳以上）</option>
                       </select>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">3. レベル</label>
                       <select value={input.level} onChange={(e) => handleInputChange('level', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
                         <option value="">選択してください</option>
-                        <option value="全国大会入賞〜代表クラス">全国大会入賞〜代表クラス</option>
-                        <option value="上級（選手クラス〜全国大会）">上級（選手クラス〜全国大会）</option>
-                        <option value="中級（育成クラス〜県大会）">中級（育成クラス〜県大会）</option>
-                        <option value="初級（4泳法完泳）">初級（4泳法完泳）</option>
-                        <option value="マスターズ（記録狙い）">マスターズ（記録狙い）</option>
-                        <option value="マスターズ（大会出場）">マスターズ（大会出場）</option>
-                        <option value="マスターズ（泳力向上）">マスターズ（泳力向上）</option>
-                        <option value="マスターズ（健康志向）">マスターズ（健康志向）</option>
+                        <option value="トップ選手（代表・全国入賞）">トップ選手（代表・全国入賞）</option>
+                        <option value="競技選手（地区〜全国 / マスターズ記録挑戦）">競技選手（地区〜全国 / マスターズ記録挑戦）</option>
+                        <option value="クラブ選手（育成〜県大会 / マスターズ大会参加）">クラブ選手（育成〜県大会 / マスターズ大会参加）</option>
+                        <option value="一般スイマー（定期練習 / マスターズ継続）">一般スイマー（定期練習 / マスターズ継続）</option>
+                        <option value="フィットネス（健康・運動目的 / マスターズ健康）">フィットネス（健康・運動目的 / マスターズ健康）</option>
+                        <option value="初心者（基礎習得中）">初心者（基礎習得中）</option>
                       </select>
                     </div>
                     <div>
@@ -888,28 +891,20 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                 </svg>
                 <div className="generate-loading-orb absolute h-9 w-9 md:h-11 md:w-11 rounded-full bg-gradient-to-br from-cyan-400 via-teal-400 to-teal-500 shadow-xl shadow-cyan-500/35 ring-4 ring-cyan-200/40" />
               </div>
-              <div className="text-center space-y-2">
-                <p className="generate-loading-wave text-slate-800 font-semibold tracking-wide text-base md:text-lg">
+              <div className="text-center space-y-1.5">
+                <p className="generate-loading-wave text-slate-700 font-mono font-semibold tracking-widest text-base md:text-lg lowercase">
                   {LOADING_MESSAGES[loadingMessageIndex]}
                 </p>
-                <p className="text-slate-600/90 text-sm">もう少しで完成します</p>
+                <p className="text-slate-400 text-xs tracking-widest uppercase">generating your menu</p>
               </div>
-              {/* ブロックラベル（泳ぎの流れを表現） */}
-              <div className="flex flex-wrap justify-center gap-2.5 max-w-[320px]">
-                {[
-                  { label: 'W-up', emoji: '🌊' },
-                  { label: 'Drill', emoji: '🎯' },
-                  { label: 'Kick', emoji: '🦵' },
-                  { label: 'Main', emoji: '⚡' },
-                ].map(({ label, emoji }, i) => (
+              {/* ステップドット */}
+              <div className="flex items-center gap-3">
+                {Array.from({ length: 5 }).map((_, i) => (
                   <span
-                    key={label}
-                    className="generate-loading-pill inline-flex items-center gap-1.5 rounded-2xl border-2 border-cyan-300/60 bg-white/95 px-4 py-2.5 text-xs font-bold text-cyan-800 shadow-md shadow-cyan-200/40 backdrop-blur-sm transition-all md:px-5 md:py-3 md:text-sm"
-                    style={{ animationDelay: `${i * 0.12}s` }}
-                  >
-                    <span className="text-base md:text-lg opacity-90">{emoji}</span>
-                    {label}
-                  </span>
+                    key={i}
+                    className="generate-loading-pill h-1.5 rounded-full bg-cyan-400/60"
+                    style={{ width: i === loadingMessageIndex ? '2rem' : '0.375rem', transition: 'width 0.4s ease', opacity: i === loadingMessageIndex ? 1 : 0.3 }}
+                  />
                 ))}
               </div>
               {/* プログレスバー */}
