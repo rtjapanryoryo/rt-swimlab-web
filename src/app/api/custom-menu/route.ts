@@ -284,9 +284,22 @@ export async function POST(request: NextRequest) {
 - 期: ${PERIOD_LABELS[period] ?? period}
 - 種目: ${stroke}
 - 総距離: ${distance}m（骨格で確定済み・変更禁止）
-- 年齢: ${age}歳　距離タイプ: ${distanceType}　レベル: ${level}
+- 年齢: ${age}歳　距離タイプ: ${distanceType}
+- レベル: ${level}
 - 状況: ${condition}　練習時間: ${practiceTime}分
 ${adjustNotes ? `- ${adjustNotes}` : ''}
+${level.includes('初級') ? `【初級レベル対応指示】
+- Drill: 基本動作に特化した易しいドリル名を選ぶ（キャッチアップ・片手・壁キック等）
+- coachingPoint: フォームの基礎・感覚づくり・怪我予防を前面に出す
+- intention: スピードより「動きを覚える」「水に慣れる」視点で書く
+- caution: 過負荷・フォーム崩れ・体力消耗に敏感に言及する` : level.includes('上級') ? `【上級レベル対応指示】
+- Drill: 強度付きの応用ドリル・感覚系ドリルを選ぶ（Form & Des 1→4・フィスト・ハイエルボー等）
+- coachingPoint: TSS最小化・タイム向上・レースペース意識を具体的に書く
+- intention: レースシミュレーション・目標タイムに紐づけた狙いで書く
+- caution: オーバートレーニング・技術の雑さ・メンタルケアを言及する` : `【中級レベル対応指示】
+- Drill: 種目固有の標準ドリルを選ぶ（odd/even形式・Form & Des等）
+- coachingPoint: フォーム維持と体力向上のバランスを書く
+- intention: 期の目標に沿ったバランスの取れた狙いを書く`}
 
 【骨格（各ブロック距離・強度は確定済み）】
 ${skeletonDesc}

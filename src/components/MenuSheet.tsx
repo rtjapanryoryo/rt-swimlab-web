@@ -28,6 +28,34 @@ function parseRowTotalToNumber(value: string): number {
   return m ? parseInt(m[1], 10) : 0;
 }
 
+/**
+ * 強度バッジ：丸数字 + ゾーン名 + 色分け
+ * ①②③ だけでは専門外には伝わりにくいので、色と略称を追加して直感的に
+ */
+function IntensityBadge({ value }: { value: string }) {
+  const CONFIG: Record<string, { cls: string; label: string; hr: string }> = {
+    '①': { cls: 'bg-slate-100 text-slate-600 border-slate-200',   label: 'Easy',   hr: '~120' },
+    '②': { cls: 'bg-sky-100 text-sky-700 border-sky-200',         label: 'EN1',    hr: '120~140' },
+    '③': { cls: 'bg-blue-100 text-blue-700 border-blue-200',      label: 'EN2',    hr: '140~160' },
+    '④': { cls: 'bg-teal-100 text-teal-700 border-teal-200',      label: 'EN3',    hr: '160~180' },
+    '⑤': { cls: 'bg-orange-100 text-orange-700 border-orange-200',label: 'AN1',    hr: 'Max近' },
+    '⑥': { cls: 'bg-red-100 text-red-700 border-red-200',         label: 'AN2',    hr: 'Max' },
+    '⑦': { cls: 'bg-gray-800 text-white border-gray-700',         label: 'MAX',    hr: '全力' },
+  };
+  if (!value || value === '-') return <>-</>;
+  const cfg = CONFIG[value];
+  if (!cfg) return <>{value}</>;
+  return (
+    <span
+      className={`inline-flex flex-col items-center px-1.5 py-0.5 rounded-md border text-[11px] font-bold leading-tight ${cfg.cls}`}
+      title={`HR ${cfg.hr}`}
+    >
+      <span>{value}</span>
+      <span className="text-[8px] leading-none opacity-80 font-semibold">{cfg.label}</span>
+    </span>
+  );
+}
+
 /** 距離表示：数字と単位mを分離して重なりを防ぐ */
 function DistDisplay({ value, addUnit = false }: { value: string; addUnit?: boolean }) {
   if (!value || value === '-') return <>-</>;
@@ -448,22 +476,16 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
                         <span className="ml-1 font-semibold text-slate-800">{row.count}</span>
                       </span>
                     )}
-                    {row.sets !== '-' && row.sets !== '1' && (
-                      <span className="text-slate-600">
-                        <span className="text-slate-400 font-medium">セット</span>
-                        <span className="ml-1 font-semibold text-slate-800">{row.sets}</span>
-                      </span>
-                    )}
                     {row.style !== '-' && (
                       <span className="text-slate-600">
                         <span className="text-slate-400 font-medium">種目</span>
                         <span className="ml-1 font-semibold text-slate-800">{row.style}</span>
                       </span>
                     )}
-                    {row.cycle !== '-' && (
-                      <span className="text-slate-600">
-                        <span className="text-slate-400 font-medium">サークル</span>
-                        <span className="ml-1 font-semibold text-slate-800">{row.cycle}</span>
+                    {row.intensity !== '-' && (
+                      <span className="text-slate-600 flex items-center gap-1">
+                        <span className="text-slate-400 font-medium text-xs">強度</span>
+                        <IntensityBadge value={row.intensity} />
                       </span>
                     )}
                   </div>
@@ -471,11 +493,6 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
                     <p className="mt-2 text-slate-700 text-sm leading-relaxed break-words">
                       {row.content}
                     </p>
-                  )}
-                  {row.intensity !== '-' && (
-                    <div className="mt-2 text-xs font-medium text-slate-500">
-                      強度: <span className="text-slate-700">{row.intensity}</span>
-                    </div>
                   )}
                 </div>
               </div>
@@ -486,14 +503,13 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
         <div className="mb-6 overflow-x-auto">
           <table className="min-w-full border-collapse text-xs print:text-sm pdf-capture-table">
             <colgroup>
-              <col style={{ width: '9%' }} />
               <col style={{ width: '10%' }} />
-              <col style={{ width: '5%' }} />
-              <col style={{ width: '7%' }} />
-              <col style={{ width: '35%' }} />
+              <col style={{ width: '10%' }} />
               <col style={{ width: '6%' }} />
-              <col style={{ width: '10%' }} />
-              <col style={{ width: '18%' }} />
+              <col style={{ width: '7%' }} />
+              <col style={{ width: '43%' }} />
+              <col style={{ width: '9%' }} />
+              <col style={{ width: '15%' }} />
             </colgroup>
             <thead>
               <tr className="bg-gray-50 border-b-2 border-gray-300">
@@ -503,7 +519,6 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
                 <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300 text-center">種目</th>
                 <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300 text-left">内容</th>
                 <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300 text-center">強度</th>
-                <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300 text-center whitespace-nowrap">サークル</th>
                 <th className="py-2 px-2 font-semibold text-gray-900 text-center">Total</th>
               </tr>
             </thead>
@@ -517,9 +532,10 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
                   <td className="py-2 px-2 text-gray-700 text-center tabular-nums border-r border-gray-200">{row.count}</td>
                   <td className="py-2 px-2 text-gray-700 text-center border-r border-gray-200">{row.style}</td>
                   <td className="py-2 px-2 text-gray-700 text-left border-r border-gray-200 break-words">{row.content}</td>
-                  <td className="py-2 px-2 text-gray-700 text-center border-r border-gray-200">{row.intensity}</td>
-                  <td className="py-2 px-2 text-gray-700 text-center tabular-nums border-r border-gray-200 text-slate-600">{row.cycle}</td>
-                  <td className="py-2 px-2 text-gray-700 text-center border-r border-gray-200 font-semibold dist-td">
+                  <td className="py-2 px-2 text-center border-r border-gray-200">
+                    <IntensityBadge value={row.intensity} />
+                  </td>
+                  <td className="py-2 px-2 text-gray-700 text-center font-semibold dist-td">
                     <DistDisplay value={row.total} />
                   </td>
                 </tr>
@@ -531,15 +547,27 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
 
       {/* 強度の凡例（RT Japan公式定義） */}
       <div className="mb-6 pt-4 border-t border-gray-300 text-xs">
-        <div className="font-semibold text-gray-900 mb-2">強度の凡例（RT Japan）</div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 text-gray-700">
-          <div>① A1/A2 — HR~120（Easy・Relax）</div>
-          <div>② EN1 — HR 120~140（有酸素基盤）</div>
-          <div>③ EN2 — HR 140~160（有酸素維持）</div>
-          <div>④ EN3/EN4 — HR 160~180（有酸素パワー）</div>
-          <div>⑤ AN1 — HR Max（スピード持久）</div>
-          <div>⑥ AN2 — HR Max（乳酸生成・耐乳酸）</div>
-          <div>⑦ MAX — スプリント・最大出力</div>
+        <div className="font-semibold text-gray-900 mb-2 text-sm">強度ゾーン（RT Japan 公式）</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-1.5">
+          {[
+            { v: '①', label: 'A1/A2', zone: 'Easy · Relax',       hr: 'HR ~120',    cls: 'bg-slate-50 border-slate-200 text-slate-700' },
+            { v: '②', label: 'EN1',   zone: '有酸素基盤',           hr: 'HR 120~140', cls: 'bg-sky-50 border-sky-200 text-sky-800' },
+            { v: '③', label: 'EN2',   zone: '有酸素維持',           hr: 'HR 140~160', cls: 'bg-blue-50 border-blue-200 text-blue-800' },
+            { v: '④', label: 'EN3',   zone: '有酸素パワー',         hr: 'HR 160~180', cls: 'bg-teal-50 border-teal-200 text-teal-800' },
+            { v: '⑤', label: 'AN1',   zone: 'スピード持久',         hr: 'HR Max近',   cls: 'bg-orange-50 border-orange-200 text-orange-800' },
+            { v: '⑥', label: 'AN2',   zone: '耐乳酸',               hr: 'HR Max',     cls: 'bg-red-50 border-red-200 text-red-800' },
+            { v: '⑦', label: 'MAX',   zone: 'スプリント・全力',     hr: '最大出力',   cls: 'bg-gray-100 border-gray-400 text-gray-900' },
+          ].map(({ v, label, zone, hr, cls }) => (
+            <div key={v} className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border ${cls}`}>
+              <span className="text-base font-black w-5 text-center flex-shrink-0">{v}</span>
+              <div className="min-w-0">
+                <span className="font-bold text-xs">{label}</span>
+                <span className="mx-1 opacity-40">·</span>
+                <span className="text-xs opacity-75">{zone}</span>
+                <div className="text-[10px] opacity-60 tabular-nums">{hr}</div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
