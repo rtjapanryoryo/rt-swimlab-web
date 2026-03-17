@@ -110,9 +110,10 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
 
   const LOADING_MESSAGES = [
     '条件を分析しています...',
-    'メニューを組み立てています...',
+    '今日のメニューを紡いでいます',
     '強度と距離を調整しています...',
-    '仕上げています...',
+    'プールに届く準備を整えています',
+    'もうすぐ完成です',
   ];
 
   useEffect(() => {
@@ -866,47 +867,54 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
         </>
         )}
 
-        {/* カスタム生成中：ワクワク感のあるポップなアニメーション */}
+        {/* カスタム生成中：RT swim lab ブランド・ワクワク感のあるローディング */}
         {customIsGenerating && (
-          <div className="generate-loading-in fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-cyan-50/95 via-white to-teal-50/95 backdrop-blur-sm">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_60%_at_50%_35%,rgba(6,182,212,0.12),transparent_60%)]" aria-hidden />
-            <div className="relative flex flex-col items-center gap-10 px-6">
-              {/* 水の雫風オーブ + 回転リング */}
-              <div className="relative flex items-center justify-center">
-                <svg className="generate-loading-ring h-28 w-28 md:h-32 md:w-32 text-cyan-400/80" viewBox="0 0 64 64" fill="none">
-                  <circle
-                    cx="32"
-                    cy="32"
-                    r="28"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeDasharray="120 56"
-                    className="generate-loading-ring-dash"
-                  />
-                </svg>
-                <div className="generate-loading-orb absolute h-8 w-8 md:h-10 md:w-10 rounded-full bg-gradient-to-br from-cyan-400 to-teal-500 shadow-lg shadow-cyan-400/40" />
+          <div className="generate-loading-in fixed inset-0 z-50 flex items-center justify-center overflow-hidden">
+            {/* 背景：水をイメージしたグラデーション + 波パターン */}
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan-100/90 via-teal-50/95 to-sky-100/90" aria-hidden />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_110%_70%_at_50%_20%,rgba(6,182,212,0.18),transparent_50%)]" aria-hidden />
+            <div className="generate-loading-waves absolute inset-0 opacity-[0.15]" aria-hidden />
+            <div className="absolute inset-0 backdrop-blur-[1px]" aria-hidden />
+            <div className="relative flex flex-col items-center gap-8 px-6 py-8">
+              {/* RT swim lab ロゴ + ブランド */}
+              <div className="flex flex-col items-center gap-3">
+                <img src="/RT-japan_Logo.svg" alt="" className="generate-loading-logo h-12 w-auto md:h-14 opacity-90" />
+                <span className="text-sm font-semibold tracking-widest text-cyan-600/90 uppercase">RT swim lab</span>
               </div>
-              <div className="text-center space-y-1.5">
-                <p className="generate-loading-wave text-slate-700 font-semibold tracking-wide text-base md:text-lg">
+              {/* 水の雫風オーブ + 回転リング（泳ぎを連想する流線） */}
+              <div className="relative flex items-center justify-center -mt-2">
+                <svg className="generate-loading-ring h-24 w-24 md:h-28 md:w-28 text-cyan-400/70" viewBox="0 0 64 64" fill="none">
+                  <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="100 76" className="generate-loading-ring-dash" />
+                </svg>
+                <div className="generate-loading-orb absolute h-9 w-9 md:h-11 md:w-11 rounded-full bg-gradient-to-br from-cyan-400 via-teal-400 to-teal-500 shadow-xl shadow-cyan-500/35 ring-4 ring-cyan-200/40" />
+              </div>
+              <div className="text-center space-y-2">
+                <p className="generate-loading-wave text-slate-800 font-semibold tracking-wide text-base md:text-lg">
                   {LOADING_MESSAGES[loadingMessageIndex]}
                 </p>
-                <p className="text-slate-500 text-xs md:text-sm">まもなく完成します</p>
+                <p className="text-slate-600/90 text-sm">もう少しで完成します</p>
               </div>
-              <div className="flex flex-wrap justify-center gap-2">
-                {['W-up', 'Drill', 'Kick', 'Main'].map((label, i) => (
+              {/* ブロックラベル（泳ぎの流れを表現） */}
+              <div className="flex flex-wrap justify-center gap-2.5 max-w-[320px]">
+                {[
+                  { label: 'W-up', emoji: '🌊' },
+                  { label: 'Drill', emoji: '🎯' },
+                  { label: 'Kick', emoji: '🦵' },
+                  { label: 'Main', emoji: '⚡' },
+                ].map(({ label, emoji }, i) => (
                   <span
                     key={label}
-                    className="generate-loading-pill rounded-2xl border-2 border-cyan-200/80 bg-white/90 px-4 py-2 text-xs font-semibold text-cyan-700/90 shadow-sm backdrop-blur-sm md:px-5 md:py-2.5 md:text-sm"
-                    style={{ animationDelay: `${i * 0.15}s` }}
+                    className="generate-loading-pill inline-flex items-center gap-1.5 rounded-2xl border-2 border-cyan-300/60 bg-white/95 px-4 py-2.5 text-xs font-bold text-cyan-800 shadow-md shadow-cyan-200/40 backdrop-blur-sm transition-all md:px-5 md:py-3 md:text-sm"
+                    style={{ animationDelay: `${i * 0.12}s` }}
                   >
+                    <span className="text-base md:text-lg opacity-90">{emoji}</span>
                     {label}
                   </span>
                 ))}
               </div>
               {/* プログレスバー */}
-              <div className="w-full max-w-[260px] h-1 overflow-hidden rounded-full bg-cyan-100/80">
-                <div className="generate-loading-progress h-full w-1/3 rounded-full bg-gradient-to-r from-transparent via-cyan-400 to-teal-400" />
+              <div className="w-full max-w-[280px] h-1.5 overflow-hidden rounded-full bg-cyan-100/90 shadow-inner">
+                <div className="generate-loading-progress h-full w-1/3 rounded-full bg-gradient-to-r from-transparent via-cyan-500 to-teal-500 shadow-sm" />
               </div>
             </div>
           </div>

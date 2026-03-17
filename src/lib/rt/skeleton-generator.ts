@@ -64,8 +64,8 @@ export interface MenuSkeleton {
 type LevelKey = 'beginner' | 'intermediate' | 'advanced';
 
 function getLevelKey(level: string): LevelKey {
-  if (level.includes('上級')) return 'advanced';
-  if (level.includes('初級')) return 'beginner';
+  if (level.includes('全国大会') || level.includes('上級')) return 'advanced';
+  if (level.includes('初級') || level.includes('健康志向')) return 'beginner';
   return 'intermediate';
 }
 
@@ -257,22 +257,41 @@ const LEVEL_ALLOC_DELTA: Record<LevelKey, { drill: number; kick: number }> = {
 };
 
 /**
+ * 練習時間に応じた W-up / Down の距離上限（短時間ほどコンパクトに）
+ * - 60分: W-up 250m以下・Down 150m以下
+ * - 90分: W-up 350m以下・Down 200m以下
+ * - 120分: 既存の cfg.wupMax / cfg.downMax をそのまま使用
+ */
+function getPracticeTimeCaps(practiceTime: number): { wupMax: number; downMax: number } {
+  if (practiceTime <= 60) return { wupMax: 250, downMax: 150 };
+  if (practiceTime <= 90) return { wupMax: 350, downMax: 200 };
+  return { wupMax: 500, downMax: 300 };
+}
+
+/**
  * 各ブロックの距離配分を算出。main = targetDist - sum(others) で算術保証。
  * main が unit の倍数にならない場合、pull を ±unit 調整して整合させる。
  */
-function allocateBlocks(targetDist: number, distanceType: 'S' | 'M' | 'D', levelKey: LevelKey = 'intermediate'): BlockAlloc {
+function allocateBlocks(targetDist: number, distanceType: 'S' | 'M' | 'D', levelKey: LevelKey = 'intermediate', practiceTime = 90): BlockAlloc {
   const cfg = ALLOC_CONFIG[distanceType];
+  const timeCaps = getPracticeTimeCaps(practiceTime);
   const delta = LEVEL_ALLOC_DELTA[levelKey];
   const { unit } = cfg;
 
   const r = (pct: number) => roundToUnit(targetDist * pct, unit);
 
-  let warmUp  = Math.min(Math.max(r(cfg.wupPct),   cfg.wupMin),   cfg.wupMax);
+  // 練習時間キャップを適用（min > max にならないよう min も追随させる）
+  const adjWupMax  = roundToUnit(Math.min(cfg.wupMax,  timeCaps.wupMax),  unit);
+  const adjWupMin  = Math.min(cfg.wupMin,  adjWupMax);
+  const adjDownMax = roundToUnit(Math.min(cfg.downMax, timeCaps.downMax), unit);
+  const adjDownMin = Math.min(cfg.downMin, adjDownMax);
+
+  let warmUp  = Math.min(Math.max(r(cfg.wupPct),   adjWupMin),  adjWupMax);
   let drill   = Math.max(r(cfg.drillPct + delta.drill),   unit * 2);
   let kick    = Math.max(r(cfg.kickPct  + delta.kick),    unit * 2);
   let pull    = Math.max(r(cfg.pullPct),    unit * 2);
   let preMain = Math.max(r(cfg.preMainPct), unit * 1);
-  let down    = Math.min(Math.max(r(cfg.downPct), cfg.downMin), cfg.downMax);
+  let down    = Math.min(Math.max(r(cfg.downPct), adjDownMin), adjDownMax);
 
   // warmUp を unit の倍数に揃える
   warmUp = roundToUnit(warmUp, unit);
@@ -519,34 +538,61 @@ const WARMUP_POOLS: Record<LevelKey, Record<string, string[]>> = {
   },
 };
 
+/** 疲労・月経期時に除外する高強度パターン（完全一致） */
+const FATIGUE_FILTER_HARD   = ['耐乳酸MAX', 'ダイハード', '1H/1E Alt', '1-4 Dec 5 Hard Alt', 'odd: Hard / even: Easy'];
+/** 重疲労・月経期時にさらに除外する中〜高強度パターン */
+const FATIGUE_FILTER_MEDIUM = ['ベストアベレージ', 'Negative split', 'Variable'];
+
+/**
+ * 状況に応じてパターンプールから高強度パターンを除外する。
+ * - 軽疲労: HARD のみ除外
+ * - 筋疲労・疲労残り・月経期: HARD + MEDIUM を除外
+ * フォールバック: フィルタ後に1つも残らない場合はプール先頭1件を維持
+ */
+function filterPoolForCondition(pool: string[], condition: string): string[] {
+  const isHeavy = condition.includes('疲労残り') || condition.includes('月経期') || condition.includes('筋疲労');
+  const isFatigued = condition.includes('疲労') || condition.includes('月経期');
+  if (!isFatigued) return pool;
+  const removeKws = isHeavy ? [...FATIGUE_FILTER_HARD, ...FATIGUE_FILTER_MEDIUM] : FATIGUE_FILTER_HARD;
+  const filtered = pool.filter((p) => !removeKws.some((k) => p.includes(k)));
+  return filtered.length > 0 ? filtered : pool.slice(0, 1);
+}
+
 function getPatternPool(
   blockType: string,
   period: string,
   stroke: string,
   level: string,
+  condition = '',
 ): string[] {
   const lk = getLevelKey(level);
   const p = parseInt(period);
+  let pool: string[];
 
   switch (blockType) {
     case 'warmUp': {
       const category = p <= 2 ? 'technique' : p >= 6 ? 'speed' : 'default';
-      return WARMUP_POOLS[lk][category];
+      pool = WARMUP_POOLS[lk][category];
+      break;
     }
     case 'drill': {
       // IM, S1, または4泳法のいずれか
       const sk = Object.keys(DRILL_POOLS).includes(stroke) ? stroke : 'S1';
-      return DRILL_POOLS[sk][lk];
+      pool = DRILL_POOLS[sk][lk];
+      break;
     }
     case 'kick':
-      return KICK_POOLS[lk];
+      pool = KICK_POOLS[lk];
+      break;
     case 'pull':
-      return PULL_POOLS[lk];
+      pool = PULL_POOLS[lk];
+      break;
     case 'preMain':
       // preMain: レベルによって難易度を変える
-      if (lk === 'beginner')     return ['Des（フォーム確認）', 'Build（ペースを上げる）', 'Easy → Build'];
-      if (lk === 'advanced')     return ['Des（レースペース確認）', 'Negative split', 'Build up → Fast', 'レースペース @rest'];
-      return ['Des（レースペース確認）', 'Negative split', 'レースペース', 'Build up'];
+      if (lk === 'beginner')     pool = ['Des（フォーム確認）', 'Build（ペースを上げる）', 'Easy → Build'];
+      else if (lk === 'advanced') pool = ['Des（レースペース確認）', 'Negative split', 'Build up → Fast', 'レースペース @rest'];
+      else                        pool = ['Des（レースペース確認）', 'Negative split', 'レースペース', 'Build up'];
+      break;
     case 'main': {
       let cat: string;
       if (p === 5) cat = 'lactic';
@@ -554,10 +600,13 @@ function getPatternPool(
       else if (p >= 4) cat = 'high';
       else if (p >= 3) cat = 'middle';
       else cat = 'base';
-      return MAIN_POOLS[cat][lk];
+      pool = MAIN_POOLS[cat][lk];
+      break;
     }
-    default: return ['Standard'];
+    default: pool = ['Standard'];
   }
+
+  return filterPoolForCondition(pool, condition);
 }
 
 // ============================================================
@@ -594,12 +643,13 @@ function buildBlockSpec(
   stroke: string,
   level: string,
   twoSegments?: boolean,
+  condition = '',
 ): BlockSpec {
   const lm = getLevelModifiers(level);
   const lk = lm.key;
   const needsTwoSeg = twoSegments ?? (['kick', 'pull'].includes(blockType) && parseInt(period) >= 3);
   const structs = findSetStructures(targetM, blockType, distanceType, needsTwoSeg, lm.preferSmallSets);
-  const patternPool = getPatternPool(blockType, period, stroke, level);
+  const patternPool = getPatternPool(blockType, period, stroke, level, condition);
 
   if (structs.length === 1 || ['warmUp', 'down', 'preMain'].includes(blockType)) {
     const seg = structs[0];
@@ -658,7 +708,8 @@ export function generateMenuSkeleton(input: TrainingInput): MenuSkeleton {
   );
 
   const lk = getLevelKey(input.level);
-  const alloc = allocateBlocks(targetDist, dt, lk);
+  const practiceTimeNum = parseInt(input.practiceTime, 10) || 90;
+  const alloc = allocateBlocks(targetDist, dt, lk, practiceTimeNum);
 
   // 合計検証（バグ検出用）
   const allocTotal = alloc.warmUp + alloc.drill + alloc.kick + alloc.pull + alloc.preMain + alloc.main + alloc.down;
@@ -681,16 +732,17 @@ export function generateMenuSkeleton(input: TrainingInput): MenuSkeleton {
   const pullStep  = nonMainStep;               // Pull は非メイン天井まで
 
   const level = input.level;
+  const cond  = input.condition;
 
-  const warmUp  = buildBlockSpec(alloc.warmUp,   'warmUp',  dt, 1,           input.period, input.stroke, level, false);
-  const drill   = buildBlockSpec(alloc.drill,    'drill',   dt, drillStep,   input.period, input.stroke, level, false);
-  const kick    = buildBlockSpec(alloc.kick,     'kick',    dt, kickStep,    input.period, input.stroke, level);
-  const pull    = buildBlockSpec(alloc.pull,     'pull',    dt, pullStep,    input.period, input.stroke, level);
-  const preMain = buildBlockSpec(alloc.preMain,  'preMain', dt, preMainStep, input.period, input.stroke, level, false);
+  const warmUp  = buildBlockSpec(alloc.warmUp,   'warmUp',  dt, 1,           input.period, input.stroke, level, false, cond);
+  const drill   = buildBlockSpec(alloc.drill,    'drill',   dt, drillStep,   input.period, input.stroke, level, false, cond);
+  const kick    = buildBlockSpec(alloc.kick,     'kick',    dt, kickStep,    input.period, input.stroke, level, undefined, cond);
+  const pull    = buildBlockSpec(alloc.pull,     'pull',    dt, pullStep,    input.period, input.stroke, level, undefined, cond);
+  const preMain = buildBlockSpec(alloc.preMain,  'preMain', dt, preMainStep, input.period, input.stroke, level, false, cond);
 
   // 非Mainブロックの実際の合計でMainを確定（算術保証の核心）
   const nonMainSum = warmUp.totalM + drill.totalM + kick.totalM + pull.totalM + preMain.totalM;
-  const down = buildBlockSpec(alloc.down, 'down', dt, 1, input.period, input.stroke, level, false);
+  const down = buildBlockSpec(alloc.down, 'down', dt, 1, input.period, input.stroke, level, false, cond);
   const exactMain = targetDist - nonMainSum - down.totalM;
 
   // exactMainが正で割り切れる必要がある。割り切れない場合はdownを微調整
@@ -703,7 +755,7 @@ export function generateMenuSkeleton(input: TrainingInput): MenuSkeleton {
       const newDownM = rawDownM + delta;
       const newMain = targetDist - nonMainSum - newDownM;
       if (newMain > 0 && newMain % baseUnit === 0 && newDownM > 0) {
-        adjustedDown = buildBlockSpec(newDownM, 'down', dt, 1, input.period, input.stroke, level, false);
+        adjustedDown = buildBlockSpec(newDownM, 'down', dt, 1, input.period, input.stroke, level, false, cond);
         adjustedExactMain = newMain;
         break;
       }
@@ -724,7 +776,7 @@ export function generateMenuSkeleton(input: TrainingInput): MenuSkeleton {
 
   const main = buildBlockSpec(
     adjustedExactMain, 'main', dt, mainStep, input.period, input.stroke, level,
-    mainTwoSeg,
+    mainTwoSeg, cond,
   );
 
   /**
@@ -744,7 +796,7 @@ export function generateMenuSkeleton(input: TrainingInput): MenuSkeleton {
    */
   const hasRest = lk === 'beginner'
     ? true
-    : input.condition.includes('疲労') || ['4', '5'].includes(input.period);
+    : input.condition.includes('疲労') || input.condition.includes('月経期') || ['4', '5'].includes(input.period);
 
   return {
     input,

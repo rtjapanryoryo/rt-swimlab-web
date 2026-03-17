@@ -410,15 +410,15 @@ function generateDrill(
 ): string {
   const strokeKey = normalizeStrokeKey(stroke);
   const drills: Record<string, string[]> = {
-    FR: ['ドリル'],
-    Fr: ['ドリル'],
-    Ba: ['ドリル'],
-    Br: ['ドリル'],
-    Fly: ['ドリル'],
-    IM: ['ドリル'],
-    S1: ['ドリル'],
+    FR: ['キャッチアップ / 片手右', 'odd: 片手左 / even: 片手右', 'Form & Des'],
+    Fr: ['キャッチアップ / 片手右', 'odd: 片手左 / even: 片手右', 'Form & Des'],
+    Ba: ['片手左 / 片手右', 'odd: 片手左 / even: 片手右', 'Form & Des'],
+    Br: ['Brキックドリル / Brプルドリル', '2キック1プル', 'タイミングドリル'],
+    Fly: ['片キック（左）/ 片キック（右）', '1キック1プル', 'ドルフィンキック'],
+    IM: ['4泳法ドリル順（Fr→Ba→Br→Fly）', 'odd: IM Order / even: 専門種目', 'Form & Des'],
+    S1: ['専門種目ドリル', 'Form & Des', 'odd: ドリル / even: Swim'],
   };
-  const strokeDrills = drills[strokeKey] || ['ドリル'];
+  const strokeDrills = drills[strokeKey] || ['Form & Des'];
   const idx = pickIndex(stroke + period, strokeDrills.length);
   const drillName = strokeDrills[idx];
   const sets = ageGroup === '小学生' ? 4 : 6;

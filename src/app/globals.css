@@ -414,3 +414,93 @@ body {
 .generate-loading-wave {
   animation: generateWaveFloat 2.2s ease-in-out infinite;
 }
+/* 波パターン（水・泳ぎの連想） */
+.generate-loading-waves {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 80'%3E%3Cpath d='M0 40 Q50 20 100 40 T200 40 T300 40 T400 40' fill='none' stroke='%2306b6d4' stroke-width='1.5' opacity='0.5'/%3E%3Cpath d='M0 50 Q50 70 100 50 T200 50 T300 50 T400 50' fill='none' stroke='%2306b6d4' stroke-width='1.5' opacity='0.4'/%3E%3Cpath d='M0 55 Q50 35 100 55 T200 55 T300 55 T400 55' fill='none' stroke='%2314b8a6' stroke-width='1' opacity='0.3'/%3E%3C/svg%3E");
+  background-size: 400px 80px;
+  background-repeat: repeat-x;
+  animation: generateWavesFlow 12s linear infinite;
+}
+@keyframes generateWavesFlow {
+  from { background-position: 0 0; }
+  to { background-position: 400px 0; }
+}
+/* ロゴの優しい登場 */
+.generate-loading-logo {
+  animation: generateLogoIn 0.6s cubic-bezier(0.2, 0.9, 0.2, 1) 0.15s both;
+}
+@keyframes generateLogoIn {
+  from { opacity: 0; transform: translateY(6px) scale(0.96); }
+  to { opacity: 0.9; transform: translateY(0) scale(1); }
+}
+/* 波パターン（水をイメージした装飾） */
+.generate-loading-waves {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 120' preserveAspectRatio='none'%3E%3Cpath d='M0,60 C80,30 120,90 200,60 S320,90 400,60' fill='none' stroke='%2306b6d4' stroke-width='1.5' opacity='0.5'/%3E%3Cpath d='M0,80 C100,40 150,100 250,80 S350,110 400,80' fill='none' stroke='%2306b6d4' stroke-width='1' opacity='0.4'/%3E%3Cpath d='M0,40 C60,70 140,20 200,40 S280,70 400,40' fill='none' stroke='%2306b6d4' stroke-width='1' opacity='0.3'/%3E%3C/svg%3E");
+  background-size: 400px 120px;
+  animation: generateWavesMove 8s linear infinite;
+}
+@keyframes generateWavesMove {
+  0% { background-position: 0 0; }
+  100% { background-position: 400px 0; }
+}
+.generate-loading-logo {
+  animation: generateLogoPulse 3s ease-in-out infinite;
+}
+@keyframes generateLogoPulse {
+  0%, 100% { opacity: 0.9; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.03); }
+}
+/* 波パターン（水を連想する装飾） */
+.generate-loading-waves {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120'%3E%3Cpath fill='%2306b6d4' fill-opacity='0.4' d='M0 60 Q150 20 300 60 T600 60 T900 60 T1200 60 L1200 120 L0 120 Z'/%3E%3Cpath fill='%2306b6d4' fill-opacity='0.25' d='M0 80 Q200 40 400 80 T800 80 T1200 80 L1200 120 L0 120 Z'/%3E%3Cpath fill='%2314b8a6' fill-opacity='0.2' d='M0 70 Q180 30 360 70 T720 70 T1200 70 L1200 120 L0 120 Z'/%3E%3C/svg%3E");
+  background-size: 600px 120px;
+  background-repeat: repeat-x;
+  background-position: 0 100%;
+  animation: generateWavesShift 8s linear infinite;
+}
+@keyframes generateWavesShift {
+  0% { background-position: 0 100%; }
+  100% { background-position: 600px 100%; }
+}
+/* RT ロゴ：フェードイン＋控えめな光沢 */
+.generate-loading-logo {
+  animation: generateLogoIn 0.6s cubic-bezier(0.2, 0.9, 0.2, 1) 0.2s both;
+}
+@keyframes generateLogoIn {
+  from { opacity: 0; transform: translateY(-8px) scale(0.95); }
+  to { opacity: 0.9; transform: translateY(0) scale(1); }
+}
+.generate-loading-logo {
+  animation: generateLogoPulse 2.5s ease-in-out infinite;
+}
+@keyframes generateLogoPulse {
+  0%, 100% { opacity: 0.85; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.03); }
+}
+/* 波パターン（水泳・プールを連想する背景） */
+.generate-loading-waves {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120'%3E%3Cpath fill='%2306b6d4' fill-opacity='0.4' d='M0 60c150-30 300-60 450-60s300 30 450 60 300 60 450 60 300-30 450-60v60H0z'/%3E%3Cpath fill='%2306b6d4' fill-opacity='0.25' d='M0 90c100-20 200-40 300-40s200 20 300 40 200 40 300 40 200-20 300-40v30H0z'/%3E%3C/svg%3E");
+  background-size: 400px 80px;
+  animation: generateWavesMove 8s linear infinite;
+}
+@keyframes generateWavesMove {
+  0% { background-position: 0 0; }
+  100% { background-position: 400px 0; }
+}
+/* 波パターン（水・泳ぎをイメージ） */
+.generate-loading-waves {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120'%3E%3Cpath fill='%2306b6d4' fill-opacity='0.4' d='M0 60 C300 20 600 100 900 60 S1500 20 1800 60 V120 H0 Z'/%3E%3Cpath fill='%2306b6d4' fill-opacity='0.25' d='M0 70 C300 30 600 90 900 70 S1200 30 1500 70 V120 H0 Z'/%3E%3C/svg%3E");
+  background-size: 200% 100%;
+  animation: generateWavesMove 8s ease-in-out infinite;
+}
+@keyframes generateWavesMove {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.generate-loading-logo {
+  animation: generateLogoFloat 3s ease-in-out infinite;
+}
+@keyframes generateLogoFloat {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.9; }
+  50% { transform: translateY(-3px) scale(1.02); opacity: 1; }
+}
