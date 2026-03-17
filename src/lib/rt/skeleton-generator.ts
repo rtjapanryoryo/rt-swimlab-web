@@ -60,19 +60,24 @@ export interface MenuSkeleton {
 // 強度定義
 // ============================================================
 
-/** 強度をステップ整数で管理: A1=1, A2=2, EN1=3, EN2=3, EN3=4, AN1=5, AN2=6, MAX=7 */
+/**
+ * 強度ステップ管理（RT Japan公式定義に準拠）
+ * ①=A1/A2  ②=EN1  ③=EN2  ④=EN3  ⑤=AN1  ⑥=AN2  ⑦=MAX
+ * ※ A1とA2は同じ①。EN2（③）は別レベルとして独立。
+ */
 const INTENSITY_STEPS: { label: string; step: number; num: string }[] = [
   { label: 'A1',  step: 1, num: '①' },
-  { label: 'A2',  step: 2, num: '②' },
-  { label: 'EN1', step: 3, num: '③' },
+  { label: 'A2',  step: 1, num: '①' }, // A1/A2ともに①
+  { label: 'EN1', step: 2, num: '②' },
   { label: 'EN2', step: 3, num: '③' },
   { label: 'EN3', step: 4, num: '④' },
+  { label: 'EN4', step: 4, num: '④' },
   { label: 'AN1', step: 5, num: '⑤' },
   { label: 'AN2', step: 6, num: '⑥' },
   { label: 'MAX', step: 7, num: '⑦' },
 ];
 
-const STEP_TO_LABEL: Record<number, string> = { 1: 'A1', 2: 'A2', 3: 'EN1', 4: 'EN3', 5: 'AN1', 6: 'AN2', 7: 'MAX' };
+const STEP_TO_LABEL: Record<number, string> = { 1: 'A1', 2: 'EN1', 3: 'EN2', 4: 'EN3', 5: 'AN1', 6: 'AN2', 7: 'MAX' };
 const STEP_TO_NUM:   Record<number, string> = { 1: '①', 2: '②', 3: '③', 4: '④', 5: '⑤', 6: '⑥', 7: '⑦' };
 
 function stepOf(label: string): number {
@@ -106,15 +111,19 @@ function computeRestHint(mPerSet: number, intensityStep: number): string {
   return secs === 0 ? `${mins}:00` : `${mins}:${String(secs).padStart(2, '0')}`;
 }
 
-/** 期ごとのベース強度 [mainStep, nonMainStep] */
+/**
+ * 期ごとのベース強度 [mainStep, nonMainStep]（RT Japan規則書 強度天井表準拠）
+ * step1=A1/A2(①)  step2=EN1(②)  step3=EN2(③)  step4=EN3(④)  step5=AN1(⑤)  step6=AN2(⑥)
+ * ※ drillStep/kickStep/pullStep は generateMenuSkeleton 内でブロック別に調整
+ */
 const PERIOD_INTENSITY: Record<string, [number, number]> = {
-  '1': [3, 3], // リカバリー: main③ non③
-  '2': [4, 3], // 基礎形成:   main④ non③
-  '3': [4, 4], // 発展形成:   main④ non④
-  '4': [5, 4], // スピード持久: main⑤ non④
-  '5': [6, 4], // 耐乳酸:      main⑥ non④
-  '6': [5, 4], // 調整:        main⑤ non④
-  '7': [4, 3], // テーパー:    main④ non③
+  '1': [3, 3], // リカバリー:  main③(EN2) non③(EN2)
+  '2': [4, 3], // 基礎形成:    main④(EN3) non③(EN2)
+  '3': [4, 4], // 発展形成:    main④(EN3) non④(EN3)
+  '4': [5, 4], // スピード持久: main⑤(AN1) non④(EN3)
+  '5': [6, 4], // 耐乳酸:      main⑥(AN2) non④(EN3)
+  '6': [5, 4], // 調整:        main⑤(AN1) non④(EN3)
+  '7': [4, 3], // テーパー:    main④(EN3) non③(EN2)
 };
 
 function getAdjustedIntensities(
@@ -499,10 +508,24 @@ export function generateMenuSkeleton(input: TrainingInput): MenuSkeleton {
     alloc.main += targetDist - allocTotal;
   }
 
-  const warmUp  = buildBlockSpec(alloc.warmUp,   'warmUp',  dt, 1,             input.period, input.stroke, false);
-  const drill   = buildBlockSpec(alloc.drill,    'drill',   dt, nonMainStep,   input.period, input.stroke, false);
-  const kick    = buildBlockSpec(alloc.kick,     'kick',    dt, nonMainStep,   input.period, input.stroke);
-  const pull    = buildBlockSpec(alloc.pull,     'pull',    dt, nonMainStep,   input.period, input.stroke);
+  /**
+   * ブロック別強度の設計思想（W-up直後にいきなり高強度にしない）
+   *  W-up  : ① (A1) 固定
+   *  Drill : max ② (EN1) 固定 — 技術ドリルは常に軽め（フォーム崩さない）
+   *  Kick  : max ③ (EN2) — ストロークより軽く補助的（コーチ思想9番）
+   *  Pull  : nonMainStep の天井 — メインへの橋渡し
+   *  PreMain: mainStep - 1 — メインへの導入
+   *  Main  : mainStep（最大強度）
+   *  Down  : ① 固定
+   */
+  const drillStep = Math.min(nonMainStep, 2); // EN1(②) 以下に固定
+  const kickStep  = Math.min(nonMainStep, 3); // EN2(③) 以下に固定（ストローク優先思想）
+  const pullStep  = nonMainStep;               // Pull は非メイン天井まで
+
+  const warmUp  = buildBlockSpec(alloc.warmUp,   'warmUp',  dt, 1,          input.period, input.stroke, false);
+  const drill   = buildBlockSpec(alloc.drill,    'drill',   dt, drillStep,  input.period, input.stroke, false);
+  const kick    = buildBlockSpec(alloc.kick,     'kick',    dt, kickStep,   input.period, input.stroke);
+  const pull    = buildBlockSpec(alloc.pull,     'pull',    dt, pullStep,   input.period, input.stroke);
   const preMain = buildBlockSpec(alloc.preMain,  'preMain', dt, preMainStep,   input.period, input.stroke, false);
 
   // 非Mainブロックの実際の合計でMainを確定（算術保証の核心）

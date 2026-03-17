@@ -133,10 +133,10 @@ function parsePartToRow(
   if (circleMatch) {
     intensity = circleMatch[0].replace(/[()（）]/g, '');
   } else {
-    // EN1/EN3/AN1 等のテキスト表記を丸数字にマップ
+    // EN1/EN2/EN3/AN1 等のテキスト表記を丸数字にマップ（RT Japan公式: ①=A1/A2 ②=EN1 ③=EN2 ④=EN3 ⑤=AN1 ⑥=AN2 ⑦=MAX）
     const intensityCodes = ['AN1', 'AN2', 'AN3', 'AN', 'EN1', 'EN2', 'EN3', 'EN4', 'A1', 'A2'];
     const intensityToLegendMap: Record<string, string> = {
-      A1: '①', A2: '②', EN1: '③', EN2: '③', EN3: '④', EN4: '④', AN1: '⑤', AN2: '⑥', AN3: '⑦', AN: '⑦',
+      A1: '①', A2: '①', EN1: '②', EN2: '③', EN3: '④', EN4: '④', AN1: '⑤', AN2: '⑥', AN3: '⑦', AN: '⑦',
     };
     for (const code of intensityCodes) {
       const m = text.match(new RegExp(`[(\（]${code}[)\）]`, 'i'));
@@ -529,17 +529,17 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
         </div>
       )}
 
-      {/* 強度の凡例 */}
+      {/* 強度の凡例（RT Japan公式定義） */}
       <div className="mb-6 pt-4 border-t border-gray-300 text-xs">
-        <div className="font-semibold text-gray-900 mb-2">強度の凡例（RT Japan基準）:</div>
+        <div className="font-semibold text-gray-900 mb-2">強度の凡例（RT Japan）</div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 text-gray-700">
-          <div>① A1 — HR~120（Easy・Relax）</div>
-          <div>② A2 — HR~130（軽有酸素）</div>
-          <div>③ EN1 — HR 140~150（有酸素基盤）</div>
-          <div>④ EN3 — HR 160~180（有酸素パワー）</div>
+          <div>① A1/A2 — HR~120（Easy・Relax）</div>
+          <div>② EN1 — HR 120~140（有酸素基盤）</div>
+          <div>③ EN2 — HR 140~160（有酸素維持）</div>
+          <div>④ EN3/EN4 — HR 160~180（有酸素パワー）</div>
           <div>⑤ AN1 — HR Max（スピード持久）</div>
           <div>⑥ AN2 — HR Max（乳酸生成・耐乳酸）</div>
-          <div>⑦ MAX — スプリント・パワー</div>
+          <div>⑦ MAX — スプリント・最大出力</div>
         </div>
       </div>
 

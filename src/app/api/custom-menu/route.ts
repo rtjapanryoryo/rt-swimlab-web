@@ -70,7 +70,7 @@ const CORE_SYSTEM_PROMPT = `【コーチ思想の核心（50問インタビュ�
 
 【コンテンツラベル品質ルール（必須）】
 - **テンプレートの {PLACEHOLDER} スロットのみ埋める。数値・本数・@rest・強度番号は変更禁止。**
-- 強度番号の正確な対応: ①=A1 ②=A2 ③=EN1 ④=EN3 ⑤=AN1 ⑥=AN2 ⑦=MAX（④と③は別強度。混同禁止）
+- 強度番号の正確な対応（RT Japan公式）: ①=A1/A2 ②=EN1 ③=EN2 ④=EN3 ⑤=AN1 ⑥=AN2 ⑦=MAX（③EN2と④EN3は別強度。EN5・EN6は存在しない）
 - {WU_PATTERN}: SKPS / IM Order / Variable / Des / Build / 1-4:Relax 5-6:上げる のいずれか
 - {DR_DRILL_N}: 種目固有ドリル名（Br=キックドリル/プルドリル/タイミング。Fly=片キック/ドルフィン/1キック1プル。Ba=片手/ドリルSwim交互）
 - {KI_PATTERN_N}: Des / 1-4 Dec / good kick / Fins / Des（後半Fins）のいずれか
