@@ -63,7 +63,7 @@ export default function MyPageDashboard() {
   const { profile } = useProfile();
 
   return (
-    <div className="space-y-8 max-w-3xl">
+    <div className="space-y-8">
 
       {/* ─── ヒーローバナー ─── */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-[#0d1a2e] to-slate-900 p-7 sm:p-10 text-white shadow-2xl shadow-slate-900/40">

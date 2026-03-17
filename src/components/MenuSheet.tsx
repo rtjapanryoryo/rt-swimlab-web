@@ -29,29 +29,21 @@ function parseRowTotalToNumber(value: string): number {
 }
 
 /**
- * 強度バッジ：丸数字 + ゾーン名 + 色分け
- * ①②③ だけでは専門外には伝わりにくいので、色と略称を追加して直感的に
+ * 強度表示：丸数字 + ゾーン略称（印刷対応・シンプル）
+ * 色は使わず、読みやすいテキストベースの表示
  */
 function IntensityBadge({ value }: { value: string }) {
-  const CONFIG: Record<string, { cls: string; label: string; hr: string }> = {
-    '①': { cls: 'bg-slate-100 text-slate-600 border-slate-200',   label: 'Easy',   hr: '~120' },
-    '②': { cls: 'bg-sky-100 text-sky-700 border-sky-200',         label: 'EN1',    hr: '120~140' },
-    '③': { cls: 'bg-blue-100 text-blue-700 border-blue-200',      label: 'EN2',    hr: '140~160' },
-    '④': { cls: 'bg-teal-100 text-teal-700 border-teal-200',      label: 'EN3',    hr: '160~180' },
-    '⑤': { cls: 'bg-orange-100 text-orange-700 border-orange-200',label: 'AN1',    hr: 'Max近' },
-    '⑥': { cls: 'bg-red-100 text-red-700 border-red-200',         label: 'AN2',    hr: 'Max' },
-    '⑦': { cls: 'bg-gray-800 text-white border-gray-700',         label: 'MAX',    hr: '全力' },
+  const LABEL: Record<string, string> = {
+    '①': 'Easy', '②': 'EN1', '③': 'EN2', '④': 'EN3',
+    '⑤': 'AN1',  '⑥': 'AN2', '⑦': 'MAX',
   };
   if (!value || value === '-') return <>-</>;
-  const cfg = CONFIG[value];
-  if (!cfg) return <>{value}</>;
+  const label = LABEL[value];
+  if (!label) return <>{value}</>;
   return (
-    <span
-      className={`inline-flex flex-col items-center px-1.5 py-0.5 rounded-md border text-[11px] font-bold leading-tight ${cfg.cls}`}
-      title={`HR ${cfg.hr}`}
-    >
+    <span className="inline-flex flex-col items-center text-[11px] font-bold leading-tight text-gray-800">
       <span>{value}</span>
-      <span className="text-[8px] leading-none opacity-80 font-semibold">{cfg.label}</span>
+      <span className="text-[8px] leading-none text-gray-500 font-medium">{label}</span>
     </span>
   );
 }
@@ -545,30 +537,22 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
         </div>
       )}
 
-      {/* 強度の凡例（RT Japan公式定義） */}
-      <div className="mb-6 pt-4 border-t border-gray-300 text-xs">
-        <div className="font-semibold text-gray-900 mb-2 text-sm">強度ゾーン（RT Japan 公式）</div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-1.5">
+      {/* 強度凡例（コンパクト・印刷対応） */}
+      <div className="mb-6 pt-3 border-t border-gray-200 text-xs text-gray-600">
+        <span className="font-semibold text-gray-700 mr-2">強度:</span>
+        <span className="inline-flex flex-wrap gap-x-4 gap-y-0.5">
           {[
-            { v: '①', label: 'A1/A2', zone: 'Easy · Relax',       hr: 'HR ~120',    cls: 'bg-slate-50 border-slate-200 text-slate-700' },
-            { v: '②', label: 'EN1',   zone: '有酸素基盤',           hr: 'HR 120~140', cls: 'bg-sky-50 border-sky-200 text-sky-800' },
-            { v: '③', label: 'EN2',   zone: '有酸素維持',           hr: 'HR 140~160', cls: 'bg-blue-50 border-blue-200 text-blue-800' },
-            { v: '④', label: 'EN3',   zone: '有酸素パワー',         hr: 'HR 160~180', cls: 'bg-teal-50 border-teal-200 text-teal-800' },
-            { v: '⑤', label: 'AN1',   zone: 'スピード持久',         hr: 'HR Max近',   cls: 'bg-orange-50 border-orange-200 text-orange-800' },
-            { v: '⑥', label: 'AN2',   zone: '耐乳酸',               hr: 'HR Max',     cls: 'bg-red-50 border-red-200 text-red-800' },
-            { v: '⑦', label: 'MAX',   zone: 'スプリント・全力',     hr: '最大出力',   cls: 'bg-gray-100 border-gray-400 text-gray-900' },
-          ].map(({ v, label, zone, hr, cls }) => (
-            <div key={v} className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border ${cls}`}>
-              <span className="text-base font-black w-5 text-center flex-shrink-0">{v}</span>
-              <div className="min-w-0">
-                <span className="font-bold text-xs">{label}</span>
-                <span className="mx-1 opacity-40">·</span>
-                <span className="text-xs opacity-75">{zone}</span>
-                <div className="text-[10px] opacity-60 tabular-nums">{hr}</div>
-              </div>
-            </div>
+            ['①', 'A1/A2', '~HR120 Easy'],
+            ['②', 'EN1',   'HR120~140'],
+            ['③', 'EN2',   'HR140~160'],
+            ['④', 'EN3',   'HR160~180'],
+            ['⑤', 'AN1',   'HR Max近'],
+            ['⑥', 'AN2',   'HR Max'],
+            ['⑦', 'MAX',   '全力'],
+          ].map(([v, code, desc]) => (
+            <span key={v}><span className="font-bold text-gray-800">{v} {code}</span><span className="ml-1 text-gray-400">{desc}</span></span>
           ))}
-        </div>
+        </span>
       </div>
 
       {/* まとめ */}

@@ -7,7 +7,7 @@ import MenuGeneratorPanel from '@/components/MenuGeneratorPanel';
  */
 export default function RTSwimLabMenuPage() {
   return (
-    <div className="max-w-3xl">
+    <div>
       {/* ─── プレミアムヘッダー ─── */}
       <header className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-[#0a1628] to-[#0d1f35] mb-8 p-7 sm:p-10 text-white shadow-2xl shadow-slate-900/40">
         {/* Ambient glows */}

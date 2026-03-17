@@ -113,7 +113,7 @@ function MyPageLayoutInner({
         </aside>
 
         {/* メインコンテンツ（PC: サイドバー＋余白＋パディング。モバイル: フッター分の余白） */}
-        <main className="flex-1 min-w-0 order-1 lg:order-2 py-6 sm:py-8 px-4 sm:px-6 lg:pl-[21rem] lg:pr-0 lg:py-8 lg:max-w-[calc(100%-20rem)] pb-24 lg:pb-8">
+        <main className="flex-1 min-w-0 order-1 lg:order-2 py-6 sm:py-8 px-4 sm:px-6 lg:pl-72 lg:pr-8 xl:pr-12 lg:py-8 pb-24 lg:pb-8">
           {children}
         </main>
       </div>
