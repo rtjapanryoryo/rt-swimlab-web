@@ -68,23 +68,39 @@ const CORE_SYSTEM_PROMPT = `【コーチ思想の核心（50問インタビュ�
 9. 【ストローク優先・キックは補助】まず土台となるストロークを確立し、その上でキックを連動させる。
 10. 【安全第一・怪我させない】年齢・疲労を最優先。マスターズは「怪我をさせないこと」が最重要。
 
-【コンテンツラベル品質ルール（必須）】
+【コンテンツラベル生成ルール（必須）】
 - **テンプレートの {PLACEHOLDER} スロットのみ埋める。数値・本数・@rest・強度番号は変更禁止。**
 - 強度番号の正確な対応（RT Japan公式）: ①=A1/A2 ②=EN1 ③=EN2 ④=EN3 ⑤=AN1 ⑥=AN2 ⑦=MAX（③EN2と④EN3は別強度。EN5・EN6は存在しない）
-- {WU_PATTERN}: SKPS / IM Order / Variable / Des / Build / 1-4:Relax 5-6:上げる のいずれか
-- {DR_DRILL_N}: 種目固有ドリル名（Br=キックドリル/プルドリル/タイミング。Fly=片キック/ドルフィン/1キック1プル。Ba=片手/ドリルSwim交互）
-- {KI_PATTERN_N}: Des / 1-4 Dec / good kick / Fins / Des（後半Fins）のいずれか
-- {PL_PATTERN_N}: DPS / Negative split / o:Fast e:Easy / Form & Des 1→4 のいずれか（必ず具体的なパターン名で）
-- {PM_CONTENT}: レースペース確認内容（"@{rest}レースペース" / "Des（レースペース確認）" / "Negative split"）
+- **{WU_PATTERN}・{DR_DRILL_N}・{KI_PATTERN_N}・{PL_PATTERN_N}・{PM_CONTENT} は固定選択肢を使わず、種目・期・レベル・状況に最適なオリジナルの内容を自由に生成すること。**
+- {WU_PATTERN}: W-upの泳ぎ方・フォーカスを具体的に命名（例: SKPS build / odd:Ba even:Fr Des / IM order 4×50 等）
+- {DR_DRILL_N}: その種目・レベルに固有の具体的なドリル名を創造的に命名（例: Fr=エルボーアップキャッチドリル / Ba=片手リカバリーフォーカス / Br=グライドフェーズ強調プルドリル / Fly=ヒップドライブ片キック）。毎回異なる視点で命名する。
+- {KI_PATTERN_N}: そのキックの目的・感覚に即した具体的なパターン名（例: back kick build / underwater dolphin 3→5→7 / strong finish last 2 等）
+- {PL_PATTERN_N}: そのプルの狙いに即した具体的なパターン名（例: DPS focus negative split / catch-up timing form first / fist drill → open hand Des 等）
+- {PM_CONTENT}: Pre-Mainの内容を期・距離タイプ・コンディションに合わせて具体的に（例: build to race pace @30sec / negative split レースペース確認 / threshold feel Des 4→1 等）
 - W-up / Down: 種目は Cho 固定。Down は変更しない（テンプレートのまま出力）。
 - Main: カテゴリ名はテンプレート通りに出力（変更禁止）。@rest も変更禁止。
 - Dive: 期が⑥調整期・⑦テーパー期のときのみ出力。それ以外は空文字（""）。
 
 【intention・coachingPoint・caution・expectedEffectの必須カスタマイズ】
-- intention: 期・目的・状況・距離タイプ・年齢を必ず反映。汎用文コピペ禁止。2〜4行で具体的に。
-- coachingPoint: このメニューのDrill/Kick/Pull/Mainに即した意識点を3つ。TSS最小化・水感・ブレーキゼロの視点を必ず含める。
-- caution: 状況・年齢・疲労・月経期等を必ず反映した固有の注意。3点。汎用文禁止。
-- expectedEffect: このメニューで何が得られるか。2〜3行。期別・強度別の具体的な効果を書く。`;
+- intention（今日の狙い）: 選手が「なぜ今日これをやるか」を聞いてポジティブになれる言葉で書く。
+  以下の3軸を統合した2〜4文の具体的な文章。汎用文（「基礎を固める」「スタミナをつける」等）は禁止。
+  軸①: 期の目的（今どのフェーズで何を積み上げているか）
+  軸②: コンディション（状況がメニュー設計にどう影響したか）
+  軸③: 距離タイプ×種目の戦略的意図（今日の技術フォーカスは何か）
+  例OK: 「基礎形成期の○週目として、EN2強度でのDPS感覚をキックとプルで重点的に磨きます。軽疲労のため高強度を外し、丁寧なストローク技術の定着を優先した設計です」
+
+- coachingPoint（指導ポイント）: このセッションのDrill/Kick/Pull/Mainに即した具体的な意識ポイントを3つ。
+  必須視点: ① TSS（タイム＋ストローク数＋心拍数）の最小化 ② 水感・ブレーキゼロ・重心の連続移動 ③ このセッション固有の技術焦点
+  各ポイントは「何を・どう意識するか」まで具体的に書く（「水を感じて」は禁止）。
+
+- caution（注意点）: このセッション固有の安全・技術・メンタル注意を3点。
+  状況・年齢・疲労・月経期を必ず反映した具体的な注意。汎用文（「無理しない」「体調に注意」等）は禁止。
+
+- expectedEffect（期待効果）: このメニューをやりきった後に「何が変わるか・何が得られるか」を以下3軸で書く。
+  軸①【生理的適応】: 有酸素系・乳酸系・神経系のどこがどう刺激・強化されるか（心拍・代謝・筋の観点）
+  軸②【技術的発展】: ドリル・キック・プルを通じて何の感覚が磨かれ、ストロークにどう活きるか
+  軸③【メンタル・成功体験】: 達成感・翌日への準備・自己効力感の視点
+  2〜3文で期別・強度別の具体的な効果を書く。汎用文禁止。`;
 
 /** 必須8項目 */
 const REQUIRED_KEYS: { key: string; label: string }[] = [
@@ -251,13 +267,13 @@ export async function POST(request: NextRequest) {
       // ユーザープロンプト構築（テンプレート充填タスク）
       // ============================================================
 
-      // 各ブロックのパターンプール文字列
+      // 各ブロックの構造ヒント（コンテンツラベルはAIが自由生成）
       const patternHints = [
-        `W-up パターン: ${skeleton.warmUp.segments[0]?.patternPool.slice(0, 3).join(' / ')}`,
-        `Drill ${stroke} パターン: ${skeleton.drill.segments[0]?.patternPool.slice(0, 3).join(' / ')}`,
-        `Kick パターン: ${skeleton.kick.segments.map((s, i) => `seg${i + 1}: ${s.patternPool.slice(0, 2).join(' or ')}`).join(' | ')}`,
-        `Pull パターン: ${skeleton.pull.segments.map((s, i) => `seg${i + 1}: ${s.patternPool.slice(0, 2).join(' or ')}`).join(' | ')}`,
-        `Pre-Main {PM_CONTENT}: Des（レースペース確認）/ Negative split / Build up（→レースペース）/ レースペース@${skeleton.preMain.segments[0]?.restHint ?? '30sec'}`,
+        `W-up: ${skeleton.warmUp.totalM}m Cho — {WU_PATTERN} に種目別フォーカスと変化を自由命名`,
+        `Drill (${stroke}): ${skeleton.drill.totalM}m — {DR_DRILL_N} に ${stroke} 固有の具体的なドリル名をオリジナル生成（毎回異なる視点で）`,
+        `Kick: ${skeleton.kick.totalM}m — {KI_PATTERN_N} にキックの目的・感覚・構成を自由命名`,
+        `Pull: ${skeleton.pull.totalM}m — {PL_PATTERN_N} にプルの狙い・フォーム・テンポ指示を自由命名`,
+        `Pre-Main: ${skeleton.preMain.totalM}m — {PM_CONTENT} を期・距離タイプ・コンディションに合わせて自由生成（@rest=${skeleton.preMain.segments[0]?.restHint ?? '30sec'} 変更禁止）`,
         `Main カテゴリ: ${skeleton.mainCategory}（変更不可）・rest: ${skeleton.main.segments[0]?.restHint ?? '30sec'}（変更不可）`,
       ].join('\n');
 
@@ -267,18 +283,20 @@ export async function POST(request: NextRequest) {
         `合計: ${skeleton.targetDist}m（変更禁止）`,
       ].join('\n');
 
-      const ageNum = parseInt(age, 10) || 20;
       const adjustNotes = skeleton.adjustmentNotes.length
         ? `適用済み補正: ${skeleton.adjustmentNotes.join(', ')}`
         : '';
 
       const buildUserPrompt = (retryHint = '') =>
-        `${retryHint}【タスク】以下のテンプレートの {PLACEHOLDER} スロットをコンテンツラベルで埋めてください。
-**数値・本数・@rest・強度番号（①〜⑥）は絶対変更禁止。{PLACEHOLDER} 部分のみ書き換える。**
-- {WU_PATTERN} → SKPS/IM Order/Variable/Des/Build のいずれか
-- {DR_DRILL_N} → 種目別ドリル名（パターン辞書より）
-- {KI_PATTERN_N} / {PL_PATTERN_N} → Kick/Pull パターン（Des/DPS/Negative split 等）
-- {PM_CONTENT} → レースペース確認の内容（"Des（レースペース確認）" / "@30sec レースペース" 等）
+        `${retryHint}【タスク】以下のテンプレートの {PLACEHOLDER} スロットをオリジナルのコンテンツラベルで埋めてください。
+**数値・本数・@rest・強度番号（①〜⑦）は絶対変更禁止。{PLACEHOLDER} 部分のみ書き換える。**
+
+【重要】コンテンツラベルは固定パターンを使い回さず、下記条件（種目・期・レベル・状況）に最適なオリジナル内容を毎回新鮮に生成すること。
+- {WU_PATTERN} → 種目と期に合ったW-upの泳法フォーカスを自由命名（例: SKPS build / odd:Ba even:Fr Des 等）
+- {DR_DRILL_N} → ${stroke} 固有の具体的なドリル名をオリジナル生成（形よりも水感・ブレーキゼロを意識した命名で）
+- {KI_PATTERN_N} → キックの目的・感覚・構成を反映した自由命名
+- {PL_PATTERN_N} → プルの狙い・テンポ・フォーム指示を反映した自由命名
+- {PM_CONTENT} → Pre-Mainの内容を期・距離タイプ・コンディションに合わせて自由生成
 
 【入力条件】
 - 期: ${PERIOD_LABELS[period] ?? period}
@@ -288,23 +306,35 @@ export async function POST(request: NextRequest) {
 - レベル: ${level}
 - 状況: ${condition}　練習時間: ${practiceTime}分
 ${adjustNotes ? `- ${adjustNotes}` : ''}
+${condition.includes('絶好調') ? `【絶好調コンディション指示】
+- intention: ピーク状態を活かした「攻めの練習」の狙いを前向きに書く。今日の感覚の鋭さを最大限に使う視点で。
+- coachingPoint: 感覚の鋭さ・TSS最小化の極限追求・タイムへのこだわりを具体的に書く
+- caution: 好調時こそ「やりすぎ」に陥るリスク・翌日への疲労管理・技術の雑さへの警戒を言及する
+- expectedEffect: ピーク状態で積んだ質の高い練習が身体・神経系にどう定着するかを具体的に書く` : condition.includes('疲労残り') || condition.includes('月経期') ? `【高疲労・回復優先指示】
+- intention: 疲労状態での「質を落とさない賢い練習」の意義を書く。無理せず技術に集中する狙いで。
+- coachingPoint: フォーム保持・体力消耗を最小化する泳ぎ・感覚確認に絞った意識点を書く
+- caution: 疲労蓄積のリスク・強度超過の危険性・回復を優先する判断基準を具体的に書く
+- expectedEffect: 疲労下でも技術確認・軽負荷での身体メンテナンスによる回復促進効果を書く` : condition.includes('疲労') ? `【軽〜中疲労対応指示】
+- intention: 疲労を考慮した「丁寧な技術練習」の狙いを書く。量より質・感覚優先の視点で。
+- coachingPoint: 疲労があっても維持できるフォームのポイント・省エネな泳ぎの意識を具体的に書く
+- caution: 疲労サインへの敏感な対応・早めの強度調整・本数削減の基準を書く` : ''}
 ${(level.includes('フィットネス') || level.includes('初心者')) ? `【初級レベル対応指示】
-- Drill: 基本動作に特化した易しいドリル名を選ぶ（キャッチアップ・片手・壁キック等）
+- Drill: 基本動作に特化した易しいドリル名をオリジナル生成（キャッチ感覚・体位・呼吸タイミング系）
 - coachingPoint: フォームの基礎・感覚づくり・怪我予防を前面に出す
 - intention: スピードより「動きを覚える」「水に慣れる」視点で書く
 - caution: 過負荷・フォーム崩れ・体力消耗に敏感に言及する` : (level.includes('トップ選手') || level.includes('競技選手')) ? `【上級レベル対応指示】
-- Drill: 強度付きの応用ドリル・感覚系ドリルを選ぶ（Form & Des 1→4・フィスト・ハイエルボー等）
+- Drill: 高強度・感覚系のドリル名をオリジナル生成（パワー伝達・ストロークレート・レース動作系）
 - coachingPoint: TSS最小化・タイム向上・レースペース意識を具体的に書く
 - intention: レースシミュレーション・目標タイムに紐づけた狙いで書く
 - caution: オーバートレーニング・技術の雑さ・メンタルケアを言及する` : `【中級レベル対応指示】
-- Drill: 種目固有の標準ドリルを選ぶ（odd/even形式・Form & Des等）
+- Drill: 種目の技術課題に即したドリル名をオリジナル生成（フォーム維持・効率向上系）
 - coachingPoint: フォーム維持と体力向上のバランスを書く
 - intention: 期の目標に沿ったバランスの取れた狙いを書く`}
 
 【骨格（各ブロック距離・強度は確定済み）】
 ${skeletonDesc}
 
-【パターン選択ヒント（menu-patterns.mdより）】
+【ブロック別コンテンツ生成ガイド】
 ${patternHints}
 
 【テンプレート（{PLACEHOLDER}のみ置き換える・数値変更禁止）】
@@ -333,10 +363,10 @@ down    : "${tmpl.downStr}"（変更禁止）
   "main":   "(テンプレートmainを{PLACEHOLDER}埋め済みで出力)",
   "down":   "${tmpl.downStr}",
   "total":  "${tmpl.totalStr}",
-  "intention": "今日の狙い（2〜4行。期・目的・状況・距離タイプ・年齢を反映した固有の狙い）",
-  "coachingPoint": "指導ポイント（3つ。このメニューのDrill/Kick/Pull/Mainに即した具体的な意識点）",
-  "caution": "注意点（3つ。状況・年齢を反映した固有の注意）",
-  "expectedEffect": "期待効果（2〜3行）",
+  "intention": "今日の狙い（2〜4行。期の目的×コンディション×距離タイプの戦略意図を統合した固有の狙い。汎用文禁止）",
+  "coachingPoint": "指導ポイント（3つ。① TSS最小化 ② 水感・ブレーキゼロ ③ このセッション固有の技術焦点。各ポイントは何をどう意識するかまで具体的に）",
+  "caution": "注意点（3つ。状況・年齢・疲労・月経期を反映した固有の注意。汎用文禁止）",
+  "expectedEffect": "期待効果（2〜3行。① 生理的適応 ② 技術的発展 ③ メンタル・成功体験 の3軸で具体的に。汎用文禁止）",
   "warmUpM": ${skeleton.warmUp.totalM},
   "drillM":  ${skeleton.drill.totalM},
   "kickM":   ${skeleton.kick.totalM},

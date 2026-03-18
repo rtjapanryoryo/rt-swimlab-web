@@ -592,6 +592,25 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
     }
   };
 
+  /** PDFを直接ダウンロード保存 */
+  const handleDownloadPDF = async (captureId: string) => {
+    try {
+      const blob = await exportPDFBlob(captureId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `RT-menu_${new Date().toISOString().slice(0, 10)}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch (e) {
+      console.error('PDF download error:', e);
+      // フォールバック：新しいタブで開く
+      await handleOpenPDFInNewTab(captureId);
+    }
+  };
+
   /** PDFを別タブで開く（開いた画面から保存可能） */
   const handleOpenPDFInNewTab = async (captureId: string) => {
     try {
@@ -810,10 +829,11 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                       <label className="block text-sm font-medium text-slate-700 mb-1">4. 状況</label>
                       <select value={input.condition} onChange={(e) => handleInputChange('condition', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
                         <option value="">選択してください</option>
-                        <option value="良好">良好</option>
-                        <option value="軽疲労">軽疲労</option>
-                        <option value="筋疲労（筋トレ後）">筋疲労（筋トレ後）</option>
-                        <option value="疲労残り（メイン翌日）">疲労残り（メイン翌日）</option>
+                        <option value="絶好調（ピーク・調子最高）">絶好調（ピーク・調子最高）</option>
+                        <option value="良好（通常コンディション）">良好（通常コンディション）</option>
+                        <option value="軽疲労（体が少し重い）">軽疲労（体が少し重い）</option>
+                        <option value="筋疲労（ウェイト・陸トレ後）">筋疲労（ウェイト・陸トレ後）</option>
+                        <option value="疲労残り（試合・合宿翌日）">疲労残り（試合・合宿翌日）</option>
                         <option value="月経期">月経期</option>
                       </select>
                     </div>
@@ -970,17 +990,16 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={() => handleOpenPDFInNewTab('menu-capture')}
+                  onClick={() => handleDownloadPDF('menu-capture')}
                   disabled={isExporting}
-                  className="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-900 disabled:opacity-50 font-medium text-sm shadow-sm transition-all"
-                  title="PDFを開いて保存"
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 text-white hover:from-cyan-600 hover:to-teal-600 disabled:opacity-50 font-semibold text-sm shadow-lg shadow-cyan-500/25 transition-all"
                 >
-                  {isExporting ? 'PDF生成中...' : 'PDFを表示'}
+                  {isExporting ? 'PDF生成中...' : 'PDF保存'}
                 </button>
                 <button
                   onClick={() => handleSharePDF('menu-capture')}
                   disabled={isExporting}
-                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 text-white hover:from-cyan-600 hover:to-teal-600 disabled:opacity-50 font-semibold text-sm shadow-lg shadow-cyan-500/25 transition-all"
+                  className="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-900 disabled:opacity-50 font-medium text-sm shadow-sm transition-all"
                 >
                   {isExporting ? '共有準備中...' : '共有'}
                 </button>

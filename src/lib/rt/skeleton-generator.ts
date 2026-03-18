@@ -158,14 +158,52 @@ function computeRestHint(mPerSet: number, intensityStep: number, levelKey?: Leve
  * step1=A1/A2(①)  step2=EN1(②)  step3=EN2(③)  step4=EN3(④)  step5=AN1(⑤)  step6=AN2(⑥)
  * ※ drillStep/kickStep/pullStep は generateMenuSkeleton 内でブロック別に調整
  */
+// nonMainStep は getAdjustedIntensities で「必ず mainStep - 1 以下」に強制される。
+// ここでの非Main値はベース（補正前）。同値の行は補正後に自動で -1 される。
 const PERIOD_INTENSITY: Record<string, [number, number]> = {
-  '1': [3, 3], // リカバリー:  main③(EN2) non③(EN2)
+  '1': [3, 3], // リカバリー:  main③(EN2) → 補正後 non②(EN1)
   '2': [4, 3], // 基礎形成:    main④(EN3) non③(EN2)
-  '3': [4, 4], // 発展形成:    main④(EN3) non④(EN3)
+  '3': [4, 4], // 発展形成:    main④(EN3) → 補正後 non③(EN2)
   '4': [5, 4], // スピード持久: main⑤(AN1) non④(EN3)
   '5': [6, 4], // 耐乳酸:      main⑥(AN2) non④(EN3)
   '6': [5, 4], // 調整:        main⑤(AN1) non④(EN3)
   '7': [4, 3], // テーパー:    main④(EN3) non③(EN2)
+};
+
+/**
+ * 期別の Main ブロック設計制約
+ *
+ * maxRatio     : targetDist に対する Main の最大割合
+ * maxAbsoluteM : Main の絶対距離上限（高強度期の過剰負荷防止）
+ * maxSets      : Main の最大セット数（期の役割に合った本数上限）
+ * preferShort  : 短距離・低本数を優先するか（調整/テーパー期）
+ *
+ * 超過距離は Pull(③) に振り替えて有酸素補強に充てる。
+ *
+ * 設計思想:
+ *  期①: ③は短いアクセント程度 → max 28% かつ 400m 絶対上限
+ *  期②: ③中心・④補助 → 40%・本数制限なし
+ *  期③: ④中心・Main 集中 → 42%
+ *  期④: ⑤をMainに明確集約 → 45%（最大割合）
+ *  期⑤: ⑥はMainのみ・量は抑制 → 25% かつ 1200m 絶対上限
+ *  期⑥: ⑤は短・低本数 → 22% かつ 800m 絶対上限
+ *  期⑦: 高強度は最小量 → 20% かつ 600m 絶対上限
+ */
+interface PeriodMainConstraints {
+  maxRatio: number;
+  maxAbsoluteM?: number;
+  maxSets: number;
+  preferShort: boolean;
+}
+
+const PERIOD_MAIN_CONSTRAINTS: Record<string, PeriodMainConstraints> = {
+  '1': { maxRatio: 0.28, maxAbsoluteM:  400, maxSets:  6, preferShort: true  },
+  '2': { maxRatio: 0.40,                     maxSets: 10, preferShort: false },
+  '3': { maxRatio: 0.42,                     maxSets: 10, preferShort: false },
+  '4': { maxRatio: 0.45,                     maxSets: 10, preferShort: false },
+  '5': { maxRatio: 0.25, maxAbsoluteM: 1200, maxSets:  8, preferShort: true  },
+  '6': { maxRatio: 0.22, maxAbsoluteM:  800, maxSets:  6, preferShort: true  },
+  '7': { maxRatio: 0.20, maxAbsoluteM:  600, maxSets:  5, preferShort: true  },
 };
 
 function getAdjustedIntensities(
@@ -201,7 +239,9 @@ function getAdjustedIntensities(
   }
 
   // ─── 状況補正 ───
-  if (condition.includes('疲労残り') || condition.includes('月経期')) {
+  if (condition.includes('絶好調')) {
+    notes.push('絶好調: ピーク状態・調整なし');
+  } else if (condition.includes('疲労残り') || condition.includes('月経期')) {
     mainStep = Math.max(1, mainStep - 2);
     notes.push(`${condition}: 強度-2(main)`);
   } else if (condition.includes('疲労') || condition.includes('筋疲労')) {
@@ -209,8 +249,14 @@ function getAdjustedIntensities(
     notes.push(`${condition}: 強度-1(main)`);
   }
 
-  // Pre-Main は Main より必ず1段階下
-  const preMainStep = Math.max(1, mainStep - 1);
+  // 非Main は必ず Main より1段階以上低く（Main が最大強度ルール）
+  if (nonMainStep >= mainStep) {
+    nonMainStep = Math.max(1, mainStep - 1);
+    notes.push(`非Main強度を Main(${labelOfStep(mainStep)}) より1段階下に調整`);
+  }
+
+  // Pre-Main は Main より必ず1段階下、かつ ④(EN3) を上限とする（⑤/⑥ は Main 専用）
+  const preMainStep = Math.min(Math.max(1, mainStep - 1), 4);
 
   return { mainStep, nonMainStep, preMainStep, notes };
 }
@@ -272,7 +318,7 @@ function getPracticeTimeCaps(practiceTime: number): { wupMax: number; downMax: n
  * 各ブロックの距離配分を算出。main = targetDist - sum(others) で算術保証。
  * main が unit の倍数にならない場合、pull を ±unit 調整して整合させる。
  */
-function allocateBlocks(targetDist: number, distanceType: 'S' | 'M' | 'D', levelKey: LevelKey = 'intermediate', practiceTime = 90): BlockAlloc {
+function allocateBlocks(targetDist: number, distanceType: 'S' | 'M' | 'D', levelKey: LevelKey = 'intermediate', practiceTime = 90, period = '3'): BlockAlloc {
   const cfg = ALLOC_CONFIG[distanceType];
   const timeCaps = getPracticeTimeCaps(practiceTime);
   const delta = LEVEL_ALLOC_DELTA[levelKey];
@@ -324,6 +370,21 @@ function allocateBlocks(targetDist: number, distanceType: 'S' | 'M' | 'D', level
 
   if (main < unit) main = unit;
 
+  // 期別 Main 距離上限チェック — 超過分を Pull に振り替えて有酸素補強に充てる
+  const periodCon = PERIOD_MAIN_CONSTRAINTS[period];
+  if (periodCon) {
+    let maxMainM = Math.floor(targetDist * periodCon.maxRatio / unit) * unit;
+    if (periodCon.maxAbsoluteM !== undefined) {
+      const absMax = Math.floor(periodCon.maxAbsoluteM / unit) * unit;
+      maxMainM = Math.min(maxMainM, absMax);
+    }
+    if (main > maxMainM && maxMainM >= unit) {
+      const excess = roundToUnit(main - maxMainM, unit);
+      main -= excess;
+      pull += excess;
+    }
+  }
+
   return { warmUp, drill, kick, pull, preMain, main, down };
 }
 
@@ -354,8 +415,8 @@ const PREFERRED_UNITS: Record<string, Record<'S' | 'M' | 'D', number[]>> = {
   kick:    { S: [50, 25],        M: [100, 50],           D: [200, 100]           },
   pull:    { S: [100, 50, 25],   M: [200, 100, 50],      D: [400, 200, 100]      },
   preMain: { S: [50, 25],        M: [100, 50],           D: [200, 100]           },
-  main:    { S: [100, 50, 25],   M: [200, 100, 50],      D: [400, 300, 200, 100] },
-  down:    { S: [100, 50, 25],   M: [200, 100, 50],      D: [300, 200, 100]      },
+  main:    { S: [100, 50, 25],   M: [200, 100, 50],      D: [400, 200, 100]      },
+  down:    { S: [100, 50, 25],   M: [200, 100, 50],      D: [200, 100]           },
 };
 
 /** ベース単位（距離タイプ別）。すべてのブロック距離はこの倍数になる。 */
@@ -377,12 +438,13 @@ function findSetStructures(
   distanceType: 'S' | 'M' | 'D',
   allowTwoSegments = false,
   preferSmallSets = false,
+  maxSetsOverride?: number,
 ): SetStructure[] {
   const rawPreferred = PREFERRED_UNITS[blockType]?.[distanceType] ?? [50, 25];
-  // 初級: 小→大の順（短距離多本数）で検索
+  // 初級 or preferShort: 小→大の順（短距離多本数）で検索
   const preferred = preferSmallSets ? [...rawPreferred].reverse() : rawPreferred;
   const baseUnit = BASE_UNIT[distanceType];
-  const maxSets = MAX_SETS_PER_BLOCK[blockType] ?? 12;
+  const maxSets = maxSetsOverride ?? (MAX_SETS_PER_BLOCK[blockType] ?? 12);
 
   // 優先単位でブロック別最大本数以内を探す
   for (const unit of preferred) {
@@ -644,11 +706,14 @@ function buildBlockSpec(
   level: string,
   twoSegments?: boolean,
   condition = '',
+  maxSetsOverride?: number,
+  preferSmallSetsOverride?: boolean,
 ): BlockSpec {
   const lm = getLevelModifiers(level);
   const lk = lm.key;
+  const effectivePreferSmall = preferSmallSetsOverride ?? lm.preferSmallSets;
   const needsTwoSeg = twoSegments ?? (['kick', 'pull'].includes(blockType) && parseInt(period) >= 3);
-  const structs = findSetStructures(targetM, blockType, distanceType, needsTwoSeg, lm.preferSmallSets);
+  const structs = findSetStructures(targetM, blockType, distanceType, needsTwoSeg, effectivePreferSmall, maxSetsOverride);
   const patternPool = getPatternPool(blockType, period, stroke, level, condition);
 
   if (structs.length === 1 || ['warmUp', 'down', 'preMain'].includes(blockType)) {
@@ -723,7 +788,7 @@ export function generateMenuSkeleton(input: TrainingInput): MenuSkeleton {
 
   const lk = getLevelKey(input.level);
   const practiceTimeNum = parseInt(input.practiceTime, 10) || 90;
-  const alloc = allocateBlocks(targetDist, dt, lk, practiceTimeNum);
+  const alloc = allocateBlocks(targetDist, dt, lk, practiceTimeNum, input.period);
 
   // 合計検証（バグ検出用）
   const allocTotal = alloc.warmUp + alloc.drill + alloc.kick + alloc.pull + alloc.preMain + alloc.main + alloc.down;
@@ -732,18 +797,21 @@ export function generateMenuSkeleton(input: TrainingInput): MenuSkeleton {
   }
 
   /**
-   * ブロック別強度の設計思想（W-up直後にいきなり高強度にしない）
-   *  W-up  : ① (A1) 固定
-   *  Drill : max ② (EN1) 固定 — 技術ドリルは常に軽め（フォーム崩さない）
-   *  Kick  : max ③ (EN2) — ストロークより軽く補助的（コーチ思想9番）
-   *  Pull  : nonMainStep の天井 — メインへの橋渡し
-   *  PreMain: mainStep - 1 — メインへの導入
-   *  Main  : mainStep（最大強度）
-   *  Down  : ① 固定
+   * ブロック別強度の段階設計（役割の明確化・⑤/⑥ は Main 専用）
+   *
+   *  ① WarmUp  : ① 固定 — 活性化・ゆっくりほぐす
+   *  ② Drill   : ≤② (EN1) — フォーム優先・技術習得（強度を上げない）
+   *  ② Kick    : ≤② (EN1) — 脚の補助作業。Drill と同格だが内容は別（キック特化）
+   *  ③ Pull    : ≤③ (EN2) — テンポ練習・Kick より一段上でメインへの橋渡し
+   *  ④ PreMain : main-1 かつ ≤④ (EN3) — Main 直前の準備。⑤/⑥ は Main 専用
+   *  ⑤/⑥ Main : mainStep — その日の最大強度。高強度刺激をここに集約
+   *  ① Down    : ① 固定 — クールダウン
+   *
+   *  強度ステップ昇順: WU(①) → Drill(②)/Kick(②) → Pull(③) → PreMain(≤④) → Main(⑤/⑥)
    */
   const drillStep = Math.min(nonMainStep, 2); // EN1(②) 以下に固定
-  const kickStep  = Math.min(nonMainStep, 3); // EN2(③) 以下に固定（ストローク優先思想）
-  const pullStep  = nonMainStep;               // Pull は非メイン天井まで
+  const kickStep  = Math.min(nonMainStep, 2); // EN1(②) 以下 — Pull(③) と段差をつけ役割を区別
+  const pullStep  = Math.min(nonMainStep, 3); // EN2(③) 以下 — Kick より一段上でブリッジ役
 
   const level = input.level;
   const cond  = input.condition;
@@ -780,17 +848,23 @@ export function generateMenuSkeleton(input: TrainingInput): MenuSkeleton {
    * Main の2セグメント分割しきい値（レベル別）
    * - 上級: 期③以上で分割（早期から強度変化に慣らす）
    * - 中級: 期④以上で分割（現行通り）
-   * - 初級: 常に1セグメント（シンプルな構成で集中）
+   * - 初級 / 期⑥⑦: 常に1セグメント（シンプルに・調整/テーパーは単一強度で完結）
    */
-  const mainTwoSeg = lk === 'advanced'
-    ? parseInt(input.period) >= 3
-    : lk === 'intermediate'
-      ? parseInt(input.period) >= 4
-      : false; // beginner: never split
+  const mainTwoSeg = (['6', '7'].includes(input.period))
+    ? false // 調整・テーパーは単一セグメント（強度の分散防止）
+    : lk === 'advanced'
+      ? parseInt(input.period) >= 3
+      : lk === 'intermediate'
+        ? parseInt(input.period) >= 4
+        : false;
 
+  // 期別制約を Main ビルドに適用（最大本数・短セット優先）
+  const periodCon = PERIOD_MAIN_CONSTRAINTS[input.period] ?? { maxRatio: 0.45, maxSets: 10, preferShort: false };
   const main = buildBlockSpec(
     adjustedExactMain, 'main', dt, mainStep, input.period, input.stroke, level,
     mainTwoSeg, cond,
+    periodCon.maxSets,
+    periodCon.preferShort || undefined,
   );
 
   /**

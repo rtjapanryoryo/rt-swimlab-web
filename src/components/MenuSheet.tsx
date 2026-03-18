@@ -302,22 +302,6 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
     return { sumFromRows: sum, blockSubtotals: subs };
   }, [rows]);
 
-  // 強度別負荷分布（80:20 ルールの可視化用）
-  const loadDistribution = useMemo(() => {
-    const byLevel: Record<string, number> = {};
-    let total = 0;
-    for (const row of rows) {
-      const m = parseRowTotalToNumber(row.total);
-      if (m > 0 && row.intensity && row.intensity !== '-') {
-        byLevel[row.intensity] = (byLevel[row.intensity] ?? 0) + m;
-        total += m;
-      }
-    }
-    const easyM = (byLevel['①'] ?? 0) + (byLevel['②'] ?? 0) + (byLevel['③'] ?? 0);
-    const hardM = total - easyM;
-    const easyPct = total > 0 ? Math.round((easyM / total) * 100) : 0;
-    return { byLevel, total, easyPct, hardM };
-  }, [rows]);
 
   // 日付を取得
   const today = new Date();
@@ -403,7 +387,7 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
             </div>
             <div className="flex">
               <span className="font-semibold text-gray-700 w-24">年齢:</span>
-              <span className="text-gray-900">{input.age}歳</span>
+              <span className="text-gray-900">{input.age}</span>
             </div>
           </div>
           <div className="space-y-2">
@@ -586,50 +570,6 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
             />
           </span>
         </div>
-        {/* 強度分布バー（80:20 可視化） */}
-        {loadDistribution.total > 0 && (
-          <div className="mb-2">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-semibold text-gray-700 text-xs">強度分布:</span>
-              {(() => {
-                const { byLevel, total, easyPct } = loadDistribution;
-                const levels = ['①','②','③','④','⑤','⑥','⑦'];
-                const colors = ['bg-slate-300','bg-slate-400','bg-blue-400','bg-teal-500','bg-orange-400','bg-red-500','bg-red-800'];
-                const is8020 = easyPct >= 75;
-                return (
-                  <>
-                    <div className="flex flex-1 h-3 rounded-full overflow-hidden gap-px">
-                      {levels.map((lvl, i) => {
-                        const m = byLevel[lvl] ?? 0;
-                        const pct = total > 0 ? (m / total) * 100 : 0;
-                        if (pct < 0.5) return null;
-                        return (
-                          <div
-                            key={lvl}
-                            className={`${colors[i]} flex-shrink-0`}
-                            style={{ width: `${pct}%` }}
-                            title={`${lvl}: ${m.toLocaleString()}m (${Math.round(pct)}%)`}
-                          />
-                        );
-                      })}
-                    </div>
-                    <span className={`text-xs font-semibold whitespace-nowrap ${is8020 ? 'text-teal-700' : 'text-orange-600'}`}>
-                      有酸素 {easyPct}% {is8020 ? '✓' : '↑'}
-                    </span>
-                  </>
-                );
-              })()}
-            </div>
-            <div className="flex flex-wrap gap-x-3 text-xs text-gray-500">
-              {['①','②','③','④','⑤','⑥','⑦'].map((lvl, i) => {
-                const m = loadDistribution.byLevel[lvl] ?? 0;
-                const colors = ['text-slate-500','text-slate-600','text-blue-600','text-teal-600','text-orange-600','text-red-600','text-red-800'];
-                if (!m) return null;
-                return <span key={lvl} className={colors[i]}>{lvl} {m.toLocaleString()}m</span>;
-              })}
-            </div>
-          </div>
-        )}
 
         <div className="flex items-start">
           <span className="font-semibold text-gray-700 w-24">今日の狙い:</span>
