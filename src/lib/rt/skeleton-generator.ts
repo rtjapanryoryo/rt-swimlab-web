@@ -315,16 +315,30 @@ function getPracticeTimeCaps(practiceTime: number): { wupMax: number; downMax: n
 }
 
 /**
+ * ブロック別の推奨丸め単位
+ * Pull と PreMain をそれぞれのセット推奨単位に揃えることで
+ * findSetStructures が有効な構成を見つけやすくなる。
+ * (例: M-type Pull → 100m単位 → 8×100m or 4×200m が自然に選ばれる)
+ */
+const BLOCK_ALLOC_ROUND: Record<'S' | 'M' | 'D', { pull: number; preMain: number }> = {
+  S: { pull:  50, preMain:  25 },
+  M: { pull: 100, preMain: 100 },
+  D: { pull: 200, preMain: 200 },
+};
+
+/**
  * 各ブロックの距離配分を算出。main = targetDist - sum(others) で算術保証。
- * main が unit の倍数にならない場合、pull を ±unit 調整して整合させる。
+ * Pull・PreMain は BLOCK_ALLOC_ROUND の推奨単位で丸め、有効なセット構成を保証する。
  */
 function allocateBlocks(targetDist: number, distanceType: 'S' | 'M' | 'D', levelKey: LevelKey = 'intermediate', practiceTime = 90, period = '3'): BlockAlloc {
   const cfg = ALLOC_CONFIG[distanceType];
   const timeCaps = getPracticeTimeCaps(practiceTime);
   const delta = LEVEL_ALLOC_DELTA[levelKey];
   const { unit } = cfg;
+  const br = BLOCK_ALLOC_ROUND[distanceType];
 
-  const r = (pct: number) => roundToUnit(targetDist * pct, unit);
+  const r  = (pct: number) => roundToUnit(targetDist * pct, unit);
+  const rr = (pct: number, ru: number) => roundToUnit(targetDist * pct, ru);
 
   // 練習時間キャップを適用（min > max にならないよう min も追随させる）
   const adjWupMax  = roundToUnit(Math.min(cfg.wupMax,  timeCaps.wupMax),  unit);
@@ -335,51 +349,48 @@ function allocateBlocks(targetDist: number, distanceType: 'S' | 'M' | 'D', level
   let warmUp  = Math.min(Math.max(r(cfg.wupPct),   adjWupMin),  adjWupMax);
   let drill   = Math.max(r(cfg.drillPct + delta.drill),   unit * 2);
   let kick    = Math.max(r(cfg.kickPct  + delta.kick),    unit * 2);
-  let pull    = Math.max(r(cfg.pullPct),    unit * 2);
-  let preMain = Math.max(r(cfg.preMainPct), unit * 1);
+  // Pull と PreMain はブロック推奨単位で丸め → セット構成の端数を防止
+  let pull    = Math.max(rr(cfg.pullPct,    br.pull),    br.pull * 2);
+  let preMain = Math.max(rr(cfg.preMainPct, br.preMain), br.preMain);
   let down    = Math.min(Math.max(r(cfg.downPct), adjDownMin), adjDownMax);
 
-  // warmUp を unit の倍数に揃える
   warmUp = roundToUnit(warmUp, unit);
   down   = roundToUnit(down,   unit);
 
   const sumFixed = () => warmUp + drill + kick + pull + preMain + down;
   let main = targetDist - sumFixed();
 
-  // main が unit で割り切れるよう pull を調整（最大 ±4unit）
-  for (let delta = 0; Math.abs(delta) <= unit * 4; delta += (delta > 0 ? -delta - unit : -delta + unit)) {
-    if (main % unit === 0 && main > 0) break;
-    pull += unit;
-    main = targetDist - sumFixed();
-    if (main % unit === 0 && main > 0) break;
-    pull -= unit * 2;
-    main = targetDist - sumFixed();
-    if (main % unit === 0 && main > 0) break;
-    pull += unit; // restore
-    break;
-  }
-
-  // 最終フォールバック: 最小 unit の倍数に切り捨てて main に乗せる
+  // main が unit で割り切れるよう pull を ±pullUnit 微調整（最大 ±2回）
   if (main <= 0 || main % unit !== 0) {
-    const fixedFloor = Math.floor(sumFixed() / unit) * unit;
-    main = targetDist - fixedFloor;
-    const excess = sumFixed() - fixedFloor;
-    pull = Math.max(unit, pull - excess);
-    main = targetDist - (warmUp + drill + kick + pull + preMain + down);
+    for (const adj of [br.pull, -br.pull, br.pull * 2, -br.pull * 2]) {
+      pull += adj;
+      main = targetDist - sumFixed();
+      if (main > 0 && main % unit === 0) break;
+      pull -= adj; // restore
+    }
   }
 
+  // 最終フォールバック: main が負またはゼロなら最小 unit を確保
+  if (main <= 0) {
+    pull = Math.max(br.pull, pull - br.pull);
+    main = targetDist - sumFixed();
+  }
   if (main < unit) main = unit;
 
   // 期別 Main 距離上限チェック — 超過分を Pull に振り替えて有酸素補強に充てる
   const periodCon = PERIOD_MAIN_CONSTRAINTS[period];
   if (periodCon) {
-    let maxMainM = Math.floor(targetDist * periodCon.maxRatio / unit) * unit;
-    if (periodCon.maxAbsoluteM !== undefined) {
-      const absMax = Math.floor(periodCon.maxAbsoluteM / unit) * unit;
-      maxMainM = Math.min(maxMainM, absMax);
+    // D-type は高ボリューム前提のため絶対上限を 2× に緩和
+    const absMax = periodCon.maxAbsoluteM !== undefined
+      ? (distanceType === 'D' ? periodCon.maxAbsoluteM * 2 : periodCon.maxAbsoluteM)
+      : undefined;
+    let maxMainM = Math.floor(targetDist * periodCon.maxRatio / br.pull) * br.pull;
+    if (absMax !== undefined) {
+      maxMainM = Math.min(maxMainM, Math.floor(absMax / br.pull) * br.pull);
     }
     if (main > maxMainM && maxMainM >= unit) {
-      const excess = roundToUnit(main - maxMainM, unit);
+      // 超過分を br.pull 単位に丸めて Pull に振り替え
+      const excess = roundToUnit(main - maxMainM, br.pull);
       main -= excess;
       pull += excess;
     }
@@ -477,7 +488,26 @@ function findSetStructures(
     if (sets >= 2 && sets <= maxSets) return [{ sets, mPerSet: unit }];
   }
 
-  // 絶対フォールバック: 1セット（正確さを最優先）
+  // 強制フォールバック: 1セットあたり最大 500m の制約内で maxSets を緩和して再探索
+  // 「1×1350m」「1×450m」のような異常セット構成を防ぐための最終安全弁
+  const MAX_M_PER_SET = 500;
+  const relaxedOrder = preferSmallSets
+    ? Array.from({ length: Math.floor(Math.min(totalM, MAX_M_PER_SET) / baseUnit) }, (_, i) => baseUnit * (i + 1))
+        .filter(u => isValidSetUnit(u) && totalM % u === 0)
+    : Array.from({ length: Math.floor(Math.min(totalM, MAX_M_PER_SET) / baseUnit) }, (_, i) => Math.min(MAX_M_PER_SET, totalM) - baseUnit * i)
+        .filter(u => u >= baseUnit && isValidSetUnit(u) && totalM % u === 0);
+  for (const mPerSet of relaxedOrder) {
+    const sets = totalM / mPerSet;
+    if (sets >= 2) return [{ sets, mPerSet }]; // maxSets は緩和（500m上限を優先）
+  }
+
+  // 真の最終フォールバック: 500m以下で割り切れる最大単位
+  for (let mPerSet = MAX_M_PER_SET; mPerSet >= baseUnit; mPerSet -= baseUnit) {
+    if (isValidSetUnit(mPerSet) && totalM % mPerSet === 0) {
+      return [{ sets: totalM / mPerSet, mPerSet }];
+    }
+  }
+  // 距離が500m以下の場合は1セットも許容（500m以内なので問題なし）
   return [{ sets: 1, mPerSet: totalM }];
 }
 
@@ -504,32 +534,40 @@ function findSingleSegment(totalM: number, preferred: number[], baseUnit: number
 // パターンプール（レベル × 4泳法 × ブロック種別）
 // ============================================================
 
-/** ドリルプール: 4泳法 × レベル別 */
+/**
+ * ドリルプール: 4泳法 × レベル別
+ * 【重要】各泳法に固有のドリルのみ収録。泳法をまたいだドリル名は禁止。
+ *  Fr: キャッチアップ / 片手 / ハイエルボー / フィスト / フィンガーティップ
+ *  Ba: 片手スイム / スカーリング / 6-1-6バランス / ローリング強調（キャッチアップは Fr 固有→Ba 禁止）
+ *  Br: 分離キック / グライドプル / 2キック1プル / タイミング強調
+ *  Fly: ドルフィンキック / 片キック / 1キック1プル / ショルダードリル / ヒップドライブ
+ */
 const DRILL_POOLS: Record<string, Record<LevelKey, string[]>> = {
   Fr: {
-    beginner:     ['キャッチアップ / 片手右', 'ヘッドアップ / キャッチアップ', '片手左右交互'],
-    intermediate: ['odd: 片手左 / even: 片手右', 'odd: キャッチアップ / even: 片手', 'Form & Des', 'ヘッドアップ / キャッチアップ'],
-    advanced:     ['ハイエルボー / フィスト', 'Form & Des 1→4', 'odd: 片手左 / even: 片手右', 'フィンガーティップ / キャッチアップ'],
+    beginner:     ['キャッチアップ / 片手右', 'ヘッドアップ / 片手左右交互', '片手スイム（丁寧に）'],
+    intermediate: ['odd: 片手左 / even: 片手右', 'フィンガーティップ Des → Swim', 'Form & Des 1→4', 'ハイエルボー→フィスト交互'],
+    advanced:     ['フィスト → オープン Des 1→4', 'ハイエルボーキャッチ + ストロークカウント Dec', 'odd: 片手左 / even: フィスト Des', 'Form & Des + TSS最小化'],
   },
   Ba: {
-    beginner:     ['片手左 / 片手右（基本）', '片手スイム（丁寧に）', 'スカーリング基礎'],
-    intermediate: ['odd: 片手左 / even: 片手右', 'odd: ドリル / even: Swim', 'Form & Des'],
-    advanced:     ['片手 + ローリング強調', 'スカーリング → Swim 交互', 'Form & Des 1→4'],
+    // Ba固有: 片手スイム・スカーリング・6-1-6・ローリング強調（キャッチアップ厳禁）
+    beginner:     ['片手左 / 片手右（フィニッシュ確認）', '6キック 1プル バランス', 'スカーリング基礎（浮力確認）'],
+    intermediate: ['片手左右交互 ローリング強調', '6-1-6 バランスドリル', 'スカーリング → Swim 交互', '腕伸ばし6キック / Swim'],
+    advanced:     ['片手 + ストローク数 Des 1→4', '6-1-6 ハイエルボー強調', 'スカーリング Des → Race pace Swim', 'Count Down + TSS最小化'],
   },
   Br: {
-    beginner:     ['Brキックドリル / Brプルドリル', '2キック1プル（ゆっくり）', '分離キック（壁キック）'],
-    intermediate: ['Brキックドリル / Brプルドリル', 'タイミングドリル', '2キック1プル', 'Brキック（Fin）'],
-    advanced:     ['水平キックドリル / タイミング', '2キック1プル → Swim 交互', 'プルアウト強調 + タイミング', 'Brキック（Fin）→ タイミング'],
+    beginner:     ['壁キック分離 / Brプルドリル', '2キック1プル グライド強調', '分離キック（ゆっくり）'],
+    intermediate: ['グライドフェーズ強調プルドリル', '2キック1プル タイミング', 'Brキック（Fin）/ プルドリル交互', '壁キック → タイミング連結'],
+    advanced:     ['プルアウト強調 + 狭い軌道', '2キック1プル → Swim 交互 Des', 'ストロークカウント Dec + グライド', 'レースリズム確認 2×4'],
   },
   Fly: {
-    beginner:     ['ドルフィンキック（壁あり）/ 片キック左', '1キック1プル（ゆっくり）', 'Fly基本ドリル（呼吸なし）'],
-    intermediate: ['片キック（左）/ 片キック（右）', 'ドルフィンキック', 'ショルダードリル', '1キック1プル'],
-    advanced:     ['ショルダードリル → Swim 交互', '1キック1プル → 2キック1プル', 'ドルフィン + ハイエルボー', 'Form & Des 1→4'],
+    beginner:     ['ドルフィンキック（壁あり）/ 片キック左', '1キック1プル（ゆっくり呼吸確認）', '片手Fly（右→左交互）'],
+    intermediate: ['ヒップドライブ片キック左右', 'ショルダードリル + ドルフィン', '1キック1プル → 2キック1プル', 'Form & Des 1→4'],
+    advanced:     ['ショルダードリル → Swim Des 1→4', '1K1P → 2K1P → Swim 連続', 'ドルフィン水中 + ハイエルボー', 'レースリズム Form & Des'],
   },
   IM: {
-    beginner:     ['4泳法キックドリル（易→難）', '4泳法プルドリル基本', 'IM基本ドリル順'],
-    intermediate: ['4泳法ドリル順（Fr→Ba→Br→Fly）', 'odd: IM Order / even: 専門種目', 'Form & Des'],
-    advanced:     ['4泳法ドリル（弱点種目強調）', 'odd: IM Order / even: 専門種目 +強度', 'Form & Des 1→4'],
+    beginner:     ['4泳法キックドリル（易→難）', '4泳法プルドリル基本', 'Fly→Ba→Br→Fr ドリル順'],
+    intermediate: ['4泳法ドリル順（弱点種目2本）', 'odd: IM Order / even: 専門種目', 'Form & Des 4泳法切り替え'],
+    advanced:     ['4泳法（弱点種目 Form & Des 強調）', 'odd: IM Order / even: 専門 Des', 'ストロークカウント比較 IM Order'],
   },
   S1: {
     beginner:     ['専門種目ドリル基本', 'Form（フォーム確認）', 'odd: ドリル / even: Easy Swim'],
@@ -538,46 +576,46 @@ const DRILL_POOLS: Record<string, Record<LevelKey, string[]>> = {
   },
 };
 
-/** キックプール: レベル別 */
+/** キックプール: レベル別（補助的・脚の感覚・リズム系） */
 const KICK_POOLS: Record<LevelKey, string[]> = {
-  beginner:     ['Des（フォーム優先）', 'good kick', 'Fins（基本キック）', 'Des（ゆっくり丁寧に）'],
-  intermediate: ['Des', '1-4 Dec', 'Fins 交互', 'good kick', 'Des（後半Fins）'],
-  advanced:     ['1-4 Dec 5 Hard Alt', 'Des（後半Fins）', 'Fins', 'good kick', 'odd: Hard / even: Easy'],
+  beginner:     ['Des（フォーム優先）', 'good kick（リズムよく）', 'Fins（基本キック感覚）', 'ゆっくり丁寧に Des'],
+  intermediate: ['Des 1→4', '1-4 Dec（後半意識）', 'Fins + barefoot 交互', 'good kick（ストロークに連動）', 'Des 後半 Fins'],
+  advanced:     ['1-4 Dec 強度 Hard Alt', 'Des Fins（後半キック強化）', 'Underwater 3→5→7 push', 'good kick + count Dec', 'odd: Strong / even: Recover'],
 };
 
-/** プルプール: レベル別 */
+/** プルプール: レベル別（テンポ・DPS・ネガティブスプリット系） */
 const PULL_POOLS: Record<LevelKey, string[]> = {
-  beginner:     ['DPS（丁寧に）', 'Des（フォーム優先）', 'Easy Pull（ストローク感覚）', 'Build'],
-  intermediate: ['DPS', 'Negative split', 'Des', 'o:Fast e:Easy', 'Variable'],
-  advanced:     ['Negative split', 'Form & Des 1→4', 'o:Fast e:Easy', 'Variable', 'ベストアベレージ'],
+  beginner:     ['DPS（ストローク感覚優先）', 'Des（フォーム崩さず）', 'Easy Pull（水感確認）', 'Build（ゆっくり上げる）'],
+  intermediate: ['DPS Negative split', 'o:Fast e:DPS交互', 'Des 1→4（ストローク数管理）', 'Variable（ペース変化）', 'Catch emphasis + DPS'],
+  advanced:     ['Negative split + count Dec', 'Form & Des 1→4（TSS意識）', 'o:Race pace e:Easy', 'Variable（ペース変動耐性）', 'ベストアベレージ（ターゲットタイム内）'],
 };
 
-/** メインプール: 期 × レベル別 */
+/** メインプール: 期 × レベル別（高強度集中・戦略的構成） */
 const MAIN_POOLS: Record<string, Record<LevelKey, string[]>> = {
-  lactic: {  // 期5
-    beginner:     ['Standard Main', 'ベースメイン'],
-    intermediate: ['耐乳酸MAX', 'ダイハード', '1H/1E Alt'],
-    advanced:     ['耐乳酸MAX', 'ダイハード', '1H/1E Alt'],
+  lactic: {  // 期5 AN2
+    beginner:     ['ベースメイン（フォーム保持）', '全力後に Form確認'],
+    intermediate: ['耐乳酸MAX（ベストアベレージ）', 'Broken（10sec/set）全力', '1H/1E Alt（乳酸交互）'],
+    advanced:     ['耐乳酸MAX（ベストタイム狙い）', 'ダイハード（壊さず全力）', '1H/1E Alt + ターゲットタイム'],
   },
-  taper: {   // 期7
-    beginner:     ['Standard Main', 'Des'],
-    intermediate: ['ベストアベレージ', 'Variable', 'Des'],
-    advanced:     ['ベストアベレージ', 'Variable', 'Des'],
+  taper: {   // 期7 EN3
+    beginner:     ['Standard Main（リズム確認）', 'Des（感覚を整える）'],
+    intermediate: ['ベストアベレージ（ターゲット内）', 'Des（レースリズム確認）', 'Variable（ペース感覚）'],
+    advanced:     ['ベストアベレージ + split確認', 'Des 1→4（キレ重視）', 'Race pace × 短本数'],
   },
-  high: {    // 期4, 6
-    beginner:     ['ベースメイン', 'Standard Main'],
-    intermediate: ['ベストアベレージ', 'Negative split', 'Des'],
-    advanced:     ['ベストアベレージ', '1H/1E Alt', 'Negative split'],
+  high: {    // 期4 AN1 / 期6 AN1調整
+    beginner:     ['ベースメイン（力まず）', 'Standard Main'],
+    intermediate: ['ベストアベレージ（ターゲットタイム内）', 'Negative split（後半勝負）', 'Des 1→4（質の積み上げ）'],
+    advanced:     ['ベストアベレージ + count Dec', '1H/1E Alt（高強度交互）', 'Negative split レースペース'],
   },
-  middle: {  // 期3
-    beginner:     ['Standard Main', 'ベースメイン'],
-    intermediate: ['ベースメイン', 'ベストアベレージ', 'Negative split'],
-    advanced:     ['ベストアベレージ', 'Negative split', 'Des'],
+  middle: {  // 期3 EN3
+    beginner:     ['Standard Main（安定ペース）', 'Build（徐々に上げる）'],
+    intermediate: ['ベースメイン（安定×量）', 'ベストアベレージ（ターゲット設定）', 'Negative split（後半意識）'],
+    advanced:     ['ベストアベレージ + split管理', 'Negative split → Des', 'Variable（ペース変動耐性）'],
   },
-  base: {    // 期1, 2
-    beginner:     ['Standard Main', 'Easy Main'],
-    intermediate: ['Standard Main', 'ベースメイン'],
-    advanced:     ['ベースメイン', 'Negative split', 'Des'],
+  base: {    // 期1 EN2 / 期2 EN3
+    beginner:     ['Standard Main（フォーム優先）', 'Easy Main（丁寧に）'],
+    intermediate: ['Standard Main（ペース一定）', 'ベースメイン（有酸素ベース）', 'Des（ゆとりを持って）'],
+    advanced:     ['ベースメイン（DPS意識）', 'Negative split（リズム構築）', 'Des + count管理'],
   },
 };
 
@@ -650,10 +688,18 @@ function getPatternPool(
       pool = PULL_POOLS[lk];
       break;
     case 'preMain':
-      // preMain: レベルによって難易度を変える
-      if (lk === 'beginner')     pool = ['Des（フォーム確認）', 'Build（ペースを上げる）', 'Easy → Build'];
-      else if (lk === 'advanced') pool = ['Des（レースペース確認）', 'Negative split', 'Build up → Fast', 'レースペース @rest'];
-      else                        pool = ['Des（レースペース確認）', 'Negative split', 'レースペース', 'Build up'];
+      // preMain: レベル × 期で戦略的アプローチを変える
+      if (lk === 'beginner') {
+        pool = ['Build（ペースを徐々に上げる）', 'Des（フォーム保ちながら）', 'Easy → Race feel'];
+      } else if (lk === 'advanced') {
+        if (p >= 5)      pool = ['Broken（10sec/set）レースペース', 'Des 1→4 最終レースペース', 'Race pace + kick off wall', 'ターゲットタイム Des'];
+        else if (p >= 3) pool = ['Descend to race pace', 'Negative split + count Dec', 'Build up → Race finish', 'Race feel Des 1→4'];
+        else             pool = ['Des（レースペース導入）', 'Negative split', 'Build up → Fast'];
+      } else {
+        if (p >= 5)      pool = ['Descend to race pace（目標タイム意識）', 'Build up → Race pace', 'Des 1→4（最終本レースペース）'];
+        else if (p >= 3) pool = ['Des（レースペース確認）', 'Negative split + ペース管理', 'Build up（最終本レースペース）'];
+        else             pool = ['Des（フォーム確認）', 'Build（ペースを上げる）', 'レースペース感覚確認'];
+      }
       break;
     case 'main': {
       let cat: string;

@@ -73,10 +73,10 @@ const CORE_SYSTEM_PROMPT = `【コーチ思想の核心（50問インタビュ�
 - 強度番号の正確な対応（RT Japan公式）: ①=A1/A2 ②=EN1 ③=EN2 ④=EN3 ⑤=AN1 ⑥=AN2 ⑦=MAX（③EN2と④EN3は別強度。EN5・EN6は存在しない）
 - **{WU_PATTERN}・{DR_DRILL_N}・{KI_PATTERN_N}・{PL_PATTERN_N}・{PM_CONTENT} は固定選択肢を使わず、種目・期・レベル・状況に最適なオリジナルの内容を自由に生成すること。**
 - {WU_PATTERN}: W-upの泳ぎ方・フォーカスを具体的に命名（例: SKPS build / odd:Ba even:Fr Des / IM order 4×50 等）
-- {DR_DRILL_N}: その種目・レベルに固有の具体的なドリル名を創造的に命名（例: Fr=エルボーアップキャッチドリル / Ba=片手リカバリーフォーカス / Br=グライドフェーズ強調プルドリル / Fly=ヒップドライブ片キック）。毎回異なる視点で命名する。
+- {DR_DRILL_N}: その種目に固有のドリル名を具体的に命名する。**泳法をまたいだドリル名は禁止**（例: バタフライにキャッチアップは使わない。背泳ぎにキャッチアップは使わない）。各泳法の固有ドリル例→ Fr: 片手/キャッチアップ/ハイエルボー/フィスト / Ba: 片手スイム/スカーリング/6-1-6バランス/ローリング強調（キャッチアップ厳禁） / Br: 分離キック/グライドプル/2キック1プル/タイミング / Fly: ドルフィンキック/片キック/1キック1プル/ショルダードリル/ヒップドライブ。毎回異なる視点・感覚軸で命名する。
 - {KI_PATTERN_N}: そのキックの目的・感覚に即した具体的なパターン名（例: back kick build / underwater dolphin 3→5→7 / strong finish last 2 等）
 - {PL_PATTERN_N}: そのプルの狙いに即した具体的なパターン名（例: DPS focus negative split / catch-up timing form first / fist drill → open hand Des 等）
-- {PM_CONTENT}: Pre-Mainの内容を期・距離タイプ・コンディションに合わせて具体的に（例: build to race pace @30sec / negative split レースペース確認 / threshold feel Des 4→1 等）
+- {PM_CONTENT}: Pre-Mainの内容を期・距離タイプに合わせて戦略的に（例: Descend to race pace @30sec / Broken（10sec）レースペース / Negative split + ペース管理 / Des 1→4 最終本レースペース 等。単に「ペースを上げる」ではなく目的・感覚・構成を明示する）
 - W-up / Down: 種目は Cho 固定。Down は変更しない（テンプレートのまま出力）。
 - Main: カテゴリ名はテンプレート通りに出力（変更禁止）。@rest も変更禁止。
 - Dive: 期が⑥調整期・⑦テーパー期のときのみ出力。それ以外は空文字（""）。
