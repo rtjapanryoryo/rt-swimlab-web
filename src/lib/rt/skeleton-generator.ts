@@ -202,8 +202,8 @@ const PERIOD_MAIN_CONSTRAINTS: Record<string, PeriodMainConstraints> = {
   '3': { maxRatio: 0.42,                     maxSets: 10, preferShort: false },
   '4': { maxRatio: 0.45,                     maxSets: 10, preferShort: false },
   '5': { maxRatio: 0.25, maxAbsoluteM: 1200, maxSets:  8, preferShort: true  },
-  '6': { maxRatio: 0.22, maxAbsoluteM:  800, maxSets:  6, preferShort: true  },
-  '7': { maxRatio: 0.20, maxAbsoluteM:  600, maxSets:  5, preferShort: true  },
+  '6': { maxRatio: 0.22, maxAbsoluteM:  600, maxSets:  4, preferShort: true  }, // 刺激は短時間・独立構成
+  '7': { maxRatio: 0.18, maxAbsoluteM:  600, maxSets:  5, preferShort: true  }, // テーパー: 疲労を残さない・少本数
 };
 
 function getAdjustedIntensities(
@@ -255,8 +255,8 @@ function getAdjustedIntensities(
     notes.push(`非Main強度を Main(${labelOfStep(mainStep)}) より1段階下に調整`);
   }
 
-  // Pre-Main は Main より必ず1段階下、かつ ④(EN3) を上限とする（⑤/⑥ は Main 専用）
-  const preMainStep = Math.min(Math.max(1, mainStep - 1), 4);
+  // Pre-Main は Main より必ず1段階下、かつ ⑤(AN1) を上限とする（⑥/⑦ は Main 専用）
+  const preMainStep = Math.min(Math.max(1, mainStep - 1), 5);
 
   return { mainStep, nonMainStep, preMainStep, notes };
 }
@@ -396,6 +396,27 @@ function allocateBlocks(targetDist: number, distanceType: 'S' | 'M' | 'D', level
     }
   }
 
+  // Main を推奨単位の倍数に整合（S: 50m、M: 100m、D: 200m 単位のキレイなセット構成を保証）
+  // warmUp を ±rem 調整することで sumFixed の差分を main に転嫁する
+  const mainPreferUnit = distanceType === 'D' ? 200 : distanceType === 'S' ? unit : 100;
+  if (main > 0 && main % mainPreferUnit !== 0) {
+    const rem = main % mainPreferUnit;
+    const upNeeded = mainPreferUnit - rem;
+    // Option 1: warmUp を rem 減らして main を rem 増やす（main を次の倍数に切り上げ）
+    const newWu1 = roundToUnit(warmUp - rem, unit);
+    if (newWu1 >= adjWupMin && newWu1 <= adjWupMax) {
+      warmUp = newWu1;
+      main += rem;
+    // Option 2: warmUp を upNeeded 増やして main を upNeeded 減らす（main を前の倍数に切り捨て）
+    } else if (main - upNeeded > 0) {
+      const newWu2 = roundToUnit(warmUp + upNeeded, unit);
+      if (newWu2 >= adjWupMin && newWu2 <= adjWupMax) {
+        warmUp = newWu2;
+        main -= upNeeded;
+      }
+    }
+  }
+
   return { warmUp, drill, kick, pull, preMain, main, down };
 }
 
@@ -457,15 +478,8 @@ function findSetStructures(
   const baseUnit = BASE_UNIT[distanceType];
   const maxSets = maxSetsOverride ?? (MAX_SETS_PER_BLOCK[blockType] ?? 12);
 
-  // 優先単位でブロック別最大本数以内を探す
-  for (const unit of preferred) {
-    if (totalM % unit === 0) {
-      const sets = totalM / unit;
-      if (sets >= 2 && sets <= maxSets) return [{ sets, mPerSet: unit }];
-    }
-  }
-
-  // 2セグメント分割（allowTwoSegments=true）
+  // 2セグメントが必要なブロック（W-up / Kick / Pull 期3以上 / Main 期4以上）は先に2分割を試みる
+  // → 段階設計（強度差・内容差）を算術的に保証する
   if (allowTwoSegments) {
     for (const ratio of [0.5, 0.4, 0.6, 0.33, 0.67]) {
       const seg1M = roundToUnit(totalM * ratio, baseUnit);
@@ -474,6 +488,14 @@ function findSetStructures(
       const s1 = findSingleSegment(seg1M, preferred, baseUnit, maxSets);
       const s2 = findSingleSegment(seg2M, preferred, baseUnit, maxSets);
       if (s1 && s2) return [s1, s2];
+    }
+  }
+
+  // 優先単位でブロック別最大本数以内を探す（2分割が不可能な場合のフォールバック）
+  for (const unit of preferred) {
+    if (totalM % unit === 0) {
+      const sets = totalM / unit;
+      if (sets >= 2 && sets <= maxSets) return [{ sets, mPerSet: unit }];
     }
   }
 
@@ -758,11 +780,12 @@ function buildBlockSpec(
   const lm = getLevelModifiers(level);
   const lk = lm.key;
   const effectivePreferSmall = preferSmallSetsOverride ?? lm.preferSmallSets;
-  const needsTwoSeg = twoSegments ?? (['kick', 'pull'].includes(blockType) && parseInt(period) >= 3);
+  // 期3-5(発展形成〜耐乳酸)は Kick/Pull を必ず2構成 / 期1・7(回復・テーパー)は除外
+  const needsTwoSeg = twoSegments ?? (['kick', 'pull'].includes(blockType) && [3,4,5,6].includes(parseInt(period)));
   const structs = findSetStructures(targetM, blockType, distanceType, needsTwoSeg, effectivePreferSmall, maxSetsOverride);
   const patternPool = getPatternPool(blockType, period, stroke, level, condition);
 
-  if (structs.length === 1 || ['warmUp', 'down', 'preMain'].includes(blockType)) {
+  if (structs.length === 1 || ['down', 'preMain'].includes(blockType)) {
     const seg = structs[0];
     const actualM = seg.sets * seg.mPerSet;
     return {
@@ -862,7 +885,8 @@ export function generateMenuSkeleton(input: TrainingInput): MenuSkeleton {
   const level = input.level;
   const cond  = input.condition;
 
-  const warmUp  = buildBlockSpec(alloc.warmUp,   'warmUp',  dt, 1,           input.period, input.stroke, level, false, cond);
+  // W-up は必ず2段階で構成（①Easy → ②Build）。DrillをW-up最終段階として統合するため twoSegments=true
+  const warmUp  = buildBlockSpec(alloc.warmUp,   'warmUp',  dt, 1,           input.period, input.stroke, level, true,  cond);
   const drill   = buildBlockSpec(alloc.drill,    'drill',   dt, drillStep,   input.period, input.stroke, level, false, cond);
   const kick    = buildBlockSpec(alloc.kick,     'kick',    dt, kickStep,    input.period, input.stroke, level, undefined, cond);
   const pull    = buildBlockSpec(alloc.pull,     'pull',    dt, pullStep,    input.period, input.stroke, level, undefined, cond);
@@ -987,19 +1011,24 @@ export function buildSkeletonTemplateStrings(skeleton: MenuSkeleton): {
   const stroke = skeleton.input.stroke;
   const pullStroke = getPullStroke(stroke); // Fly → Fr
 
-  // W-up: Cho固定、パターンのみ可変
+  // W-up: Cho段階（2段階）＋Drill段階を統合した3段階テンプレート
+  // → 「体動かし→リズム構築→技術準備」の段階的ウォームアップをLLMに明示
   const wuSegs = skeleton.warmUp.segments;
-  const warmUpTemplate = wuSegs.length === 1
-    ? `Cho ${wuSegs[0].totalM}m {WU_PATTERN}（${wuSegs[0].intensity}）`
-    : wuSegs.map((s, i) =>
-        `Cho ${s.totalM}m {WU_PATTERN_${i + 1}}（${s.intensity}）`
-      ).join(' → ');
-
-  // Drill: 種目種別＋ドリル名可変
   const drSegs = skeleton.drill.segments;
-  const drillTemplate = drSegs.map((s, i) =>
-    `${stroke} {DR_DRILL_${i + 1}} ${s.sets}×${s.mPerSet}m（${s.intensity}）`
-  ).join(' → ');
+
+  const warmUpParts: string[] = wuSegs.map((s, i) =>
+    wuSegs.length === 1
+      ? `Cho ${s.totalM}m {WU_PATTERN}（${s.intensity}）`
+      : `Cho ${s.totalM}m {WU_PATTERN_${i + 1}}（${s.intensity}）`
+  );
+  // DrillをW-upの最終技術段階として統合
+  drSegs.forEach((s, j) => {
+    warmUpParts.push(`${stroke} {DR_DRILL_${j + 1}} ${s.sets}×${s.mPerSet}m（${s.intensity}）`);
+  });
+  const warmUpTemplate = warmUpParts.join(' → ');
+
+  // Drill: W-upに統合済み（drillフィールドは空文字）
+  const drillTemplate = '';
 
   // Kick: パターン可変
   const kiSegs = skeleton.kick.segments;

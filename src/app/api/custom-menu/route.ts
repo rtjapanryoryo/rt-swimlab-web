@@ -72,12 +72,12 @@ const CORE_SYSTEM_PROMPT = `【コーチ思想の核心（50問インタビュ�
 - **テンプレートの {PLACEHOLDER} スロットのみ埋める。数値・本数・@rest・強度番号は変更禁止。**
 - 強度番号の正確な対応（RT Japan公式）: ①=A1/A2 ②=EN1 ③=EN2 ④=EN3 ⑤=AN1 ⑥=AN2 ⑦=MAX（③EN2と④EN3は別強度。EN5・EN6は存在しない）
 - **{WU_PATTERN}・{DR_DRILL_N}・{KI_PATTERN_N}・{PL_PATTERN_N}・{PM_CONTENT} は固定選択肢を使わず、種目・期・レベル・状況に最適なオリジナルの内容を自由に生成すること。**
-- {WU_PATTERN}: W-upの泳ぎ方・フォーカスを具体的に命名（例: SKPS build / odd:Ba even:Fr Des / IM order 4×50 等）
-- {DR_DRILL_N}: その種目に固有のドリル名を具体的に命名する。**泳法をまたいだドリル名は禁止**（例: バタフライにキャッチアップは使わない。背泳ぎにキャッチアップは使わない）。各泳法の固有ドリル例→ Fr: 片手/キャッチアップ/ハイエルボー/フィスト / Ba: 片手スイム/スカーリング/6-1-6バランス/ローリング強調（キャッチアップ厳禁） / Br: 分離キック/グライドプル/2キック1プル/タイミング / Fly: ドルフィンキック/片キック/1キック1プル/ショルダードリル/ヒップドライブ。毎回異なる視点・感覚軸で命名する。
+- {WU_PATTERN_N}: W-upのCho段階の泳ぎ方・フォーカスを具体的に命名。段階ごとに内容を変化させる（例: 段階1: Easy Des / 段階2: SKPS build / 段階2: odd:Ba even:Fr Des 等）
+- {DR_DRILL_N}: **W-upの最終技術段階**として、その種目に固有のドリル名を具体的に命名する。**泳法をまたいだドリル名は禁止**（例: バタフライにキャッチアップは使わない。背泳ぎにキャッチアップは使わない）。各泳法の固有ドリル例→ Fr: 片手/キャッチアップ/ハイエルボー/フィスト / Ba: 片手スイム/スカーリング/6-1-6バランス/ローリング強調（キャッチアップ厳禁） / Br: 分離キック/グライドプル/2キック1プル/タイミング / Fly: ドルフィンキック/片キック/1キック1プル/ショルダードリル/ヒップドライブ。毎回異なる視点・感覚軸で命名する。
 - {KI_PATTERN_N}: そのキックの目的・感覚に即した具体的なパターン名（例: back kick build / underwater dolphin 3→5→7 / strong finish last 2 等）
 - {PL_PATTERN_N}: そのプルの狙いに即した具体的なパターン名（例: DPS focus negative split / catch-up timing form first / fist drill → open hand Des 等）
 - {PM_CONTENT}: Pre-Mainの内容を期・距離タイプに合わせて戦略的に（例: Descend to race pace @30sec / Broken（10sec）レースペース / Negative split + ペース管理 / Des 1→4 最終本レースペース 等。単に「ペースを上げる」ではなく目的・感覚・構成を明示する）
-- W-up / Down: 種目は Cho 固定。Down は変更しない（テンプレートのまま出力）。
+- W-up: Cho段階（{WU_PATTERN_N}部分）は Cho 固定。最終段階のドリル（{DR_DRILL_N}部分）は種目固有のドリルを使用。Down は変更しない（テンプレートのまま出力）。
 - Main: カテゴリ名はテンプレート通りに出力（変更禁止）。@rest も変更禁止。
 - Dive: 期が⑥調整期・⑦テーパー期のときのみ出力。それ以外は空文字（""）。
 
@@ -269,8 +269,7 @@ export async function POST(request: NextRequest) {
 
       // 各ブロックの構造ヒント（コンテンツラベルはAIが自由生成）
       const patternHints = [
-        `W-up: ${skeleton.warmUp.totalM}m Cho — {WU_PATTERN} に種目別フォーカスと変化を自由命名`,
-        `Drill (${stroke}): ${skeleton.drill.totalM}m — {DR_DRILL_N} に ${stroke} 固有の具体的なドリル名をオリジナル生成（毎回異なる視点で）`,
+        `W-up（Drill統合・多段階）: ${skeleton.warmUp.totalM + skeleton.drill.totalM}m — Cho段階は {WU_PATTERN_N} に変化をつけ（体動かし→リズム構築）、最終段階の {DR_DRILL_N} に ${stroke} 固有の具体的なドリル名をオリジナル生成（毎回異なる視点で）。段階を追って強度・内容が変化するよう命名すること`,
         `Kick: ${skeleton.kick.totalM}m — {KI_PATTERN_N} にキックの目的・感覚・構成を自由命名`,
         `Pull: ${skeleton.pull.totalM}m — {PL_PATTERN_N} にプルの狙い・フォーム・テンポ指示を自由命名`,
         `Pre-Main: ${skeleton.preMain.totalM}m — {PM_CONTENT} を期・距離タイプ・コンディションに合わせて自由生成（@rest=${skeleton.preMain.segments[0]?.restHint ?? '30sec'} 変更禁止）`,
@@ -278,7 +277,7 @@ export async function POST(request: NextRequest) {
       ].join('\n');
 
       const skeletonDesc = [
-        `W-up ${skeleton.warmUp.totalM}m / Drill ${skeleton.drill.totalM}m / Kick ${skeleton.kick.totalM}m`,
+        `W-up ${skeleton.warmUp.totalM}m（Cho多段階）+ Drill ${skeleton.drill.totalM}m（W-up内技術段階） / Kick ${skeleton.kick.totalM}m`,
         `Pull ${skeleton.pull.totalM}m / Pre-Main ${skeleton.preMain.totalM}m / Main ${skeleton.main.totalM}m / Down ${skeleton.down.totalM}m`,
         `合計: ${skeleton.targetDist}m（変更禁止）`,
       ].join('\n');
@@ -339,7 +338,7 @@ ${patternHints}
 
 【テンプレート（{PLACEHOLDER}のみ置き換える・数値変更禁止）】
 warmUp  : "${tmpl.warmUpTemplate}"
-drill   : "${tmpl.drillTemplate}"
+drill   : ""  ← DrillはwarmUpに統合済み。必ず空文字 "" で出力すること
 kick    : "${tmpl.kickTemplate}"
 pull    : "${tmpl.pullTemplate}"
 preMain : "${tmpl.preMainTemplate}"

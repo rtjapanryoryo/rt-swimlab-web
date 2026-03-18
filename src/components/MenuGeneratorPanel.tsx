@@ -24,15 +24,6 @@ const QUICK_TEMPLATES = {
 
 const SAVED_INPUT_KEY_PREFIX = 'rt-swimlab-saved-input';
 
-/** LINEで共有する際の本番URL（openExternalBrowser=1 で外部ブラウザ起動） */
-const LINE_SHARE_BASE_URL = 'https://rt-swimlab-web-tl3a.vercel.app';
-
-/** LINE内ブラウザ（WebView）かどうか。PDF保存・印刷が制限される */
-function isLineInAppBrowser(): boolean {
-  if (typeof navigator === 'undefined') return false;
-  const ua = navigator.userAgent;
-  return /Line\//i.test(ua) || /\/IAB\b/i.test(ua);
-}
 
 function savedInputKey(userId: string): string {
   return `${SAVED_INPUT_KEY_PREFIX}-${userId}`;
@@ -103,8 +94,6 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
   const [sectionLabels, setSectionLabels] = useState<Record<string, string> | null>(null);
   const [showForm, setShowForm] = useState(true);
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
-  const [isInLineBrowser, setIsInLineBrowser] = useState(false);
-  const [lineUrlCopied, setLineUrlCopied] = useState(false);
   const [isSavingMenu, setIsSavingMenu] = useState(false);
   const [menuSavedAt, setMenuSavedAt] = useState<Date | null>(null);
 
@@ -135,9 +124,6 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
     };
   }, [customIsGenerating]);
 
-  useEffect(() => {
-    setIsInLineBrowser(isLineInAppBrowser());
-  }, []);
 
   // 距離の整合：無効な組み合わせなら距離をリセット
   // Quick = 距離タイプ×練習時間、Custom = 距離タイプのみ
@@ -628,37 +614,6 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
     }
   };
 
-  const handleSharePDF = async (captureId: string) => {
-    try {
-      const blob = await exportPDFBlob(captureId);
-      const file = new File([blob], `RT-menu_${new Date().toISOString().slice(0, 10)}.pdf`, {
-        type: 'application/pdf',
-      });
-
-      type NavWithShare = {
-        share?: (data: ShareData) => Promise<void>;
-        canShare?: (data?: ShareData) => boolean;
-      };
-      const nav = navigator as unknown as NavWithShare;
-      if (nav.share && nav.canShare?.({ files: [file] })) {
-        await nav.share({
-          title: 'RT swim lab 練習メニュー',
-          text: '今日の練習メニューPDFです',
-          files: [file],
-        });
-      } else {
-        await handleOpenPDFInNewTab(captureId);
-      }
-    } catch (e) {
-      if ((e as Error)?.name === 'AbortError') return; // ユーザーが共有をキャンセル
-      console.error(e);
-      try {
-        await handleOpenPDFInNewTab(captureId);
-      } catch {
-        alert('共有・PDF出力に失敗しました。もう一度お試しください。');
-      }
-    }
-  };
 
   return (
     <div className={embedded ? 'py-4' : 'min-h-screen bg-gradient-to-b from-cyan-50 via-teal-50 to-sky-100 py-8 px-4'}>
@@ -669,60 +624,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
             RT swim lab
           </h1>
           <p className="text-slate-600 text-base md:text-lg">立石諒と高城直基が監修の指導哲学に基づく練習メニュー</p>
-          <button
-            type="button"
-            onClick={async () => {
-              const base = typeof window !== 'undefined' && !window.location.origin.includes('localhost')
-                ? window.location.origin
-                : LINE_SHARE_BASE_URL;
-              const url = `${base}/?openExternalBrowser=1`;
-              try {
-                await navigator.clipboard.writeText(url);
-                setLineUrlCopied(true);
-                setTimeout(() => setLineUrlCopied(false), 3000);
-              } catch {
-                window.prompt('以下のURLをコピーしてLINEで送ってください:', url);
-              }
-            }}
-            className="mt-3 text-sm text-slate-500 hover:text-slate-700 underline underline-offset-2"
-            title="LINEで送る際はこのURLを使うと、外部ブラウザで開きPDF保存が確実になります"
-          >
-            {lineUrlCopied ? '✓ コピーしました' : 'LINEで共有する（URLコピー）'}
-          </button>
         </header>
-        )}
-
-        {/* LINE内ブラウザ検出時：PDF保存・印刷が制限されるため案内（埋め込み時は非表示） */}
-        {!embedded && isInLineBrowser && (
-          <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 no-print">
-            <p className="font-medium text-amber-900 mb-2">
-              LINE内で表示中です。PDF保存・印刷を確実に行うには、ブラウザで開いてください。
-            </p>
-            <div className="flex flex-wrap gap-2 items-center">
-              <button
-                type="button"
-                onClick={async () => {
-                  const base = typeof window !== 'undefined' && !window.location.origin.includes('localhost')
-                    ? window.location.origin
-                    : LINE_SHARE_BASE_URL;
-                  const url = `${base}/?openExternalBrowser=1`;
-                  try {
-                    await navigator.clipboard.writeText(url);
-                    setLineUrlCopied(true);
-                    setTimeout(() => setLineUrlCopied(false), 3000);
-                  } catch {
-                    window.prompt('以下のURLをコピーしてLINEで送り、再度タップしてください:', url);
-                  }
-                }}
-                className="px-4 py-2 rounded-lg bg-amber-600 text-white font-medium text-sm hover:bg-amber-700 transition-colors"
-              >
-                {lineUrlCopied ? 'コピーしました' : 'ブラウザ用URLをコピー'}
-              </button>
-              <span className="text-sm text-amber-800">
-                または 右上の ⋮ → 「Safariで開く」「Chromeで開く」を選択
-              </span>
-            </div>
-          </div>
         )}
 
         {/* 入力（メニュー生成後は非表示） */}
@@ -890,20 +792,14 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
         </>
         )}
 
-        {/* カスタム生成中：RT swim lab ブランド・ワクワク感のあるローディング */}
+        {/* カスタム生成中：ローディング */}
         {customIsGenerating && (
           <div className="generate-loading-in fixed inset-0 z-50 flex items-center justify-center overflow-hidden">
             {/* 背景：水をイメージしたグラデーション + 波パターン */}
-            <div className="absolute inset-0 bg-gradient-to-br from-cyan-100/90 via-teal-50/95 to-sky-100/90" aria-hidden />
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan-100 via-teal-50 to-sky-100" aria-hidden />
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_110%_70%_at_50%_20%,rgba(6,182,212,0.18),transparent_50%)]" aria-hidden />
             <div className="generate-loading-waves absolute inset-0 opacity-[0.15]" aria-hidden />
-            <div className="absolute inset-0 backdrop-blur-[1px]" aria-hidden />
             <div className="relative flex flex-col items-center gap-8 px-6 py-8">
-              {/* RT swim lab ロゴ + ブランド */}
-              <div className="flex flex-col items-center gap-3">
-                <img src="/RT-japan_Logo.svg" alt="" className="generate-loading-logo h-12 w-auto md:h-14 opacity-90" />
-                <span className="text-sm font-semibold tracking-widest text-cyan-600/90 uppercase">RT swim lab</span>
-              </div>
               {/* 水の雫風オーブ + 回転リング（泳ぎを連想する流線） */}
               <div className="relative flex items-center justify-center -mt-2">
                 <svg className="generate-loading-ring h-24 w-24 md:h-28 md:w-28 text-cyan-400/70" viewBox="0 0 64 64" fill="none">
@@ -995,13 +891,6 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                   className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 text-white hover:from-cyan-600 hover:to-teal-600 disabled:opacity-50 font-semibold text-sm shadow-lg shadow-cyan-500/25 transition-all"
                 >
                   {isExporting ? 'PDF生成中...' : 'PDF保存'}
-                </button>
-                <button
-                  onClick={() => handleSharePDF('menu-capture')}
-                  disabled={isExporting}
-                  className="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-900 disabled:opacity-50 font-medium text-sm shadow-sm transition-all"
-                >
-                  {isExporting ? '共有準備中...' : '共有'}
                 </button>
               </div>
             </div>

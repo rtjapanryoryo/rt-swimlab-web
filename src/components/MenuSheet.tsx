@@ -271,6 +271,7 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
     const sheetRows: MenuSheetRow[] = [];
     const s = (input.stroke && STROKE_ALLOWED.has(input.stroke) ? input.stroke : 'S1') as string;
     for (const key of order) {
+      if (key === 'drill' && !(result.drill ?? '').trim()) continue; // W-upに統合済みの場合スキップ
       if (key === 'dive' && !(result.dive ?? '').trim()) continue;
       if (key === 'rest' && !(result.rest ?? '').trim()) continue;
       const value = (result as unknown as Record<string, string>)[key] ?? '';
