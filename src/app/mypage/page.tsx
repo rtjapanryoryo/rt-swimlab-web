@@ -5,6 +5,7 @@ import { useProfile } from '@/contexts/ProfileContext';
 import { ProfileSection } from '@/components/ProfileSection';
 import { MenuLogSection } from '@/components/MenuLogSection';
 import { SwimLabIcon, GeneProfileIcon, CommunityIcon, AccountIcon } from '@/components/icons/MypageNavIcons';
+import { TrainingStatsSection } from '@/components/TrainingStatsSection';
 
 const COMMUNITY_URL = process.env.NEXT_PUBLIC_COMMUNITY_URL || '';
 
@@ -227,6 +228,9 @@ export default function MyPageDashboard() {
           </div>
         </div>
       </section>
+
+      {/* ─── トレーニング統計 ─── */}
+      <TrainingStatsSection />
 
       {/* ─── メニューログ ─── */}
       <MenuLogSection />
