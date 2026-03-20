@@ -2,49 +2,9 @@
 
 import Link from 'next/link';
 import { useProfile } from '@/contexts/ProfileContext';
-import { ProfileSection } from '@/components/ProfileSection';
 import { MenuLogSection } from '@/components/MenuLogSection';
 import { TrainingStatsSection } from '@/components/TrainingStatsSection';
-import { SwimLabIcon, GeneProfileIcon, CommunityIcon, AccountIcon } from '@/components/icons/MypageNavIcons';
 
-const COMMUNITY_URL = process.env.NEXT_PUBLIC_COMMUNITY_URL || '';
-
-const NAV_ITEMS = [
-  {
-    href: '/mypage/menu',
-    label: 'RT swim lab',
-    sub: 'AIメニュー生成',
-    Icon: SwimLabIcon,
-    gradient: 'from-cyan-500 to-teal-500',
-    glow: 'shadow-cyan-500/20',
-  },
-  {
-    href: '/mypage/genetic',
-    label: 'GENE PROFILE',
-    sub: '遺伝子検査結果',
-    Icon: GeneProfileIcon,
-    gradient: 'from-violet-500 to-purple-600',
-    glow: 'shadow-violet-500/20',
-  },
-  {
-    href: COMMUNITY_URL || '#',
-    label: 'コミュニティ',
-    sub: 'RT公式',
-    Icon: CommunityIcon,
-    gradient: 'from-orange-500 to-amber-500',
-    glow: 'shadow-orange-500/20',
-    external: true,
-    disabled: !COMMUNITY_URL,
-  },
-  {
-    href: '/mypage/settings',
-    label: 'アカウント',
-    sub: 'プロフィール設定',
-    Icon: AccountIcon,
-    gradient: 'from-sky-500 to-cyan-500',
-    glow: 'shadow-sky-500/20',
-  },
-];
 
 export default function MyPageDashboard() {
   const { profile } = useProfile();
@@ -98,9 +58,9 @@ export default function MyPageDashboard() {
 
           {/* Goal */}
           {goal && (
-            <div className="mt-3 flex items-center gap-2">
-              <span className="text-[10px] font-bold text-cyan-500/80 uppercase tracking-wider">目標</span>
-              <p className="text-sm text-slate-300 font-medium">{goal}</p>
+            <div className="mt-4 px-4 py-3 rounded-2xl bg-white/5 border border-white/10 flex items-start gap-3">
+              <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider mt-0.5 flex-shrink-0">目標</span>
+              <p className="text-base font-bold text-white leading-snug">{goal}</p>
             </div>
           )}
 
@@ -137,60 +97,8 @@ export default function MyPageDashboard() {
         </div>
       </div>
 
-      {/* ════════ メインコンテンツ ════════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* ── 左: アクティビティ ── */}
-        <div className="lg:col-span-2">
-          <TrainingStatsSection />
-        </div>
-
-        {/* ── 右: サービス ── */}
-        <div className="flex flex-col gap-3">
-          {NAV_ITEMS.map((item) => {
-            const IconComponent = item.Icon;
-            const disabled = 'disabled' in item && item.disabled;
-
-            const inner = (
-              <div className={`flex items-center gap-3 p-4 rounded-2xl border-2 transition-all group ${
-                disabled
-                  ? 'border-slate-100 bg-slate-50 opacity-50 cursor-default'
-                  : 'border-slate-100 bg-white hover:border-cyan-200 hover:shadow-lg hover:shadow-cyan-500/10 hover:-translate-y-0.5'
-              }`}>
-                <span className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-gradient-to-br ${item.gradient} shadow-md ${item.glow} text-white [&_svg]:w-5 [&_svg]:h-5 ${disabled ? '' : 'group-hover:scale-105 transition-transform'}`}>
-                  <IconComponent />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-sm font-bold text-slate-800 group-hover:text-cyan-700 transition-colors">
-                    {item.label}
-                  </p>
-                  <p className="text-[11px] text-slate-400 font-medium">{item.sub}</p>
-                </div>
-                {!disabled && (
-                  <span className="ml-auto text-slate-300 group-hover:text-cyan-400 transition-colors text-sm flex-shrink-0">→</span>
-                )}
-              </div>
-            );
-
-            if (disabled) return <div key={item.label}>{inner}</div>;
-            if ('external' in item && item.external) {
-              return (
-                <a key={item.label} href={item.href} target="_blank" rel="noopener noreferrer">
-                  {inner}
-                </a>
-              );
-            }
-            return (
-              <Link key={item.label} href={item.href}>
-                {inner}
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ════════ 目標設定 ════════ */}
-      <ProfileSection />
+      {/* ════════ アクティビティ ════════ */}
+      <TrainingStatsSection />
 
       {/* ════════ メニューログ ════════ */}
       <MenuLogSection />
