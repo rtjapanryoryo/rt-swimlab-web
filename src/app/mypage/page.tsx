@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useProfile } from '@/contexts/ProfileContext';
 import { MenuLogSection } from '@/components/MenuLogSection';
 import { TrainingStatsSection } from '@/components/TrainingStatsSection';
+import { SeasonPlannerSection } from '@/components/SeasonPlannerSection';
 
 
 export default function MyPageDashboard() {
@@ -96,6 +97,9 @@ export default function MyPageDashboard() {
           </div>
         </div>
       </div>
+
+      {/* ════════ シーズン管理 ════════ */}
+      <SeasonPlannerSection />
 
       {/* ════════ アクティビティ ════════ */}
       <TrainingStatsSection />

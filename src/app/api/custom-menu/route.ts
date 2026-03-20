@@ -290,6 +290,11 @@ export async function POST(request: NextRequest) {
         `${retryHint}【タスク】以下のテンプレートの {PLACEHOLDER} スロットをオリジナルのコンテンツラベルで埋めてください。
 **数値・本数・@rest・強度番号（①〜⑦）は絶対変更禁止。{PLACEHOLDER} 部分のみ書き換える。**
 
+【多様性の徹底】同じ条件でも毎回異なる内容を生成すること。前回と同じドリル名・パターン名・コーチングポイントは使わない。
+- ドリル・パターンの軸を変える（感覚軸 / 技術軸 / 動作軸 / タイミング軸 / パワー軸など）
+- coachingPoint・intentionの切り口を毎回変える（今日のテーマを明確に立てる）
+- Pre-Mainの構成を期・距離タイプごとに変化させる（Broken/Des/Negative split/Pyramid等）
+
 【重要】コンテンツラベルは固定パターンを使い回さず、下記条件（種目・期・レベル・状況）に最適なオリジナル内容を毎回新鮮に生成すること。
 - {WU_PATTERN} → 種目と期に合ったW-upの泳法フォーカスを自由命名（例: SKPS build / odd:Ba even:Fr Des 等）
 - {DR_DRILL_N} → ${stroke} 固有の具体的なドリル名をオリジナル生成（形よりも水感・ブレーキゼロを意識した命名で）
@@ -414,7 +419,7 @@ down    : "${tmpl.downStr}"（変更禁止）
         }
       };
 
-      const doGenerate = async (retryHint = '', temp = 0.1): Promise<string | null> => {
+      const doGenerate = async (retryHint = '', temp = 0.45): Promise<string | null> => {
         const completion = await openai.chat.completions.create({
           model,
           messages: [
@@ -440,7 +445,7 @@ down    : "${tmpl.downStr}"（変更禁止）
       // JSONパース失敗時のみリトライ（距離リトライは不要）
       if (!result) {
         const retryHint = '【再試行】JSONの全キーが揃っていません。正しいJSONのみを出力してください。\n\n';
-        rawContent = await doGenerate(retryHint, 0.2);
+        rawContent = await doGenerate(retryHint, 0.3);
         if (rawContent) result = parseAndAssemble(rawContent);
       }
 

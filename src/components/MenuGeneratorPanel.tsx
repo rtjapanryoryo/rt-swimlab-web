@@ -97,6 +97,28 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
   const [isSavingMenu, setIsSavingMenu] = useState(false);
   const [menuSavedAt, setMenuSavedAt] = useState<Date | null>(null);
 
+  // レース日からトレーニング期を自動サジェスト
+  const [raceDate, setRaceDate] = useState<string>('');
+  useEffect(() => {
+    const stored = localStorage.getItem('rt-race-date');
+    if (stored) setRaceDate(stored);
+  }, []);
+  const raceDaysLeft = raceDate ? Math.ceil((new Date(raceDate).getTime() - Date.now()) / 86400000) : null;
+  const suggestedPeriodFromRace: string | null = (() => {
+    if (raceDaysLeft === null || raceDaysLeft < 0) return null;
+    if (raceDaysLeft <= 7)   return '7';
+    if (raceDaysLeft <= 21)  return '6';
+    if (raceDaysLeft <= 42)  return '5';
+    if (raceDaysLeft <= 70)  return '4';
+    if (raceDaysLeft <= 105) return '3';
+    if (raceDaysLeft <= 140) return '2';
+    return '1';
+  })();
+  const PERIOD_SHORT_LABELS: Record<string, string> = {
+    '1': 'リカバリー', '2': '基礎形成', '3': '発展形成',
+    '4': '強化(SL)', '5': '強化(AN)', '6': '調整期', '7': 'テーパー',
+  };
+
   const LOADING_MESSAGES = [
     'reading...',
     'designing...',
@@ -578,6 +600,37 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
     }
   };
 
+  /** メニューをテキスト形式でクリップボードにコピー */
+  const [copyDone, setCopyDone] = useState(false);
+  const handleCopyText = async () => {
+    if (!result) return;
+    const LABELS: Record<string, string> = {
+      warmUp: 'W-up', drill: 'Drill', kick: 'Kick', pull: 'Pull',
+      preMain: 'Pre-Main', dive: 'Dive', rest: 'Rest', main: 'Main', down: 'Down',
+    };
+    const activeInput = resultSource === 'quick' ? buildQuickInput() : input;
+    const lines: string[] = [];
+    lines.push(`■ RT swim lab 練習メニュー`);
+    lines.push(`日付: ${new Date().toLocaleDateString('ja-JP')}`);
+    if (activeInput.period) lines.push(`期: ${activeInput.period}`);
+    if (activeInput.stroke) lines.push(`種目: ${activeInput.stroke}`);
+    if (activeInput.distance) lines.push(`距離: ${activeInput.distance}m`);
+    lines.push('');
+    for (const key of ['warmUp', 'drill', 'kick', 'pull', 'preMain', 'dive', 'rest', 'main', 'down']) {
+      const val = (result as unknown as Record<string, string>)[key];
+      if (val && val.trim()) lines.push(`${LABELS[key] ?? key}: ${val}`);
+    }
+    lines.push('');
+    lines.push(result.total ?? '');
+    if (result.intention) { lines.push(''); lines.push(`【今日の狙い】\n${result.intention}`); }
+    if (result.coachingPoint) { lines.push(''); lines.push(`【指導ポイント】\n${result.coachingPoint}`); }
+    try {
+      await navigator.clipboard.writeText(lines.join('\n'));
+      setCopyDone(true);
+      setTimeout(() => setCopyDone(false), 2000);
+    } catch { /* ignore */ }
+  };
+
   /** PDFを直接ダウンロード保存 */
   const handleDownloadPDF = async (captureId: string) => {
     try {
@@ -651,6 +704,23 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
           <p className="text-sm text-slate-500 mb-5">
             {mode === 'quick' ? '4項目でテンプレートから適正なメニューを1件抽出。すぐに表示されます。' : '8項目でAIが種目・年齢・状況に合わせてあなた専用のメニューを生成します。'}
           </p>
+
+          {/* レース日サジェスト */}
+          {suggestedPeriodFromRace && (
+            <div className="mb-4 px-4 py-3 rounded-2xl bg-cyan-50 border border-cyan-200 flex items-center justify-between gap-3">
+              <div>
+                <span className="text-xs font-bold text-cyan-700">🏁 レースまで {raceDaysLeft}日</span>
+                <span className="text-[11px] text-slate-500 ml-2">推奨期: {PERIOD_SHORT_LABELS[suggestedPeriodFromRace]}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleInputChange('period', suggestedPeriodFromRace)}
+                className="text-xs font-bold px-3 py-1 rounded-xl bg-cyan-500 text-white hover:bg-cyan-600 transition-colors flex-shrink-0"
+              >
+                適用
+              </button>
+            </div>
+          )}
 
           {mode === 'quick' && (
             <>
@@ -891,6 +961,13 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                   className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 text-white hover:from-cyan-600 hover:to-teal-600 disabled:opacity-50 font-semibold text-sm shadow-lg shadow-cyan-500/25 transition-all"
                 >
                   {isExporting ? 'PDF生成中...' : 'PDF保存'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCopyText}
+                  className="px-4 py-2 rounded-xl border-2 border-slate-200 bg-white text-slate-700 hover:border-cyan-300 hover:text-cyan-700 font-semibold text-sm transition-all"
+                >
+                  {copyDone ? '✓ コピー済み' : 'テキストコピー'}
                 </button>
               </div>
             </div>

@@ -43,6 +43,36 @@ function calcStreak(menus: MenuData[]): number {
   return streak;
 }
 
+function calcStrokeDistribution(menus: MenuData[]): { stroke: string; count: number; pct: number }[] {
+  const counts: Record<string, number> = {};
+  menus.forEach((m) => {
+    const s = m.input?.stroke ?? 'Fr';
+    counts[s] = (counts[s] ?? 0) + 1;
+  });
+  const total = Object.values(counts).reduce((a, b) => a + b, 0) || 1;
+  return Object.entries(counts)
+    .map(([stroke, count]) => ({ stroke, count, pct: Math.round((count / total) * 100) }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+}
+
+function calcPeriodDistribution(menus: MenuData[]): { period: string; count: number; pct: number }[] {
+  const PERIOD_LABELS: Record<string, string> = {
+    '1': 'リカバリー', '2': '基礎形成', '3': '発展形成',
+    '4': '強化SL', '5': '強化AN', '6': '調整', '7': 'テーパー',
+  };
+  const counts: Record<string, number> = {};
+  menus.forEach((m) => {
+    const p = m.input?.period ?? '2';
+    counts[p] = (counts[p] ?? 0) + 1;
+  });
+  const total = Object.values(counts).reduce((a, b) => a + b, 0) || 1;
+  return Object.entries(counts)
+    .map(([period, count]) => ({ period: PERIOD_LABELS[period] ?? `期${period}`, count, pct: Math.round((count / total) * 100) }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+}
+
 function calcMonthlyStats(menus: MenuData[]) {
   const now = new Date();
   const monthStart = toDateStr(new Date(now.getFullYear(), now.getMonth(), 1));
@@ -181,8 +211,13 @@ export function TrainingStatsSection() {
   const streak = calcStreak(menus);
   const { count: monthlyCount, days: activeDays, distance: monthlyDist } = calcMonthlyStats(menus);
   const { days: calDays, year, month } = genMonthCalendar(menus);
+  const strokeDist = calcStrokeDistribution(menus);
+  const periodDist = calcPeriodDistribution(menus);
 
   const nextBadge = BADGES.find((b) => totalCount < b.threshold);
+  const STROKE_COLORS: Record<string, string> = {
+    Fr: 'bg-cyan-500', Ba: 'bg-blue-500', Br: 'bg-teal-500', Fly: 'bg-violet-500', IM: 'bg-orange-500',
+  };
 
   if (loading) {
     return (
@@ -334,6 +369,55 @@ export function TrainingStatsSection() {
             })}
           </div>
         </div>
+
+        {/* ─── データ分布 ─── */}
+        {menus.length >= 3 && (
+          <div className="pt-1 border-t border-cyan-100/60 space-y-4">
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">練習データ分析</p>
+
+            {/* 種目分布 */}
+            {strokeDist.length > 0 && (
+              <div>
+                <p className="text-[10px] text-slate-400 mb-1.5">種目別</p>
+                <div className="space-y-1.5">
+                  {strokeDist.map((d) => (
+                    <div key={d.stroke} className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-slate-600 w-6">{d.stroke}</span>
+                      <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${STROKE_COLORS[d.stroke] ?? 'bg-slate-400'} transition-all`}
+                          style={{ width: `${d.pct}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-slate-500 tabular-nums w-8 text-right">{d.pct}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 期分布 */}
+            {periodDist.length > 0 && (
+              <div>
+                <p className="text-[10px] text-slate-400 mb-1.5">期別</p>
+                <div className="space-y-1.5">
+                  {periodDist.map((d) => (
+                    <div key={d.period} className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-slate-600 w-14 truncate">{d.period}</span>
+                      <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-teal-400 transition-all"
+                          style={{ width: `${d.pct}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-slate-500 tabular-nums w-8 text-right">{d.pct}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </section>
   );
