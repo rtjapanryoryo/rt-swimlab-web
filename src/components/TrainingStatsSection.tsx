@@ -43,76 +43,61 @@ function calcStreak(menus: MenuData[]): number {
   return streak;
 }
 
-function calcMonthlyCount(menus: MenuData[]): number {
+function calcMonthlyStats(menus: MenuData[]) {
   const now = new Date();
   const monthStart = toDateStr(new Date(now.getFullYear(), now.getMonth(), 1));
-  return menus.filter((m) => parseLocalDate(m.created_at) >= monthStart).length;
+  const thisMonth = menus.filter((m) => parseLocalDate(m.created_at) >= monthStart);
+  const count = thisMonth.length;
+  const days = new Set(thisMonth.map((m) => parseLocalDate(m.created_at))).size;
+  const distance = thisMonth.reduce((sum, m) => sum + (parseInt(m.input?.distance ?? '0', 10) || 0), 0);
+  return { count, days, distance };
 }
 
-function calcMonthlyDistance(menus: MenuData[]): number {
+type CalendarDay = {
+  date: string | null;
+  day: number | null;
+  count: number;
+  isToday: boolean;
+  isFuture: boolean;
+};
+
+function genMonthCalendar(menus: MenuData[]): { days: CalendarDay[]; year: number; month: number } {
   const now = new Date();
-  const monthStart = toDateStr(new Date(now.getFullYear(), now.getMonth(), 1));
-  return menus
-    .filter((m) => parseLocalDate(m.created_at) >= monthStart)
-    .reduce((sum, m) => sum + (parseInt(m.input?.distance ?? '0', 10) || 0), 0);
-}
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const today = toDateStr(now);
 
-type HeatmapCell = { date: string; count: number; isFuture: boolean };
-type HeatmapColumn = { week: HeatmapCell[]; monthLabel: string | null };
-
-function genHeatmap(menus: MenuData[], weeksCount = 14): HeatmapColumn[] {
   const countByDate: Record<string, number> = {};
   menus.forEach((m) => {
     const date = parseLocalDate(m.created_at);
     countByDate[date] = (countByDate[date] ?? 0) + 1;
   });
 
-  const today = new Date();
-  const todayStr = toDateStr(today);
-  const todayDow = today.getDay();
+  const firstDay = new Date(year, month, 1);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  const lastSunday = new Date(today);
-  lastSunday.setDate(today.getDate() - todayDow);
+  // 月曜始まり (0=月, 6=日)
+  const rawDow = firstDay.getDay(); // 0=Sun
+  const startOffset = rawDow === 0 ? 6 : rawDow - 1;
 
-  const firstSunday = new Date(lastSunday);
-  firstSunday.setDate(lastSunday.getDate() - (weeksCount - 1) * 7);
+  const days: CalendarDay[] = [];
 
-  const MONTH_NAMES = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
-
-  const columns: HeatmapColumn[] = [];
-  let prevMonth: number | null = null;
-
-  for (let w = 0; w < weeksCount; w++) {
-    const weekStart = new Date(firstSunday);
-    weekStart.setDate(firstSunday.getDate() + w * 7);
-    const week: HeatmapCell[] = [];
-
-    for (let d = 0; d < 7; d++) {
-      const day = new Date(weekStart);
-      day.setDate(weekStart.getDate() + d);
-      const dateStr = toDateStr(day);
-      week.push({
-        date: dateStr,
-        count: countByDate[dateStr] ?? 0,
-        isFuture: dateStr > todayStr,
-      });
-    }
-
-    const thisMonth = weekStart.getMonth();
-    const monthLabel = prevMonth !== thisMonth ? MONTH_NAMES[thisMonth] : null;
-    prevMonth = thisMonth;
-
-    columns.push({ week, monthLabel });
+  for (let i = 0; i < startOffset; i++) {
+    days.push({ date: null, day: null, count: 0, isToday: false, isFuture: false });
   }
-  return columns;
-}
 
-function cellColor(count: number, isFuture: boolean): string {
-  if (isFuture) return 'bg-transparent';
-  if (count === 0) return 'bg-slate-100';
-  if (count === 1) return 'bg-cyan-300';
-  if (count === 2) return 'bg-cyan-500';
-  return 'bg-teal-500';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    days.push({
+      date: dateStr,
+      day: d,
+      count: countByDate[dateStr] ?? 0,
+      isToday: dateStr === today,
+      isFuture: dateStr > today,
+    });
+  }
+
+  return { days, year, month };
 }
 
 const BADGES = [
@@ -124,7 +109,49 @@ const BADGES = [
   { id: 'hundred', label: '100回達成', icon: '👑', threshold: 100, from: 'from-amber-400', to: 'to-yellow-300' },
 ];
 
-const DAY_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
+const MONTH_NAMES = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+const DOW_LABELS = ['月', '火', '水', '木', '金', '土', '日'];
+
+function DayCell({ cell }: { cell: CalendarDay }) {
+  if (!cell.date || cell.day === null) {
+    return <div className="aspect-square" />;
+  }
+  if (cell.isFuture) {
+    return (
+      <div className="aspect-square flex items-center justify-center">
+        <span className="text-[11px] text-slate-200 font-medium">{cell.day}</span>
+      </div>
+    );
+  }
+
+  const hasPractice = cell.count > 0;
+  const bg = hasPractice
+    ? cell.count >= 3
+      ? 'bg-teal-500 shadow-sm shadow-teal-400/40'
+      : cell.count === 2
+      ? 'bg-cyan-500'
+      : 'bg-cyan-300'
+    : cell.isToday
+    ? 'bg-transparent'
+    : 'bg-slate-100';
+
+  const textColor = hasPractice ? 'text-white' : cell.isToday ? 'text-cyan-600' : 'text-slate-400';
+  const ring = cell.isToday ? 'ring-2 ring-cyan-400 ring-offset-1' : '';
+
+  return (
+    <div
+      className={`aspect-square flex items-center justify-center rounded-lg ${bg} ${ring} transition-all`}
+      title={hasPractice ? `${cell.date}：${cell.count}回生成` : cell.isToday ? '今日' : cell.date}
+    >
+      <span className={`text-[11px] font-bold ${textColor}`}>{cell.day}</span>
+      {hasPractice && cell.count >= 2 && (
+        <span className="absolute bottom-0.5 right-0.5 text-[7px] text-white/80 leading-none font-bold">
+          {cell.count}
+        </span>
+      )}
+    </div>
+  );
+}
 
 export function TrainingStatsSection() {
   const { profile } = useProfile();
@@ -152,26 +179,23 @@ export function TrainingStatsSection() {
 
   const totalCount = profile?.total_usage_count ?? 0;
   const streak = calcStreak(menus);
-  const monthlyCount = calcMonthlyCount(menus);
-  const monthlyDist = calcMonthlyDistance(menus);
-  const heatmap = genHeatmap(menus, 14);
+  const { count: monthlyCount, days: activeDays, distance: monthlyDist } = calcMonthlyStats(menus);
+  const { days: calDays, year, month } = genMonthCalendar(menus);
 
-  // 次のバッジ
   const nextBadge = BADGES.find((b) => totalCount < b.threshold);
-  const nextBadgeRemaining = nextBadge ? nextBadge.threshold - totalCount : 0;
 
   if (loading) {
     return (
       <section className="dashboard-card overflow-hidden">
         <div className="px-6 py-5 border-b border-cyan-100/80 flex items-center gap-2">
           <span className="w-2 h-6 rounded-full bg-gradient-to-b from-cyan-400 to-teal-500" />
-          <h2 className="text-sm font-bold text-slate-800 tracking-wide">トレーニング統計</h2>
+          <h2 className="text-sm font-bold text-slate-800 tracking-wide">今月のアクティビティ</h2>
         </div>
         <div className="p-6 animate-pulse space-y-4">
+          <div className="h-48 rounded-2xl bg-slate-100" />
           <div className="grid grid-cols-3 gap-3">
-            {[0, 1, 2].map((i) => <div key={i} className="h-28 rounded-2xl bg-slate-100" />)}
+            {[0, 1, 2].map((i) => <div key={i} className="h-16 rounded-xl bg-slate-100" />)}
           </div>
-          <div className="h-24 rounded-xl bg-slate-100" />
         </div>
       </section>
     );
@@ -179,174 +203,141 @@ export function TrainingStatsSection() {
 
   return (
     <section className="dashboard-card overflow-hidden">
-      <div className="px-6 py-5 border-b border-cyan-100/80 flex items-center gap-2">
-        <span className="w-2 h-6 rounded-full bg-gradient-to-b from-cyan-400 to-teal-500" />
-        <h2 className="text-sm font-bold text-slate-800 tracking-wide">トレーニング統計</h2>
+      {/* ヘッダー */}
+      <div className="px-6 py-5 border-b border-cyan-100/80 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-6 rounded-full bg-gradient-to-b from-cyan-400 to-teal-500" />
+          <h2 className="text-sm font-bold text-slate-800 tracking-wide">今月のアクティビティ</h2>
+        </div>
+        <span className="text-xs text-slate-400 font-medium">
+          {MONTH_NAMES[month]}
+        </span>
       </div>
 
-      <div className="p-6 space-y-7">
+      <div className="p-5 space-y-5">
 
-        {/* ─── 統計カード 3枚 ─── */}
-        <div className="grid grid-cols-3 gap-3">
+        {/* ─── カレンダー ─── */}
+        <div>
+          {/* 曜日ヘッダー */}
+          <div className="grid grid-cols-7 gap-1 mb-1">
+            {DOW_LABELS.map((d, i) => (
+              <div key={i} className={`text-center text-[10px] font-bold ${i >= 5 ? 'text-slate-400' : 'text-slate-500'}`}>
+                {d}
+              </div>
+            ))}
+          </div>
+          {/* 日付グリッド */}
+          <div className="grid grid-cols-7 gap-1">
+            {calDays.map((cell, i) => (
+              <div key={i} className="relative">
+                <DayCell cell={cell} />
+              </div>
+            ))}
+          </div>
+          {/* 凡例 */}
+          <div className="flex items-center gap-3 mt-3 justify-end">
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 rounded-sm bg-slate-100" />
+              <span className="text-[9px] text-slate-400">なし</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 rounded-sm bg-cyan-300" />
+              <span className="text-[9px] text-slate-400">1回</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 rounded-sm bg-cyan-500" />
+              <span className="text-[9px] text-slate-400">2回</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 rounded-sm bg-teal-500" />
+              <span className="text-[9px] text-slate-400">3回以上</span>
+            </div>
+          </div>
+        </div>
 
-          {/* ストリーク */}
-          <div className={`relative overflow-hidden rounded-2xl p-4 border transition-all ${
+        {/* ─── 今月サマリー ─── */}
+        <div className="grid grid-cols-3 gap-2 pt-1 border-t border-cyan-100/60">
+          <div className="text-center py-2">
+            <div className="text-xl font-black text-cyan-600 tabular-nums">{monthlyCount}</div>
+            <div className="text-[10px] text-slate-500 font-medium mt-0.5">今月の生成回数</div>
+          </div>
+          <div className="text-center py-2 border-x border-cyan-100/60">
+            <div className="text-xl font-black text-teal-600 tabular-nums">{activeDays}</div>
+            <div className="text-[10px] text-slate-500 font-medium mt-0.5">練習した日数</div>
+          </div>
+          <div className="text-center py-2">
+            <div className="text-xl font-black text-violet-600 tabular-nums leading-tight">
+              {monthlyDist >= 1000
+                ? `${(monthlyDist / 1000).toFixed(1)}`
+                : `${monthlyDist}`}
+            </div>
+            <div className="text-[10px] text-slate-500 font-medium mt-0.5">
+              {monthlyDist >= 1000 ? '合計距離 (km)' : '合計距離 (m)'}
+            </div>
+          </div>
+        </div>
+
+        {/* ─── ストリーク ─── */}
+        {streak > 0 && (
+          <div className={`flex items-center gap-3 px-4 py-3 rounded-2xl border ${
             streak >= 3
-              ? 'bg-gradient-to-br from-orange-50 to-amber-50 border-orange-200 shadow-md shadow-orange-100'
+              ? 'bg-gradient-to-r from-orange-50 to-amber-50 border-orange-200'
               : 'bg-slate-50 border-slate-200'
           }`}>
-            {streak >= 3 && (
-              <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-orange-300/20 blur-2xl pointer-events-none" />
-            )}
-            <div className="relative flex flex-col items-center text-center gap-1">
-              <span className="text-2xl">{streak > 0 ? '🔥' : '💤'}</span>
-              <div className={`text-3xl font-black tabular-nums leading-none ${streak > 0 ? 'text-orange-500' : 'text-slate-400'}`}>
-                {streak}
+            <span className="text-2xl">{streak >= 3 ? '🔥' : '✅'}</span>
+            <div>
+              <div className="text-sm font-bold text-slate-800">
+                {streak}日間 連続練習中！
               </div>
-              <div className="text-xs font-bold text-slate-700">連続練習日</div>
-              <div className="text-[10px] text-slate-400 leading-tight">
-                {streak > 0 ? `${streak}日間継続中！` : '今日から再開しよう'}
+              <div className="text-[11px] text-slate-500">
+                この調子で続けましょう
               </div>
             </div>
           </div>
+        )}
 
-          {/* 今月の練習回数 */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-cyan-50 to-teal-50 border border-cyan-200 p-4">
-            <div className="absolute -bottom-6 -right-6 w-20 h-20 rounded-full bg-cyan-200/30 blur-2xl pointer-events-none" />
-            <div className="relative flex flex-col items-center text-center gap-1">
-              <span className="text-2xl">📋</span>
-              <div className="text-3xl font-black text-cyan-600 tabular-nums leading-none">{monthlyCount}</div>
-              <div className="text-xs font-bold text-slate-700">今月の練習回数</div>
-              <div className="text-[10px] text-slate-400 leading-tight">
-                {monthlyDist > 0
-                  ? `合計 ${monthlyDist >= 1000 ? `${(monthlyDist / 1000).toFixed(1)}km` : `${monthlyDist.toLocaleString()}m`}`
-                  : 'メニュー生成回数'}
-              </div>
-            </div>
-          </div>
-
-          {/* 累計生成 */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-200 p-4">
-            <div className="absolute -bottom-6 -left-6 w-20 h-20 rounded-full bg-violet-200/30 blur-2xl pointer-events-none" />
-            <div className="relative flex flex-col items-center text-center gap-1">
-              <span className="text-2xl">🏊</span>
-              <div className="text-3xl font-black text-violet-600 tabular-nums leading-none">{totalCount}</div>
-              <div className="text-xs font-bold text-slate-700">累計生成回数</div>
-              <div className="text-[10px] text-slate-400 leading-tight">
-                {nextBadge ? `あと${nextBadgeRemaining}回で${nextBadge.icon}` : '全バッジ解放済み！'}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ─── アクティビティヒートマップ ─── */}
-        <div>
-          <div className="flex items-baseline justify-between mb-2">
-            <p className="text-xs font-bold text-slate-600">練習アクティビティ</p>
-            <p className="text-[10px] text-slate-400">過去14週間 ／ 1マス＝1日</p>
-          </div>
-
-          <div className="overflow-x-auto">
-            <div className="min-w-min">
-              {/* 月ラベル行 */}
-              <div className="flex gap-[3px] mb-1 pl-5">
-                {heatmap.map((col, wi) => (
-                  <div key={wi} className="w-4 text-[9px] text-slate-400 font-medium whitespace-nowrap">
-                    {col.monthLabel ?? ''}
-                  </div>
-                ))}
-              </div>
-
-              {/* グリッド本体 */}
-              <div className="flex gap-[3px]">
-                {/* 曜日ラベル */}
-                <div className="flex flex-col gap-[3px] mr-1">
-                  {DAY_LABELS.map((label, i) => (
-                    <div key={i} className="w-4 h-4 text-[9px] text-slate-400 flex items-center justify-end leading-none pr-0.5">
-                      {i % 2 === 1 ? label : ''}
-                    </div>
-                  ))}
-                </div>
-
-                {/* ヒートマップ列 */}
-                {heatmap.map((col, wi) => (
-                  <div key={wi} className="flex flex-col gap-[3px]">
-                    {col.week.map((cell, di) => (
-                      <div
-                        key={di}
-                        className={`w-4 h-4 rounded-[3px] ${cellColor(cell.count, cell.isFuture)} transition-colors`}
-                        title={cell.isFuture ? '未来' : cell.count === 0 ? `${cell.date}：練習なし` : `${cell.date}：${cell.count}回生成`}
-                      />
-                    ))}
-                  </div>
-                ))}
-              </div>
-
-              {/* 凡例 */}
-              <div className="flex items-center gap-1.5 mt-2 pl-5">
-                <span className="text-[9px] text-slate-400">練習なし</span>
-                {[
-                  { cls: 'bg-slate-100', label: '0回' },
-                  { cls: 'bg-cyan-300', label: '1回' },
-                  { cls: 'bg-cyan-500', label: '2回' },
-                  { cls: 'bg-teal-500', label: '3回以上' },
-                ].map((item) => (
-                  <div key={item.cls} className="flex items-center gap-0.5">
-                    <div className={`w-4 h-4 rounded-[3px] ${item.cls}`} />
-                    <span className="text-[9px] text-slate-400">{item.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ─── アチーブメントバッジ ─── */}
-        <div>
-          <div className="flex items-baseline justify-between mb-3">
-            <p className="text-xs font-bold text-slate-600">アチーブメント</p>
+        {/* ─── アチーブメント ─── */}
+        <div className="pt-1 border-t border-cyan-100/60">
+          <div className="flex items-center justify-between mb-2.5">
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">アチーブメント</p>
             <p className="text-[10px] text-slate-400">
-              {BADGES.filter((b) => totalCount >= b.threshold).length} / {BADGES.length} 解放済み
+              {BADGES.filter((b) => totalCount >= b.threshold).length}/{BADGES.length}
             </p>
           </div>
-          <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-hide">
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
             {BADGES.map((badge) => {
               const unlocked = totalCount >= badge.threshold;
               const isNext = !unlocked && badge === nextBadge;
               const remaining = badge.threshold - totalCount;
-
               return (
                 <div
                   key={badge.id}
-                  className={`flex-shrink-0 flex flex-col items-center gap-1.5 w-[72px] pt-3 pb-2.5 rounded-2xl border-2 transition-all duration-300 ${
+                  className={`flex-shrink-0 flex flex-col items-center gap-1 w-[68px] py-2.5 rounded-2xl border-2 transition-all ${
                     unlocked
-                      ? `border-transparent bg-gradient-to-br ${badge.from} ${badge.to} shadow-lg`
+                      ? `border-transparent bg-gradient-to-br ${badge.from} ${badge.to} shadow-md`
                       : isNext
-                      ? 'border-cyan-200 bg-cyan-50/60'
+                      ? 'border-cyan-200 bg-cyan-50/80'
                       : 'border-slate-100 bg-slate-50'
                   }`}
                 >
-                  <span className={`text-2xl leading-none ${!unlocked && !isNext ? 'grayscale opacity-40' : ''}`}>
+                  <span className={`text-xl leading-none ${!unlocked && !isNext ? 'grayscale opacity-30' : ''}`}>
                     {badge.icon}
                   </span>
-                  <span className={`text-[10px] font-bold text-center leading-tight px-1 ${
+                  <span className={`text-[10px] font-bold text-center leading-tight px-0.5 ${
                     unlocked ? 'text-white' : isNext ? 'text-cyan-700' : 'text-slate-400'
                   }`}>
                     {badge.label}
                   </span>
-                  {unlocked ? (
-                    <span className="text-[9px] text-white/70 font-medium">達成！</span>
-                  ) : isNext ? (
-                    <span className="text-[9px] text-cyan-500 font-bold">あと{remaining}回</span>
-                  ) : (
-                    <span className="text-[9px] text-slate-300">{badge.threshold}回</span>
-                  )}
+                  <span className={`text-[9px] font-medium ${
+                    unlocked ? 'text-white/70' : isNext ? 'text-cyan-500 font-bold' : 'text-slate-300'
+                  }`}>
+                    {unlocked ? '達成！' : isNext ? `あと${remaining}回` : `${badge.threshold}回`}
+                  </span>
                 </div>
               );
             })}
           </div>
         </div>
-
       </div>
     </section>
   );
