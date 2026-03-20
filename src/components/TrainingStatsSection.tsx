@@ -204,7 +204,7 @@ export function TrainingStatsSection() {
   return (
     <section className="dashboard-card overflow-hidden">
       {/* ヘッダー */}
-      <div className="px-6 py-5 border-b border-cyan-100/80 flex items-center justify-between">
+      <div className="px-5 py-3 border-b border-cyan-100/80 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="w-2 h-6 rounded-full bg-gradient-to-b from-cyan-400 to-teal-500" />
           <h2 className="text-sm font-bold text-slate-800 tracking-wide">今月のアクティビティ</h2>
@@ -214,7 +214,7 @@ export function TrainingStatsSection() {
         </span>
       </div>
 
-      <div className="p-5 space-y-5">
+      <div className="p-4 space-y-4">
 
         {/* ─── カレンダー ─── */}
         <div>
@@ -235,7 +235,7 @@ export function TrainingStatsSection() {
             ))}
           </div>
           {/* 凡例 */}
-          <div className="flex items-center gap-3 mt-3 justify-end">
+          <div className="flex items-center gap-3 mt-2 justify-end">
             <div className="flex items-center gap-1">
               <div className="w-3 h-3 rounded-sm bg-slate-100" />
               <span className="text-[9px] text-slate-400">なし</span>
@@ -257,21 +257,21 @@ export function TrainingStatsSection() {
 
         {/* ─── 今月サマリー ─── */}
         <div className="grid grid-cols-3 gap-2 pt-1 border-t border-cyan-100/60">
-          <div className="text-center py-2">
-            <div className="text-xl font-black text-cyan-600 tabular-nums">{monthlyCount}</div>
-            <div className="text-[10px] text-slate-500 font-medium mt-0.5">今月の生成回数</div>
+          <div className="text-center py-1.5">
+            <div className="text-lg font-black text-cyan-600 tabular-nums">{monthlyCount}</div>
+            <div className="text-[10px] text-slate-500 font-medium">今月の生成回数</div>
           </div>
-          <div className="text-center py-2 border-x border-cyan-100/60">
-            <div className="text-xl font-black text-teal-600 tabular-nums">{activeDays}</div>
-            <div className="text-[10px] text-slate-500 font-medium mt-0.5">練習した日数</div>
+          <div className="text-center py-1.5 border-x border-cyan-100/60">
+            <div className="text-lg font-black text-teal-600 tabular-nums">{activeDays}</div>
+            <div className="text-[10px] text-slate-500 font-medium">練習した日数</div>
           </div>
-          <div className="text-center py-2">
-            <div className="text-xl font-black text-violet-600 tabular-nums leading-tight">
+          <div className="text-center py-1.5">
+            <div className="text-lg font-black text-violet-600 tabular-nums leading-tight">
               {monthlyDist >= 1000
                 ? `${(monthlyDist / 1000).toFixed(1)}`
                 : `${monthlyDist}`}
             </div>
-            <div className="text-[10px] text-slate-500 font-medium mt-0.5">
+            <div className="text-[10px] text-slate-500 font-medium">
               {monthlyDist >= 1000 ? '合計距離 (km)' : '合計距離 (m)'}
             </div>
           </div>
@@ -279,26 +279,22 @@ export function TrainingStatsSection() {
 
         {/* ─── ストリーク ─── */}
         {streak > 0 && (
-          <div className={`flex items-center gap-3 px-4 py-3 rounded-2xl border ${
+          <div className={`flex items-center gap-2.5 px-3.5 py-2 rounded-xl border ${
             streak >= 3
               ? 'bg-gradient-to-r from-orange-50 to-amber-50 border-orange-200'
               : 'bg-slate-50 border-slate-200'
           }`}>
-            <span className="text-2xl">{streak >= 3 ? '🔥' : '✅'}</span>
-            <div>
-              <div className="text-sm font-bold text-slate-800">
-                {streak}日間 連続練習中！
-              </div>
-              <div className="text-[11px] text-slate-500">
-                この調子で続けましょう
-              </div>
+            <span className="text-lg">{streak >= 3 ? '🔥' : '✅'}</span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-sm font-bold text-slate-800">{streak}日間 連続練習中！</span>
+              <span className="text-[10px] text-slate-400">この調子で続けましょう</span>
             </div>
           </div>
         )}
 
         {/* ─── アチーブメント ─── */}
         <div className="pt-1 border-t border-cyan-100/60">
-          <div className="flex items-center justify-between mb-2.5">
+          <div className="flex items-center justify-between mb-2">
             <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">アチーブメント</p>
             <p className="text-[10px] text-slate-400">
               {BADGES.filter((b) => totalCount >= b.threshold).length}/{BADGES.length}
@@ -312,7 +308,7 @@ export function TrainingStatsSection() {
               return (
                 <div
                   key={badge.id}
-                  className={`flex-shrink-0 flex flex-col items-center gap-1 w-[68px] py-2.5 rounded-2xl border-2 transition-all ${
+                  className={`flex-shrink-0 flex flex-col items-center gap-1 w-[68px] py-2 rounded-2xl border-2 transition-all ${
                     unlocked
                       ? `border-transparent bg-gradient-to-br ${badge.from} ${badge.to} shadow-md`
                       : isNext
