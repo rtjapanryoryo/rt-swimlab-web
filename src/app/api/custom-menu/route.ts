@@ -128,7 +128,22 @@ const CORE_SYSTEM_PROMPT = `【コーチ思想の核心（50問インタビュ�
 - 「体が浮いた状態で重心を止めずに連続的に移動する（ブレーキゼロ）」
 - 「水を捉えながら体を高い位置に保持する」
 - 「フォームが崩れたらタイムへのこだわりを手放し、技術確認に切り替える」
-- 「できれば毎日そうではないが、今日の練習で成功体験を積むことが選手を前向きにする」`;
+- 「できれば毎日そうではないが、今日の練習で成功体験を積むことが選手を前向きにする」
+
+【バリエーション生成：今日のテーマ軸を1つ立てる（必須）】
+毎セッション、以下の4軸のうち**1つを「今日のテーマ軸」**として冒頭に立て、W-up→Drill→Kick→Pull→Pre-Main→Mainまで一貫して流れるように設計すること。
+
+- **感覚軸（水感・浮力・ブレーキゼロ）**: スカーリング・ヘッドアップ・Snorkelなど水感系ドリルを中心に。intentionに「体が水の上に浮いている感覚を確認する日」と明記。
+- **技術軸（DPS・ストロークカウント・ハイエルボー）**: 1ストロークの進距離を最大化する効率練習。intentionに「TSSの中でもストローク数の改善にフォーカスする」と明記。
+- **強度軸（TSS最小化・高強度持続・レースペース）**: 心拍を上げながらフォームを崩さない耐性を鍛える。intentionに「苦しい中でもフォームを維持する耐性を高める日」と明記。
+- **タイミング軸（呼吸リズム・キックとストロークの連動）**: 呼吸とキックのタイミング合わせが中心。intentionに「呼吸とストロークのリズムを整え直す日」と明記。
+
+【ブロック間の連動指示（必須）】
+各ブロックは今日のテーマ軸に沿って連動させること:
+- Drill名: そのテーマ軸に直結した動作をドリル名に含める
+- Kick pattern: テーマ軸の感覚をキックで支えるパターンを選ぶ
+- Pull pattern: テーマ軸の感覚をプルで精度を上げるパターンを選ぶ
+- intention: 「今日はXX軸で設計しています。W-upのDrillで確認した○○感覚をそのままMainに持ち込みます」という流れを明記する`;
 
 /** 必須8項目 */
 const REQUIRED_KEYS: { key: string; label: string }[] = [
@@ -282,8 +297,8 @@ export async function POST(request: NextRequest) {
         systemContent += '【追加プロンプト】\n' + promptContent + '\n\n---\n\n';
       }
       if (commonContent) {
-        systemContent += '【共有参照資料（menu-dictionary・menu-patterns・menu-examples）】\n' +
-          'パターン名・ドリル名は必ずこの辞書から選ぶ。menu-examplesの完成例を**品質基準**として参照し、同レベルの具体性でコンテンツラベルを生成すること。\n\n' +
+        systemContent += '【共有参照資料（menu-dictionary・menu-patterns・menu-examples・coach-philosophy）】\n' +
+          'パターン名・ドリル名は必ずこの辞書から選ぶ。menu-examplesの完成例を**品質基準**として参照。coach-philosophyのコーチ思想・フレーズをintention/coachingPoint/cautionに自然に組み込むこと。\n\n' +
           commonContent + '\n\n---\n\n';
       }
       if (webSearchText) {
