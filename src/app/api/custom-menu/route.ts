@@ -100,7 +100,35 @@ const CORE_SYSTEM_PROMPT = `【コーチ思想の核心（50問インタビュ�
   軸①【生理的適応】: 有酸素系・乳酸系・神経系のどこがどう刺激・強化されるか（心拍・代謝・筋の観点）
   軸②【技術的発展】: ドリル・キック・プルを通じて何の感覚が磨かれ、ストロークにどう活きるか
   軸③【メンタル・成功体験】: 達成感・翌日への準備・自己効力感の視点
-  2〜3文で期別・強度別の具体的な効果を書く。汎用文禁止。`;
+  2〜3文で期別・強度別の具体的な効果を書く。汎用文禁止。
+
+【高城コーチの語り口（intention・coachingPoint・caution に必ず反映）】
+以下のフレーズを自然に組み込み、高城コーチの指導スタイルを再現すること。数を絞って使い、すべてを並べない。
+
+量的ハード期（期②③）で使うフレーズ:
+- 「息が上がる中でも質を維持する」
+- 「前後半の差を小さく、ストロークも崩さず速く」
+- 「ショートサイクルでフィジカルトレーニング」
+- 「有酸素運動の中で推進効率を高める」
+- 「最後まで雑にならずに」
+
+質的ハード期（期④⑤）で使うフレーズ:
+- 「200mペースを持続する。体がキツくても前後半の差を小さく」
+- 「苦しい時こそタイムへのこだわりを手放し、技術的課題に集中する」
+- 「最後の50mはキツい状態からでもスピード・テンポを上げても体をコントロールして」
+- 「体がキツくて息が上がっている状況でも最後にテンポを上げた時に泳ぎとタイムをコントロールできるように」
+
+スピード系（期⑥⑦）で使うフレーズ:
+- 「15mMaxからのスタートを25mまで、35mまで続けることで最速の動作を長い距離に引き延ばしていく」
+- 「パラシュートでストロークが重くなってから解放すると、次はパワフルに水を捉えられる感覚が得られる」
+- 「今日感じた良い感覚をそのまま試合当日に再現することがテーパーの目的」
+
+全期共通フレーズ:
+- 「タイム・ストローク数・心拍数（TSS）の合計を最小化する意識を持つ」
+- 「体が浮いた状態で重心を止めずに連続的に移動する（ブレーキゼロ）」
+- 「水を捉えながら体を高い位置に保持する」
+- 「フォームが崩れたらタイムへのこだわりを手放し、技術確認に切り替える」
+- 「できれば毎日そうではないが、今日の練習で成功体験を積むことが選手を前向きにする」`;
 
 /** 必須8項目 */
 const REQUIRED_KEYS: { key: string; label: string }[] = [
@@ -254,8 +282,8 @@ export async function POST(request: NextRequest) {
         systemContent += '【追加プロンプト】\n' + promptContent + '\n\n---\n\n';
       }
       if (commonContent) {
-        systemContent += '【共有参照資料（menu-dictionary・menu-patterns）】\n' +
-          'パターン名・ドリル名は必ずこの辞書から選ぶ。SKPS, DPS, Des, Negative split, odd/even 等を積極活用。\n\n' +
+        systemContent += '【共有参照資料（menu-dictionary・menu-patterns・menu-examples）】\n' +
+          'パターン名・ドリル名は必ずこの辞書から選ぶ。menu-examplesの完成例を**品質基準**として参照し、同レベルの具体性でコンテンツラベルを生成すること。\n\n' +
           commonContent + '\n\n---\n\n';
       }
       if (webSearchText) {
@@ -267,12 +295,39 @@ export async function POST(request: NextRequest) {
       // ユーザープロンプト構築（テンプレート充填タスク）
       // ============================================================
 
-      // 各ブロックの構造ヒント（コンテンツラベルはAIが自由生成）
+      // RT Japan フェーズ別パターンヒント（期によって参照パターンを変える）
+      const rtPhase = (() => {
+        const p = parseInt(period);
+        if (p <= 3) return 'volume'; // 量的ハード期
+        if (p <= 5) return 'quality'; // 質的ハード期
+        return 'speed'; // スピード系
+      })();
+      const PHASE_PATTERN_HINTS = {
+        volume: {
+          wu:   '量的ハード期参照→ 1-3:Fin 4-6:NoFin fast hold ② / Snorkel Form しっかり呼吸 ① / 50mDrill/50mForm ①〜② / Des to fast ② / Fr→Ba→Br→Fly IM order ②',
+          kick: '量的ハード期参照→ Snorkel Form しっかり呼吸をすること ② / Kick 上向きFly ① / board Des ② / 1-3:Fin 4-6:NoFin ② / NoBoard kick/Swim 25mずつ ②',
+          pull: '量的ハード期参照→ Form & Des 1→4 ストロークの質が落ちないように ② / Paddle Smooth ② / Smooth 丁寧なストロークを長距離で ②〜③ / o:Fast e:Easy ④',
+          pm:   '量的ハード期参照→ Form fast 落ち着いて無理なく ③ / Goodstroke fast 強度は低くてOK壁際も丁寧に ③ / 25mFast/25mEasy ⑦ / 3:Fast 1:Easy ③〜④',
+        },
+        quality: {
+          wu:   '質的ハード期参照→ o:2\'00"(Relax) e:1\'40"(Fast) ② / 25mSculling/15mHead up fast/45mForm/15mFast ② / 20mHead up fast/30mForm ② / Snorkel ②',
+          kick: '質的ハード期参照→ Underwater kick Smooth体を浮かせ ① → High average Brは1P1Kを連続で ⑦ / 垂直キック Vertical kick 感覚・筋肉の刺激 / Kick/Swim 50×3 交互',
+          pull: '質的ハード期参照→ o:Fast e:Fastest(テンポ・強度をしっかり上げて) ①⑤ / Fast(200mPace-1"キープできなくなったら2本Easy) ④ / Negative pace + Des ②〜③',
+          pm:   '質的ハード期参照→ 200mPace(1R:+1"/2R:200mPace/3R:-1") ③〜④ / Race pace & Set des 3セット ③〜④ / Build up to race pace/50m毎 ④',
+        },
+        speed: {
+          wu:   'スピード系参照→ Pull&Swim 50×8 Cho 交互 ② / Drill・Form・Sprintなど自由に ①② / Build up to fastest ⑦ / o:Fast(ブイを挟んで) e:Easy(Pull) ③',
+          kick: 'スピード系参照→ Kick 25×4 Cho :45 垂直キック感覚 ① / Underwater kick Smooth ① → High average ⑦ / Kick&Swim 50×8 Cho 1:00',
+          pull: 'スピード系参照→ Sculling/Stroke 距離は自由に 水感強化 ② / 1:Form 2:Fast ③ / o:Fast(ブイを挟んで) e:Easy(Pull) ③',
+          pm:   'スピード系参照→ Parachute resist 15m以上20m未満 fastest ⑦ / Form fast 15m以上35m以内で距離は自由 ⑦ / Resist 15mFast/15mEasyで戻る ⑦ / Build up to fastest ⑦',
+        },
+      };
+      const ph = PHASE_PATTERN_HINTS[rtPhase];
       const patternHints = [
-        `W-up（Drill統合・多段階）: ${skeleton.warmUp.totalM + skeleton.drill.totalM}m — Cho段階は {WU_PATTERN_N} に変化をつけ（体動かし→リズム構築）、最終段階の {DR_DRILL_N} に ${stroke} 固有の具体的なドリル名をオリジナル生成（毎回異なる視点で）。段階を追って強度・内容が変化するよう命名すること`,
-        `Kick: ${skeleton.kick.totalM}m — {KI_PATTERN_N} にキックの目的・感覚・構成を自由命名`,
-        `Pull: ${skeleton.pull.totalM}m — {PL_PATTERN_N} にプルの狙い・フォーム・テンポ指示を自由命名`,
-        `Pre-Main: ${skeleton.preMain.totalM}m — {PM_CONTENT} を期・距離タイプ・コンディションに合わせて自由生成（@rest=${skeleton.preMain.segments[0]?.restHint ?? '30sec'} 変更禁止）`,
+        `W-up（Drill統合・多段階）: ${skeleton.warmUp.totalM + skeleton.drill.totalM}m — Cho段階は {WU_PATTERN_N} に変化をつけ（体動かし→リズム構築）、最終段階の {DR_DRILL_N} に ${stroke} 固有ドリルを生成。参照: ${ph.wu}`,
+        `Kick: ${skeleton.kick.totalM}m — {KI_PATTERN_N} に以下から最適なものを選ぶか同スタイルでオリジナル命名。参照: ${ph.kick}`,
+        `Pull: ${skeleton.pull.totalM}m — {PL_PATTERN_N} に以下から最適なものを選ぶか同スタイルでオリジナル命名。参照: ${ph.pull}`,
+        `Pre-Main: ${skeleton.preMain.totalM}m — {PM_CONTENT} に以下から最適なものを使う（@rest=${skeleton.preMain.segments[0]?.restHint ?? '30sec'} 変更禁止）。参照: ${ph.pm}`,
         `Main カテゴリ: ${skeleton.mainCategory}（変更不可）・rest: ${skeleton.main.segments[0]?.restHint ?? '30sec'}（変更不可）`,
       ].join('\n');
 
@@ -447,6 +502,29 @@ down    : "${tmpl.downStr}"（変更禁止）
         const retryHint = '【再試行】JSONの全キーが揃っていません。正しいJSONのみを出力してください。\n\n';
         rawContent = await doGenerate(retryHint, 0.3);
         if (rawContent) result = parseAndAssemble(rawContent);
+      }
+
+      // コンテンツ品質バリデーション（プレースホルダー未充填・汎用文検出）
+      if (result) {
+        const qualityIssues: string[] = [];
+        const checkFields = ['warmUp', 'kick', 'pull', 'preMain', 'main'];
+        for (const field of checkFields) {
+          const val = String(result[field] ?? '');
+          const match = val.match(/\{[A-Z_0-9]+\}/);
+          if (match) qualityIssues.push(`${field}にプレースホルダー${match[0]}が残っています`);
+        }
+        const intention = String(result.intention ?? '');
+        if (intention.length < 60) qualityIssues.push('intentionが短すぎます（60文字以上必要）');
+        const genericPhrases = ['基礎を固める', 'スタミナをつける', '体力向上を図る', '体調に注意してください', '無理しないように'];
+        for (const phrase of genericPhrases) {
+          if (intention.includes(phrase)) qualityIssues.push(`intentionに汎用表現「${phrase}」が含まれています`);
+        }
+        if (qualityIssues.length > 0) {
+          console.warn('[custom-menu] content quality issues:', qualityIssues);
+          const qualityRetryHint = `【品質修正が必要です】以下の問題を修正して再生成してください:\n${qualityIssues.map(i => `- ${i}`).join('\n')}\nRT Japan スタイルの具体的なパターン名・コーチの語り口で書き直すこと。\n\n`;
+          rawContent = await doGenerate(qualityRetryHint, 0.4);
+          if (rawContent) result = parseAndAssemble(rawContent) ?? result;
+        }
       }
 
       if (!result) {
