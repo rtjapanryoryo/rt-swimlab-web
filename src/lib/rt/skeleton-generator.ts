@@ -347,11 +347,11 @@ function allocateBlocks(targetDist: number, distanceType: 'S' | 'M' | 'D', level
   const adjDownMin = Math.min(cfg.downMin, adjDownMax);
 
   let warmUp  = Math.min(Math.max(r(cfg.wupPct),   adjWupMin),  adjWupMax);
-  let drill   = Math.max(r(cfg.drillPct + delta.drill),   unit * 2);
-  let kick    = Math.max(r(cfg.kickPct  + delta.kick),    unit * 2);
+  const drill   = Math.max(r(cfg.drillPct + delta.drill),   unit * 2);
+  const kick    = Math.max(r(cfg.kickPct  + delta.kick),    unit * 2);
   // Pull と PreMain はブロック推奨単位で丸め → セット構成の端数を防止
   let pull    = Math.max(rr(cfg.pullPct,    br.pull),    br.pull * 2);
-  let preMain = Math.max(rr(cfg.preMainPct, br.preMain), br.preMain);
+  const preMain = Math.max(rr(cfg.preMainPct, br.preMain), br.preMain);
   let down    = Math.min(Math.max(r(cfg.downPct), adjDownMin), adjDownMax);
 
   warmUp = roundToUnit(warmUp, unit);
@@ -598,18 +598,60 @@ const DRILL_POOLS: Record<string, Record<LevelKey, string[]>> = {
   },
 };
 
-/** キックプール: レベル別（補助的・脚の感覚・リズム系） */
-const KICK_POOLS: Record<LevelKey, string[]> = {
-  beginner:     ['Des（フォーム優先）', 'good kick（リズムよく）', 'Fins（基本キック感覚）', 'ゆっくり丁寧に Des'],
-  intermediate: ['Des 1→4', '1-4 Dec（後半意識）', 'Fins + barefoot 交互', 'good kick（ストロークに連動）', 'Des 後半 Fins'],
-  advanced:     ['1-4 Dec 強度 Hard Alt', 'Des Fins（後半キック強化）', 'Underwater 3→5→7 push', 'good kick + count Dec', 'odd: Strong / even: Recover'],
+/**
+ * キックプール: 期フェーズ × レベル別
+ * 期フェーズ: recovery(①②) / volume(③) / quality(④⑤) / speed(⑥⑦)
+ * RT Japan公式区分け（Smooth, Des/2t, 上向きFly kick, Kick/Swim 等）を反映。
+ */
+const KICK_POOLS: Record<string, Record<LevelKey, string[]>> = {
+  recovery: { // 期①②
+    beginner:     ['Smooth（リズムよく）', 'ゆっくり丁寧 Des', 'Snorkel Form（呼吸確認）'],
+    intermediate: ['Smooth（ボディポジション確認）', 'Des to fast 2t', 'Snorkel Form', 'Kick/Swim 25mずつ'],
+    advanced:     ['Smooth（浮力×ブレーキゼロ）', 'Des to fast 2t', 'Kick/Swim 25mずつ', 'good kick + form check'],
+  },
+  volume: { // 期③
+    beginner:     ['Des to fast 2t（ゆっくり）', 'good kick リズムよく', 'Fins（基本キック感覚）'],
+    intermediate: ['Des to fast 2t', '上向きFly kick（腹筋刺激）', 'Fins + barefoot 交互', 'Kick/Swim 25mずつ'],
+    advanced:     ['Des to fast 2t（脈上げ）', '上向きFly kick', 'Fins build', 'odd: Strong / even: Recover'],
+  },
+  quality: { // 期④⑤
+    beginner:     ['Des to fast 2t（フォーム優先）', 'Kick/Swim 25mずつ', 'good kick（ストロークに連動）'],
+    intermediate: ['2H/2E pattern', 'Underwater 3→5→7', 'Des to fast 2t（強化）', 'strong finish last 10m'],
+    advanced:     ['2H/2E pattern（高強度交互）', 'Underwater 3→5→7 push', 'strong finish last 10m', 'odd: Hard / even: Easy'],
+  },
+  speed: { // 期⑥⑦
+    beginner:     ['Smooth（感覚維持）', 'Kick&Swim Fast（短め）'],
+    intermediate: ['Kick&Swim Fast', 'Vertical kick（神経刺激）', 'Smooth（疲労抜き）'],
+    advanced:     ['Kick&Swim Fast（最速感覚）', 'Vertical kick', 'Underwater kick High average'],
+  },
 };
 
-/** プルプール: レベル別（テンポ・DPS・ネガティブスプリット系） */
-const PULL_POOLS: Record<LevelKey, string[]> = {
-  beginner:     ['DPS（ストローク感覚優先）', 'Des（フォーム崩さず）', 'Easy Pull（水感確認）', 'Build（ゆっくり上げる）'],
-  intermediate: ['DPS Negative split', 'o:Fast e:DPS交互', 'Des 1→4（ストローク数管理）', 'Variable（ペース変化）', 'Catch emphasis + DPS'],
-  advanced:     ['Negative split + count Dec', 'Form & Des 1→4（TSS意識）', 'o:Race pace e:Easy', 'Variable（ペース変動耐性）', 'ベストアベレージ（ターゲットタイム内）'],
+/**
+ * プルプール: 期フェーズ × レベル別
+ * 期フェーズ: recovery(①②) / volume(③) / quality(④⑤) / speed(⑥⑦)
+ * RT Japan公式区分け（Sculling/Stroke, Head up fast, B-up, Smooth, Des, Hold 等）を反映。
+ */
+const PULL_POOLS: Record<string, Record<LevelKey, string[]>> = {
+  recovery: { // 期①②
+    beginner:     ['DPS（ストローク感覚優先）', 'Easy Pull（水感確認）', 'B-up（ゆっくり上げる）'],
+    intermediate: ['DPS focus', 'B-up（Build-up）', 'Smooth（長距離）', 'Form & Des 1→4'],
+    advanced:     ['DPS focus + count check', 'B-up（Build-up）', 'Smooth（ブレーキゼロ確認）', 'Form & Des 1→4'],
+  },
+  volume: { // 期③
+    beginner:     ['Des to fast（フォーム崩さず）', 'B-up', 'Sculling/Stroke 25mずつ'],
+    intermediate: ['Sculling/Stroke 25mずつ', 'Head up fast/Stroke 25mずつ', 'Des to fast（段階的）', 'Smooth（長距離）'],
+    advanced:     ['Head up fast/Stroke 25mずつ', 'Des to fast（段階的）', 'Hold（ペース維持）', 'DPS Negative split'],
+  },
+  quality: { // 期④⑤
+    beginner:     ['Hold（ペース維持）', 'Des to fast', 'o:Fast e:Easy（緩め）'],
+    intermediate: ['o:Fast e:Easy', 'Negative split', 'Fast hold（レースペース維持）', 'Hold（ペース維持）'],
+    advanced:     ['200mPace-1" hold', 'o:Fast e:Easy（テンポ強め）', 'Negative split + count Dec', 'Fast hold（高強度維持）'],
+  },
+  speed: { // 期⑥⑦
+    beginner:     ['Sculling/Stroke（水感確認）', 'DPS focus（感覚整理）'],
+    intermediate: ['Sculling/Stroke 25mずつ', 'Sculling→Race Swim', 'o:Fast e:Easy（短め）'],
+    advanced:     ['Sculling→Race Swim', 'Fast hold（短距離）', 'o:Race pace e:Easy'],
+  },
 };
 
 /** メインプール: 期 × レベル別（高強度集中・戦略的構成） */
@@ -703,12 +745,16 @@ function getPatternPool(
       pool = DRILL_POOLS[sk][lk];
       break;
     }
-    case 'kick':
-      pool = KICK_POOLS[lk];
+    case 'kick': {
+      const kickPhase = p <= 2 ? 'recovery' : p === 3 ? 'volume' : p <= 5 ? 'quality' : 'speed';
+      pool = KICK_POOLS[kickPhase][lk];
       break;
-    case 'pull':
-      pool = PULL_POOLS[lk];
+    }
+    case 'pull': {
+      const pullPhase = p <= 2 ? 'recovery' : p === 3 ? 'volume' : p <= 5 ? 'quality' : 'speed';
+      pool = PULL_POOLS[pullPhase][lk];
       break;
+    }
     case 'preMain':
       // preMain: レベル × 期で戦略的アプローチを変える
       if (lk === 'beginner') {

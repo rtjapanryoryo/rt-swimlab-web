@@ -310,36 +310,66 @@ export async function POST(request: NextRequest) {
       // ユーザープロンプト構築（テンプレート充填タスク）
       // ============================================================
 
-      // RT Japan フェーズ別パターンヒント（期によって参照パターンを変える）
-      const rtPhase = (() => {
-        const p = parseInt(period);
-        if (p <= 3) return 'volume'; // 量的ハード期
-        if (p <= 5) return 'quality'; // 質的ハード期
-        return 'speed'; // スピード系
-      })();
-      const PHASE_PATTERN_HINTS = {
-        volume: {
-          wu:   '量的ハード期参照→ 1-3:Fin 4-6:NoFin fast hold ② / Snorkel Form しっかり呼吸 ① / 50mDrill/50mForm ①〜② / Des to fast ② / Fr→Ba→Br→Fly IM order ②',
-          kick: '量的ハード期参照→ Snorkel Form しっかり呼吸をすること ② / Kick 上向きFly ① / board Des ② / 1-3:Fin 4-6:NoFin ② / NoBoard kick/Swim 25mずつ ②',
-          pull: '量的ハード期参照→ Form & Des 1→4 ストロークの質が落ちないように ② / Paddle Smooth ② / Smooth 丁寧なストロークを長距離で ②〜③ / o:Fast e:Easy ④',
-          pm:   '量的ハード期参照→ Form fast 落ち着いて無理なく ③ / Goodstroke fast 強度は低くてOK壁際も丁寧に ③ / 25mFast/25mEasy ⑦ / 3:Fast 1:Easy ③〜④',
+      // 7期×種目別パターンヒント（session-patterns-db.md と完全対応）
+      const periodNum = parseInt(period);
+      const strokeKey = ['Fr','Ba','Br','Fly','IM'].includes(stroke) ? stroke : 'Fr';
+      type HintEntry = { wu: string; kick: string; pull: string; pm: string };
+      const PERIOD_PATTERN_HINTS: Record<number, HintEntry> = {
+        1: { // リカバリー期
+          wu:   '①参照→ Easy feel water / Smooth ① / Fin smooth ② / SKPS基本 / IM order軽め',
+          kick: '①参照→ Smooth（ボディポジション確認・①〜②）/ Snorkel Form（呼吸確認・②）/ Vertical kick（感覚刺激）',
+          pull: '①参照→ DPS focus（ストローク感覚優先）/ B-up（ゆっくり）/ Easy Pull（水感確認）/ Sculling/Stroke 25mずつ',
+          pm:   '①参照→ Build（ペースをゆっくり上げる）/ Des（フォーム確認のみ）/ Easy Race feel（強度低め）',
         },
-        quality: {
-          wu:   '質的ハード期参照→ o:2\'00"(Relax) e:1\'40"(Fast) ② / 25mSculling/15mHead up fast/45mForm/15mFast ② / 20mHead up fast/30mForm ② / Snorkel ②',
-          kick: '質的ハード期参照→ Underwater kick Smooth体を浮かせ ① → High average Brは1P1Kを連続で ⑦ / 垂直キック Vertical kick 感覚・筋肉の刺激 / Kick/Swim 50×3 交互',
-          pull: '質的ハード期参照→ o:Fast e:Fastest(テンポ・強度をしっかり上げて) ①⑤ / Fast(200mPace-1"キープできなくなったら2本Easy) ④ / Negative pace + Des ②〜③',
-          pm:   '質的ハード期参照→ 200mPace(1R:+1"/2R:200mPace/3R:-1") ③〜④ / Race pace & Set des 3セット ③〜④ / Build up to race pace/50m毎 ④',
+        2: { // 基礎形成期
+          wu:   '②参照→ 1-3:Fin 4-6:NoFin fast hold ② / Snorkel Form しっかり呼吸 ① / Des to fast ② / SKPS / IM order',
+          kick: '②参照→ Smooth（ボディポジション・②）/ Des to fast 2t（2本ずつ・②〜③）/ Kick/Swim 25mずつ（②）/ Snorkel Form',
+          pull: '②参照→ B-up（Build-up・②）/ Smooth 長距離（②〜③）/ Form & Des 1→4 / Sculling/Stroke 25mずつ',
+          pm:   '②参照→ 2:Smooth/1:Fast（100×20 @1\'20"・②〜③）/ Goodstroke fast（③）/ Des（フォーム確認）/ Build up → Fast',
         },
-        speed: {
-          wu:   'スピード系参照→ Pull&Swim 50×8 Cho 交互 ② / Drill・Form・Sprintなど自由に ①② / Build up to fastest ⑦ / o:Fast(ブイを挟んで) e:Easy(Pull) ③',
-          kick: 'スピード系参照→ Kick 25×4 Cho :45 垂直キック感覚 ① / Underwater kick Smooth ① → High average ⑦ / Kick&Swim 50×8 Cho 1:00',
-          pull: 'スピード系参照→ Sculling/Stroke 距離は自由に 水感強化 ② / 1:Form 2:Fast ③ / o:Fast(ブイを挟んで) e:Easy(Pull) ③',
-          pm:   'スピード系参照→ Parachute resist 15m以上20m未満 fastest ⑦ / Form fast 15m以上35m以内で距離は自由 ⑦ / Resist 15mFast/15mEasyで戻る ⑦ / Build up to fastest ⑦',
+        3: { // 発展形成期
+          wu:   '③参照→ Snorkel Form ① / 50mDrill/50mForm ①〜② / Fast hold ③ / Des to fast ② / SKPS build / IM order',
+          kick: '③参照→ Des to fast 2t（100×6 @1\'40"・②〜③）/ 上向きFly kick（50×12 @50"・③）/ Fins build（②〜③）/ NoBoard kick/Swim 25mずつ',
+          pull: '③参照→ Head up fast/Stroke 25mずつ（50×6・②）/ Des to fast（300×4 @4\'00"・②〜③）/ Smooth 長距離（200×8・②〜③）/ Hold（100×8・③）',
+          pm:   '③参照→ Set des to fast（200×3×3R・③）/ Goodstroke fast（強度は低くてOK・③）/ 3:Fast 1:Easy（③〜④）/ Fast hold（100×16・③）',
+        },
+        4: { // スピード持久力期
+          wu:   '④参照→ o:2\'00"(Relax) e:1\'40"(Fast) ② / 25mSculling/15mHead up fast/45mForm/15mFast ② / 20mHead up fast/30mForm ② / Snorkel ②',
+          kick: '④参照→ 2H/2E pattern（③〜④）/ Underwater 3→5→7（③）/ Des to fast 2t（強化）/ strong finish last 10m',
+          pull: '④参照→ o:Fast e:Easy（④）/ Negative split（③〜④）/ Fast hold（レースペース維持・③〜④）/ Hold（100×8・③）',
+          pm:   '④参照→ Descend to race pace（③〜④）/ Build up to race pace/50m毎（④）/ Negative split + ペース管理 / Des 1→4（最終本レースペース）',
+        },
+        5: { // 耐乳酸期
+          wu:   '⑤参照→ o:2\'00"(Relax) e:1\'40"(Fast) ② / 25mSculling/15mHead up fast ② / Snorkel ② / 20mHead up fast/30mStroke',
+          kick: '⑤参照→ 2H/2E pattern（③〜④）/ Underwater kick High average（Brは1P1Kを連続で・⑦）/ strong finish last 10m（③）/ odd: Hard / even: Easy',
+          pull: '⑤参照→ 200mPace-1" hold（キープできなくなったら2本Easy・④）/ o:Fast e:Fastest（テンポ・強度をしっかり上げて・⑤）/ Negative split + count Dec',
+          pm:   '⑤参照→ Race pace & Set des 3セット（③〜④）/ Broken（10sec）レースペース（④）/ Build up to race pace/50m毎（④）/ 200mPace ±1"',
+        },
+        6: { // 調整期
+          wu:   '⑥参照→ Pull&Swim 50×8 Cho 交互 ② / Build up to fastest ⑦ / Drill・Form・Sprintなど自由に ①② / o:Fast(ブイを挟んで) e:Easy(Pull) ③',
+          kick: '⑥参照→ Kick&Swim Fast（最速感覚・⑦）/ Vertical kick（神経刺激・①）/ Underwater kick Smooth ① → High average ⑦',
+          pull: '⑥参照→ Sculling→Race Swim（水感直結・②→⑦）/ Sculling/Stroke 距離は自由に ② / o:Fast(ブイを挟んで) e:Easy(Pull) ③',
+          pm:   '⑥参照→ Parachute resist 15m以上20m未満 fastest ⑦ / Item assist（フィン・パドル）⑦ / Form fast 15m以上35m以内で距離は自由 ⑦ / Resist 15mFast/15mEasyで戻る ⑦',
+        },
+        7: { // テーパー期
+          wu:   '⑦参照→ Pull&Swim 50×4 Cho 交互 ② / Fin smooth ② / Build up to fastest（短め）⑦ / Drill・Form・Sprint自由に（量少なめ）',
+          kick: '⑦参照→ Kick 25×4 Cho :45 垂直キック感覚 ① / Smooth（疲労抜き・短め）/ Kick&Swim Fast（少本数）',
+          pull: '⑦参照→ Sculling/Stroke 距離は自由に 水感強化 ② / Pull&Swim 50×4 交互 / Sculling→Race Swim（水感最終確認）',
+          pm:   '⑦参照→ Parachute resist（少本数）⑦ / Item assist（少本数）⑦ / Form fast 15m以上35m以内で距離は自由 ⑦ / Build up to fastest ⑦',
         },
       };
-      const ph = PHASE_PATTERN_HINTS[rtPhase];
+      // 種目別追加ヒント（全期共通で上乗せ）
+      const STROKE_DRILL_HINTS: Record<string, string> = {
+        Fr:  'Fr固有ドリル→ 片手左右交互 / キャッチアップ / ハイエルボーキャッチ / フィスト→オープン / ハイエルボー+ストロークカウント Dec',
+        Ba:  'Ba固有ドリル→ 片手スイム / 6-1-6バランス / スカーリング→Swim / 腕伸ばし6キック+Swim / ローリング強調（キャッチアップ厳禁）',
+        Br:  'Br固有ドリル→ 壁キック分離 / グライドプル / 2キック1プル タイミング / Brキック(Fin) / プルアウト強調 狭い軌道',
+        Fly: 'Fly固有ドリル→ ヒップドライブ片キック左右 / ショルダードリル / 1キック1プル→2キック1プル / ドルフィン水中+ハイエルボー',
+        IM:  'IM固有ドリル→ 4泳法ドリル順（弱点種目2本）/ odd:IM Order even:専門種目 / IM Order Form & Des / ターン練習（種目切り替え）',
+      };
+      const ph = PERIOD_PATTERN_HINTS[periodNum] ?? PERIOD_PATTERN_HINTS[3];
+      const drillHint = STROKE_DRILL_HINTS[strokeKey] ?? STROKE_DRILL_HINTS['Fr'];
       const patternHints = [
-        `W-up（Drill統合・多段階）: ${skeleton.warmUp.totalM + skeleton.drill.totalM}m — Cho段階は {WU_PATTERN_N} に変化をつけ（体動かし→リズム構築）、最終段階の {DR_DRILL_N} に ${stroke} 固有ドリルを生成。参照: ${ph.wu}`,
+        `W-up（Drill統合・多段階）: ${skeleton.warmUp.totalM + skeleton.drill.totalM}m — Cho段階は {WU_PATTERN_N} に変化をつけ（体動かし→リズム構築）、最終段階の {DR_DRILL_N} に ${stroke} 固有ドリルを生成。W-up参照: ${ph.wu} ／ ${drillHint}`,
         `Kick: ${skeleton.kick.totalM}m — {KI_PATTERN_N} に以下から最適なものを選ぶか同スタイルでオリジナル命名。参照: ${ph.kick}`,
         `Pull: ${skeleton.pull.totalM}m — {PL_PATTERN_N} に以下から最適なものを選ぶか同スタイルでオリジナル命名。参照: ${ph.pull}`,
         `Pre-Main: ${skeleton.preMain.totalM}m — {PM_CONTENT} に以下から最適なものを使う（@rest=${skeleton.preMain.segments[0]?.restHint ?? '30sec'} 変更禁止）。参照: ${ph.pm}`,

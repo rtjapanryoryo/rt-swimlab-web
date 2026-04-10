@@ -55,7 +55,7 @@ export function MenuLogSection() {
   }, []);
 
   useEffect(() => {
-    fetchMenus();
+    void Promise.resolve().then(() => fetchMenus());
   }, [fetchMenus]);
 
   // タブに戻ったとき・メニュー保存イベントでメニュー一覧を再取得（プロフィールは ProfileContext で即時反映）

@@ -144,7 +144,7 @@ function parsePartToRow(
 
   let distance = '-';
   let count = '-';
-  let sets = '1';
+  const sets = '1';
   let cycle = '-';
   let intensity = '-';
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { isLikelyWebView, isLineWebView, getOpenInBrowserUrl } from '@/lib/webview-signin';
 
 type Props = {
@@ -13,15 +13,27 @@ type Props = {
  * フォームは常に表示し、WebView 時は上部にバナーのみ追加。
  */
 export function WebViewOpenInBrowser({ path = '/login', children }: Props) {
-  if (typeof window === 'undefined') return <>{children}</>;
-  if (!isLikelyWebView()) return <>{children}</>;
+  const [ready, setReady] = useState(false);
 
-  const needsRedirect = isLineWebView() && !window.location.search.includes('openExternalBrowser=1');
+  useEffect(() => {
+    queueMicrotask(() => setReady(true));
+  }, []);
+
+  const needsRedirect =
+    ready &&
+    typeof window !== 'undefined' &&
+    isLikelyWebView() &&
+    isLineWebView() &&
+    !window.location.search.includes('openExternalBrowser=1');
+
   useEffect(() => {
     if (needsRedirect) {
       window.location.replace(getOpenInBrowserUrl(path));
     }
   }, [needsRedirect, path]);
+
+  if (!ready || typeof window === 'undefined') return <>{children}</>;
+  if (!isLikelyWebView()) return <>{children}</>;
 
   if (needsRedirect) {
     return <div className="min-h-screen flex items-center justify-center bg-slate-50"><p className="text-slate-500">読み込み中...</p></div>;

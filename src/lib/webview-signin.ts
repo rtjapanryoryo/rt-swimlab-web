@@ -56,7 +56,7 @@ function addParam(url: string, param: string, value: string): string {
  */
 export function getOpenInBrowserUrl(path = '/'): string {
   if (typeof window === 'undefined') return '';
-  let url = `${window.location.origin}${path}`;
+  const url = `${window.location.origin}${path}`;
   if (isLineWebView()) {
     return addParam(url, 'openExternalBrowser', '1');
   }

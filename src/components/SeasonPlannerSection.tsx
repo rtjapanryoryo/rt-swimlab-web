@@ -43,8 +43,10 @@ export function SeasonPlannerSection() {
     if (stored) {
       try {
         const d = JSON.parse(stored) as { raceDate?: string; currentPeriod?: string };
-        if (d.raceDate) setRaceDate(d.raceDate);
-        if (d.currentPeriod) setCurrentPeriod(d.currentPeriod);
+        queueMicrotask(() => {
+          if (d.raceDate) setRaceDate(d.raceDate);
+          if (d.currentPeriod) setCurrentPeriod(d.currentPeriod);
+        });
       } catch { /* ignore */ }
     }
   }, [userId]);

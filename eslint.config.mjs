@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // ベンダー min（ESLint が minified コードで誤検出する）
+    "public/**/*.min.js",
   ]),
 ]);
 

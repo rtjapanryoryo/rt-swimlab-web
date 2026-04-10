@@ -16,11 +16,13 @@ export async function GET() {
     return NextResponse.json({ error: 'not_configured' }, { status: 503 });
   }
 
-  let { data, error } = await sb
+  const profileRes = await sb
     .from('profiles')
     .select('id, role, display_name, total_usage_count, goal, show_goal, created_at')
     .eq('id', user.id)
     .single();
+  let { data } = profileRes;
+  const { error } = profileRes;
 
   if (error?.code === 'PGRST116' || !data) {
     try {

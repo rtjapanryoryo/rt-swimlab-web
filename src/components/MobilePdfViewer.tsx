@@ -31,7 +31,9 @@ export function MobilePdfViewer({ pdfUrl, className = '', onError }: MobilePdfVi
     const container = containerRef.current;
     if (!container || !pdfUrl) return;
 
-    setLoading(true);
+    void Promise.resolve().then(() => {
+      if (!cancelled) setLoading(true);
+    });
     container.innerHTML = '';
 
     // モバイルで cookie 認証を確実に送るため、fetch で credentials 付き取得
