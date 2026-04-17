@@ -450,6 +450,11 @@ preMain : "${tmpl.preMainTemplate}"
 main    : "${tmpl.mainTemplate}"
 down    : "${tmpl.downStr}"（変更禁止）
 
+【絶対ルール（違反すると再生成）】
+- kick・pull・preMainは絶対に空文字 "" にしない。warmUpにキック・プル要素が含まれていても、それぞれ独立したセットとして出力すること
+- テンプレート内の強度表記（①〜⑦、A1/A2/EN1/EN2/EN3/AN1/AN2/MAX）は一切変更禁止。（{KI_PATTERN_N}）（EN1）の形式のまま、{KI_PATTERN_N} だけを置き換えること
+- {PLACEHOLDER} 以外の数値・本数・@rest・強度記号は変更禁止
+
 【出力形式】JSONのみ（説明文不要）。以下の全キーを含むこと。
 - {PLACEHOLDER}を埋めた完成形のテキストをそのまま出力（テンプレの数値は一切変えない）
 - intention/coachingPoint/cautionはこの8条件に合わせた固有の内容で書く（汎用文禁止）
@@ -494,10 +499,34 @@ down    : "${tmpl.downStr}"（変更禁止）
        * LLMレスポンスをパースし、骨格のM値・totalで強制上書きする。
        * 距離の正確性は骨格が保証するため、M値はLLM出力に依存しない。
        */
+      // 強度ラベル（A1/EN1等）をskeleton値で復元する。LLMが誤って変更した場合も正しい値に戻す。
+      const restoreBlockIntensities = (
+        text: string,
+        segments: Array<{ intensity: string }>,
+      ): string => {
+        if (!text) return text;
+        const INTENSITY_RE = /（(A[12]|EN[1-4]|AN[12]|MAX)）/g;
+        const parts = text.split(' → ');
+        if (parts.length === segments.length) {
+          return parts
+            .map((part, i) => part.replace(INTENSITY_RE, `（${segments[i].intensity}）`))
+            .join(' → ');
+        }
+        // セグメント数が合わない場合は先頭セグメントの強度で統一
+        if (segments.length >= 1) {
+          return text.replace(INTENSITY_RE, `（${segments[0].intensity}）`);
+        }
+        return text;
+      };
+
       const parseAndAssemble = (raw: string): Record<string, unknown> | null => {
         try {
           const parsed = JSON.parse(raw) as Record<string, unknown>;
           if (!TEXT_KEYS.every((k) => typeof parsed[k] === 'string')) return null;
+
+          // kick/pull/preMainが空文字の場合はLLMの誤出力 → リトライ対象
+          const REQUIRED_NON_EMPTY = ['kick', 'pull', 'preMain'] as const;
+          if (REQUIRED_NON_EMPTY.some((k) => String(parsed[k] ?? '').trim() === '')) return null;
 
           const result: Record<string, unknown> = Object.fromEntries(
             TEXT_KEYS.map((k) => [k, String(parsed[k] ?? '')])
@@ -505,6 +534,16 @@ down    : "${tmpl.downStr}"（変更禁止）
 
           // mainテンプレートはプレースホルダーなし → 骨格テンプレートで強制上書き（LLM書き換え防止）
           result.main = tmpl.mainTemplate;
+
+          // 強度ラベルをskeleton値で強制復元（LLMが変更しても正しい値に戻す）
+          // warmUpはwarmUp + drillセグメントを連結した構成
+          result.warmUp  = restoreBlockIntensities(
+            String(result.warmUp),
+            [...skeleton.warmUp.segments, ...skeleton.drill.segments],
+          );
+          result.kick    = restoreBlockIntensities(String(result.kick),    skeleton.kick.segments);
+          result.pull    = restoreBlockIntensities(String(result.pull),    skeleton.pull.segments);
+          result.preMain = restoreBlockIntensities(String(result.preMain), skeleton.preMain.segments);
 
           // 骨格M値で強制上書き（距離の算術保証）
           result.warmUpM  = skeleton.warmUp.totalM;
@@ -545,14 +584,14 @@ down    : "${tmpl.downStr}"（変更禁止）
 
       let result = parseAndAssemble(rawContent);
 
-      // JSONパース失敗時のみリトライ（距離リトライは不要）
+      // JSONパース失敗・kick/pull/preMain空文字のリトライ
       if (!result) {
-        const retryHint = '【再試行】JSONの全キーが揃っていません。正しいJSONのみを出力してください。\n\n';
+        const retryHint = '【再試行】以下を必ず守って再生成してください:\n- JSONの全キーを含めること\n- kick・pull・preMainは絶対に空文字 "" にしない（warmUpに同種要素があっても独立したセットを出力）\n- 強度表記（A1/EN1等）はテンプレートのままコピーし変更しない\n\n';
         rawContent = await doGenerate(retryHint, 0.3);
         if (rawContent) result = parseAndAssemble(rawContent);
       }
 
-      // コンテンツ品質バリデーション（プレースホルダー未充填・汎用文検出）
+      // コンテンツ品質バリデーション（プレースホルダー未充填・空文字・汎用文検出）
       if (result) {
         const qualityIssues: string[] = [];
         const checkFields = ['warmUp', 'kick', 'pull', 'preMain', 'main'];
@@ -560,6 +599,9 @@ down    : "${tmpl.downStr}"（変更禁止）
           const val = String(result[field] ?? '');
           const match = val.match(/\{[A-Z_0-9]+\}/);
           if (match) qualityIssues.push(`${field}にプレースホルダー${match[0]}が残っています`);
+          if (['kick', 'pull', 'preMain'].includes(field) && val.trim() === '') {
+            qualityIssues.push(`${field}が空文字です。warmUpに同種の要素があっても必ず独立したセットとして出力してください`);
+          }
         }
         const intention = String(result.intention ?? '');
         if (intention.length < 60) qualityIssues.push('intentionが短すぎます（60文字以上必要）');

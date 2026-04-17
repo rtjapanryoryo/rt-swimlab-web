@@ -84,19 +84,22 @@ export default function AdminSidebar({ adminName }: { adminName: string }) {
       </nav>
 
       {/* フッター */}
-      <div className="px-5 py-4 border-t border-slate-800 space-y-3">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center">
-            <span className="text-[10px] font-bold text-amber-400">
+      <div className="px-4 py-4 border-t border-slate-800 space-y-3">
+        <div className="flex items-center gap-2.5 px-1">
+          <div className="w-8 h-8 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0">
+            <span className="text-xs font-bold text-amber-400">
               {adminName.charAt(0)}
             </span>
           </div>
-          <p className="text-xs text-slate-400 truncate">{adminName}</p>
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-slate-300 truncate">{adminName}</p>
+            <p className="text-[10px] text-amber-500/70">管理者</p>
+          </div>
         </div>
         <form action="/api/auth/logout" method="post">
           <button
             type="submit"
-            className="flex items-center gap-2 text-sm text-slate-500 hover:text-white transition-colors"
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-slate-500 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
           >
             <LogoutIcon />
             ログアウト
