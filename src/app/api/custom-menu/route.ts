@@ -503,6 +503,9 @@ down    : "${tmpl.downStr}"（変更禁止）
             TEXT_KEYS.map((k) => [k, String(parsed[k] ?? '')])
           );
 
+          // mainテンプレートはプレースホルダーなし → 骨格テンプレートで強制上書き（LLM書き換え防止）
+          result.main = tmpl.mainTemplate;
+
           // 骨格M値で強制上書き（距離の算術保証）
           result.warmUpM  = skeleton.warmUp.totalM;
           result.drillM   = skeleton.drill.totalM;
@@ -527,7 +530,7 @@ down    : "${tmpl.downStr}"（変更禁止）
             { role: 'user',   content: buildUserPrompt(retryHint) },
           ],
           temperature: temp,
-          max_tokens: 4096,
+          max_tokens: 8192,
           response_format: { type: 'json_object' },
         });
         return completion.choices[0]?.message?.content?.trim() ?? null;

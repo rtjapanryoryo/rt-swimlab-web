@@ -794,7 +794,7 @@ function deriveMainCategory(period: string, distanceType: 'S' | 'M' | 'D', actua
   if (actualMainStep === 3) return 'ベースメイン';                             // EN2
   if (actualMainStep === 4) {                                                  // EN3
     const p = parseInt(period);
-    if (p >= 6) return 'ベストアベレージ';
+    if (p >= 3) return 'ベストアベレージ';  // 発展形成以降はターゲットタイム意識
     return 'ベースメイン';
   }
   if (actualMainStep === 5) {                                                  // AN1
