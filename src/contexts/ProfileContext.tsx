@@ -5,6 +5,7 @@ import { createContext, useContext, useState, useCallback, useEffect } from 'rea
 export type ProfileData = {
   display_name: string | null;
   total_usage_count: number;
+  role?: string;
   quick_count?: number;
   custom_count?: number;
   goal?: string | null;

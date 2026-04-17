@@ -54,13 +54,42 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // ログイン済みで / にアクセス → ダッシュボードへ
-  if (request.nextUrl.pathname === '/' && effectiveLoggedIn) {
-    return NextResponse.redirect(new URL('/mypage', request.url));
-  }
+  // ログイン済みのロールベースルーティング
+  if (effectiveLoggedIn) {
+    const path = request.nextUrl.pathname;
 
-  if (isAuthPage && effectiveLoggedIn) {
-    return NextResponse.redirect(new URL('/mypage', request.url));
+    // ロール取得（開発バイパスは skip）
+    let role: string | null = null;
+    if (!isBypass && user) {
+      const { data: profileRow } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+      role = profileRow?.role ?? null;
+    }
+
+    const isAdmin = role === 'admin';
+
+    // admin が /mypage にアクセス → /admin へ
+    if (isAdmin && (path === '/' || path.startsWith('/mypage'))) {
+      return NextResponse.redirect(new URL('/admin', request.url));
+    }
+
+    // 一般ユーザーが /admin にアクセス → /mypage へ
+    if (!isAdmin && !isBypass && path.startsWith('/admin')) {
+      return NextResponse.redirect(new URL('/mypage', request.url));
+    }
+
+    // / → 各ホームへ
+    if (path === '/') {
+      return NextResponse.redirect(new URL(isAdmin ? '/admin' : '/mypage', request.url));
+    }
+
+    // 認証ページ → 各ホームへ
+    if (isAuthPage) {
+      return NextResponse.redirect(new URL(isAdmin ? '/admin' : '/mypage', request.url));
+    }
   }
 
   return response;

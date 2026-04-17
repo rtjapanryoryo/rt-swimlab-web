@@ -80,6 +80,16 @@ export function AccountIcon() {
   );
 }
 
+/** 管理者：盾 + チェックマーク */
+export function AdminIcon() {
+  return (
+    <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M12 3l7 3.5v5c0 4.5-3 8-7 9.5C8 19.5 5 16 5 11.5v-5L12 3z" />
+      <polyline points="9 12 11 14 15 10" />
+    </svg>
+  );
+}
+
 /** ログアウト：ドアから出る矢印 */
 export function LogoutIcon() {
   return (

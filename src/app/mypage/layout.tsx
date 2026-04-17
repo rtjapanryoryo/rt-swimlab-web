@@ -6,6 +6,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { ProfileProvider, useProfile } from '@/contexts/ProfileContext';
 import {
   AccountIcon,
+  AdminIcon,
   CommunityIcon,
   DashboardIcon,
   GeneProfileIcon,
@@ -33,6 +34,7 @@ function MyPageLayoutInner({
 }) {
   const { profile } = useProfile();
   const displayName = profile?.display_name ?? null;
+  const isAdmin = profile?.role === 'admin';
 
   return (
     <div className="min-h-screen rt-atmosphere">
@@ -98,6 +100,17 @@ function MyPageLayoutInner({
                 );
               })}
             </ul>
+            {isAdmin && (
+              <div className="px-3 pb-2">
+                <Link
+                  href="/admin"
+                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl transition-colors"
+                >
+                  <AdminIcon />
+                  管理者ダッシュボード
+                </Link>
+              </div>
+            )}
             <div className="px-5 py-3 border-t border-cyan-100/80">
               <form action="/api/auth/logout" method="post">
                 <button
@@ -174,6 +187,17 @@ function MyPageLayoutInner({
                 </Link>
               );
             })}
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className="flex flex-col items-center justify-center gap-0.5 shrink-0 min-w-[64px] py-2 px-2 rounded-2xl text-[10px] font-semibold text-amber-600 hover:bg-amber-50 transition-colors"
+              >
+                <span className="flex justify-center [&>svg]:w-5 [&>svg]:h-5">
+                  <AdminIcon />
+                </span>
+                <span className="leading-tight">管理者</span>
+              </Link>
+            )}
             <form action="/api/auth/logout" method="post" className="shrink-0">
               <button
                 type="submit"
