@@ -13,6 +13,7 @@ export async function GET() {
   if (me?.role !== 'admin') return NextResponse.json({ error: 'forbidden' }, { status: 403 });
 
   const sb = getSupabaseServiceRole() ?? authSb;
+  const usingServiceRole = !!getSupabaseServiceRole();
 
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
@@ -106,6 +107,7 @@ export async function GET() {
   });
 
   return NextResponse.json({
+    serviceRoleActive: usingServiceRole,
     kpi: {
       totalUsers:        totalUsers       ?? 0,
       newUsersMonth:     newUsersMonth    ?? 0,

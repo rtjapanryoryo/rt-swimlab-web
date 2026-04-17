@@ -41,6 +41,7 @@ interface UserRow {
 }
 
 interface StatsData {
+  serviceRoleActive: boolean;
   kpi: KPI;
   charts: ChartData;
   users: UserRow[];
@@ -142,6 +143,13 @@ export default function AdminDashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+        {!data.serviceRoleActive && (
+          <div className="bg-red-50 border border-red-200 rounded-xl px-5 py-4 text-sm text-red-700">
+            ⚠️ <strong>SUPABASE_SERVICE_ROLE_KEY が未設定です。</strong>
+            generation_logs・menus テーブルのRLSにより、全ユーザーのデータが取得できません。
+            環境変数を設定するか、Supabaseで admin 用RLSポリシーを追加してください。
+          </div>
+        )}
 
         {/* ── KPI ─────────────────────────────────────────────────────── */}
         <section>
