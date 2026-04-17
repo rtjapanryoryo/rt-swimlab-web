@@ -32,11 +32,26 @@ export async function GET(request: NextRequest) {
       .order('total_usage_count', { ascending: false });
 
     const userIds = (profiles ?? []).map(p => p.id);
-    const [{ data: allLogs }, { data: menuRows }, { data: subRows }] = await Promise.all([
+    if (userIds.length === 0) {
+      const header = ['名前', '役割', 'プラン', '月額(円)', '累計利用', 'Quick', 'Custom', '週間頻度', '登録日', '最終利用日'];
+      const csv = toCSV([header]);
+      return new NextResponse(csv, {
+        headers: {
+          'Content-Type': 'text/csv; charset=utf-8',
+          'Content-Disposition': `attachment; filename="customers_${now.toISOString().substring(0, 10)}.csv"`,
+        },
+      });
+    }
+    const [{ data: allLogs }, { data: menuRows }] = await Promise.all([
       sb.from('generation_logs').select('user_id, created_at').in('user_id', userIds).order('created_at', { ascending: false }),
       sb.from('menus').select('user_id, source').in('user_id', userIds),
-      sb.from('subscriptions').select('user_id, plan, price_monthly, started_at').in('user_id', userIds).then(r => r).catch(() => ({ data: null })),
     ]);
+    let subRows: { user_id: string; plan: string; price_monthly: number; started_at: string }[] | null = null;
+    const subRes = await sb
+      .from('subscriptions')
+      .select('user_id, plan, price_monthly, started_at')
+      .in('user_id', userIds);
+    if (!subRes.error && subRes.data) subRows = subRes.data;
 
     const lastActive = new Map<string, string>();
     (allLogs ?? []).forEach(r => { if (!lastActive.has(r.user_id)) lastActive.set(r.user_id, r.created_at); });

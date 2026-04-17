@@ -28,7 +28,7 @@ export async function GET() {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
-  const [{ data: allLogs }, { data: monthLogs }, { data: menuRows }, { data: subRows }] = await Promise.all([
+  const [{ data: allLogs }, { data: monthLogs }, { data: menuRows }] = await Promise.all([
     sb.from('generation_logs')
       .select('user_id, created_at')
       .in('user_id', userIds)
@@ -40,13 +40,14 @@ export async function GET() {
     sb.from('menus')
       .select('user_id, source, created_at')
       .in('user_id', userIds),
-    // subscriptions が存在しない場合に備えて try/catch
-    sb.from('subscriptions')
-      .select('user_id, plan, status, price_monthly, started_at, cancelled_at')
-      .in('user_id', userIds)
-      .then(r => r)
-      .catch(() => ({ data: null })),
   ]);
+
+  let subRows: { user_id: string; plan: string; status: string; price_monthly: number; started_at: string | null; cancelled_at: string | null }[] | null = null;
+  const subRes = await sb
+    .from('subscriptions')
+    .select('user_id, plan, status, price_monthly, started_at, cancelled_at')
+    .in('user_id', userIds);
+  if (!subRes.error && subRes.data) subRows = subRes.data;
 
   // ユーザーごとの最終利用日
   const lastActiveMap = new Map<string, string>();
