@@ -68,16 +68,21 @@ function loadSavedInput(key: string): TrainingInput {
   return EMPTY_INPUT;
 }
 
-export type MenuGeneratorPanelProps = { embedded?: boolean; onSaved?: () => void };
+export type MenuGeneratorPanelProps = {
+  embedded?: boolean;
+  onSaved?: () => void;
+  planId?: string;
+  initialValues?: Partial<TrainingInput>;
+};
 
 export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
-  const { embedded, onSaved } = props ?? {};
+  const { embedded, onSaved, planId, initialValues } = props ?? {};
   const { user, loading: sessionStatus } = useAuth();
   const { viewMode, setViewMode } = useViewMode();
 
-  const [mode, setMode] = useState<'quick' | 'custom'>('quick');
+  const [mode, setMode] = useState<'quick' | 'custom'>(initialValues ? 'custom' : 'quick');
   const [customStep, setCustomStep] = useState<1 | 2>(1);
-  const [input, setInput] = useState<TrainingInput>(EMPTY_INPUT);
+  const [input, setInput] = useState<TrainingInput>(initialValues ? { ...EMPTY_INPUT, ...initialValues } : EMPTY_INPUT);
   const [hydrated, setHydrated] = useState(false);
 
   // 共通表示（最後に押した方で上書き）
@@ -347,9 +352,10 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
     setApiError(null);
     setApiErrorKind(null);
     try {
-      const payload = {
+      const payload: Record<string, unknown> = {
         ...input,
         stroke: input.stroke || 'Fr',
+        ...(planId ? { plan_id: planId } : {}),
       };
       const res = await fetch('/api/custom-menu', {
         method: 'POST',

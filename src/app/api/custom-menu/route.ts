@@ -2,8 +2,9 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import path from 'path';
 import { config as loadEnv } from 'dotenv';
-import { getEffectiveUser } from '@/lib/supabase/server';
+import { getEffectiveUser, createClient } from '@/lib/supabase/server';
 import OpenAI from 'openai';
+import { buildSessionContext, buildContextPrompt } from '@/lib/training/context-builder';
 import { getCommonContent, getProtocolContent, getPromptContent, getRTMenuProtocolContent, getRTJapanPracticeContent } from '@/lib/rt/content';
 import { validateDistanceTime, isDistanceValidForType } from '@/lib/rt/distance-time-validation';
 import { generateMenuSkeleton, buildSkeletonTemplateStrings } from '@/lib/rt/skeleton-generator';
@@ -215,7 +216,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const { period, stroke, distance, age, distanceType, level, condition, practiceTime } =
+      const { period, stroke, distance, age, distanceType, level, condition, practiceTime, plan_id } =
         body as Record<string, string>;
 
       if (distance && distanceType && !isDistanceValidForType(distance, distanceType)) {
@@ -242,6 +243,21 @@ export async function POST(request: NextRequest) {
         down: skeleton.down.totalM,
         total: skeleton.totalM,
       });
+
+      // ============================================================
+      // ストーリー文脈構築（plan_id がある場合）
+      // ============================================================
+      let storyContextPrompt = '';
+      if (plan_id && user) {
+        try {
+          const sb = await createClient();
+          if (!sb) throw new Error('supabase client null');
+          const ctx = await buildSessionContext(sb, user.id, plan_id, new Date());
+          if (ctx) storyContextPrompt = buildContextPrompt(ctx);
+        } catch (ctxErr) {
+          console.warn('[custom-menu] context build failed (non-fatal):', ctxErr);
+        }
+      }
 
       // ============================================================
       // コンテンツ読み込み（並列）
@@ -281,6 +297,11 @@ export async function POST(request: NextRequest) {
       // システムプロンプト構築
       // ============================================================
       let systemContent = '';
+
+      // ストーリー文脈（コーチ指示含む）を最優先で先頭に配置
+      if (storyContextPrompt) {
+        systemContent += storyContextPrompt + '\n\n---\n\n';
+      }
 
       if (protocolContent) {
         systemContent += '【コーチ思想（必ず反映すること）】\n\n' + protocolContent + '\n\n---\n\n';

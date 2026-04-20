@@ -1,6 +1,26 @@
 'use client';
 
+import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import MenuGeneratorPanel from '@/components/MenuGeneratorPanel';
+import type { TrainingInput } from '@/lib/rt/generator';
+
+function MenuPageInner() {
+  const searchParams = useSearchParams();
+  const planId    = searchParams.get('plan_id') ?? undefined;
+  const period    = searchParams.get('period') ?? undefined;
+  const distance  = searchParams.get('distance') ?? undefined;
+  const condition = searchParams.get('condition') ?? undefined;
+  const stroke    = searchParams.get('stroke') ?? undefined;
+  const distanceType = searchParams.get('distanceType') ?? undefined;
+
+  const initialValues: Partial<TrainingInput> | undefined =
+    period || distance || stroke
+      ? { period, distance, condition, stroke, distanceType }
+      : undefined;
+
+  return <MenuGeneratorPanel embedded planId={planId} initialValues={initialValues} />;
+}
 
 /**
  * RT swim lab - 練習メニュー専用ページ
@@ -63,7 +83,9 @@ export default function RTSwimLabMenuPage() {
       </header>
 
       {/* ─── メニュー生成パネル ─── */}
-      <MenuGeneratorPanel embedded />
+      <Suspense fallback={<div className="flex justify-center py-10"><div className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" /></div>}>
+        <MenuPageInner />
+      </Suspense>
     </div>
   );
 }

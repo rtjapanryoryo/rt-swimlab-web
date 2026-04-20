@@ -7,10 +7,12 @@ import { ProfileProvider, useProfile } from '@/contexts/ProfileContext';
 import {
   AccountIcon,
   AdminIcon,
+  CoachIcon,
   CommunityIcon,
   DashboardIcon,
   GeneProfileIcon,
   LogoutIcon,
+  PlanIcon,
   SwimLabIcon,
 } from '@/components/icons/MypageNavIcons';
 
@@ -20,6 +22,7 @@ const COMMUNITY_URL = process.env.NEXT_PUBLIC_COMMUNITY_URL || '';
 const navItems = [
   { href: '/mypage', label: 'ダッシュボード', Icon: DashboardIcon },
   { href: '/mypage/menu', label: 'RT swim lab', Icon: SwimLabIcon, footerLabel: 'swim lab' },
+  { href: '/mypage/plan', label: 'トレーニング計画', Icon: PlanIcon, footerLabel: '計画' },
   { href: '/mypage/genetic', label: 'RT GENE PROFILE', Icon: GeneProfileIcon, hideInFooter: true },
   { href: COMMUNITY_URL || '#', label: 'RTコミュニティ', Icon: CommunityIcon, external: true, disabled: !COMMUNITY_URL, footerLabel: 'コミュニティ' },
   { href: '/mypage/settings', label: 'アカウント情報', Icon: AccountIcon },
@@ -35,6 +38,7 @@ function MyPageLayoutInner({
   const { profile } = useProfile();
   const displayName = profile?.display_name ?? null;
   const isAdmin = profile?.role === 'admin';
+  const isCoach = profile?.role === 'coach' || isAdmin;
 
   return (
     <div className="min-h-screen rt-atmosphere">
@@ -100,6 +104,17 @@ function MyPageLayoutInner({
                 );
               })}
             </ul>
+            {isCoach && (
+              <div className="px-3 pb-1">
+                <Link
+                  href="/mypage/coach"
+                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm font-semibold text-cyan-700 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 rounded-xl transition-colors"
+                >
+                  <CoachIcon />
+                  コーチダッシュボード
+                </Link>
+              </div>
+            )}
             {isAdmin && (
               <div className="px-3 pb-2">
                 <Link
@@ -187,6 +202,17 @@ function MyPageLayoutInner({
                 </Link>
               );
             })}
+            {isCoach && (
+              <Link
+                href="/mypage/coach"
+                className="flex flex-col items-center justify-center gap-0.5 shrink-0 min-w-[64px] py-2 px-2 rounded-2xl text-[10px] font-semibold text-cyan-600 hover:bg-cyan-50 transition-colors"
+              >
+                <span className="flex justify-center [&>svg]:w-5 [&>svg]:h-5">
+                  <CoachIcon />
+                </span>
+                <span className="leading-tight">コーチ</span>
+              </Link>
+            )}
             {isAdmin && (
               <Link
                 href="/admin"

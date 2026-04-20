@@ -5,6 +5,7 @@ import { useProfile } from '@/contexts/ProfileContext';
 import { MenuLogSection } from '@/components/MenuLogSection';
 import { TrainingStatsSection } from '@/components/TrainingStatsSection';
 import { SeasonPlannerSection } from '@/components/SeasonPlannerSection';
+import { TodaySessionCard } from '@/components/TodaySessionCard';
 
 
 export default function MyPageDashboard() {
@@ -97,6 +98,9 @@ export default function MyPageDashboard() {
           </div>
         </div>
       </div>
+
+      {/* ════════ 今日の練習提案 ════════ */}
+      <TodaySessionCard />
 
       {/* ════════ シーズン管理 ════════ */}
       <SeasonPlannerSection />
