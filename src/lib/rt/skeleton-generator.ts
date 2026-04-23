@@ -276,7 +276,7 @@ interface AllocConfig {
 }
 
 const ALLOC_CONFIG: Record<'S' | 'M' | 'D', AllocConfig> = {
-  S: { wupPct: 0.14, wupMax: 500, wupMin: 200, drillPct: 0.13, kickPct: 0.14, pullPct: 0.17, preMainPct: 0.09, downPct: 0.06, downMin: 200, downMax: 300, unit: 25 },
+  S: { wupPct: 0.14, wupMax: 500, wupMin: 200, drillPct: 0.13, kickPct: 0.14, pullPct: 0.17, preMainPct: 0.09, downPct: 0.06, downMin: 200, downMax: 300, unit: 50 },
   M: { wupPct: 0.10, wupMax: 500, wupMin: 250, drillPct: 0.12, kickPct: 0.12, pullPct: 0.16, preMainPct: 0.09, downPct: 0.06, downMin: 200, downMax: 300, unit: 50 },
   D: { wupPct: 0.08, wupMax: 500, wupMin: 300, drillPct: 0.11, kickPct: 0.11, pullPct: 0.14, preMainPct: 0.08, downPct: 0.05, downMin: 200, downMax: 400, unit: 100 },
 };
@@ -321,7 +321,7 @@ function getPracticeTimeCaps(practiceTime: number): { wupMax: number; downMax: n
  * (例: M-type Pull → 100m単位 → 8×100m or 4×200m が自然に選ばれる)
  */
 const BLOCK_ALLOC_ROUND: Record<'S' | 'M' | 'D', { pull: number; preMain: number }> = {
-  S: { pull:  50, preMain:  25 },
+  S: { pull:  50, preMain:  50 },
   M: { pull: 100, preMain: 100 },
   D: { pull: 200, preMain: 200 },
 };
@@ -426,29 +426,33 @@ function allocateBlocks(targetDist: number, distanceType: 'S' | 'M' | 'D', level
 
 interface SetStructure { sets: number; mPerSet: number; }
 
-/**
- * 有効なセット単位かチェック
- * ルール: 25m・50m はOK。それ以降は 100m 単位のみ（75m・150m・250m は禁止）
- */
+/** 有効なセット単位: {25, 50, 75, 100, 200, 400}m のみ */
+const VALID_SET_UNITS = new Set([25, 50, 75, 100, 200, 400]);
 function isValidSetUnit(unit: number): boolean {
-  if (unit === 25 || unit === 50) return true;
-  if (unit > 50) return unit % 100 === 0;
-  return false;
+  return VALID_SET_UNITS.has(unit);
+}
+
+/**
+ * 本数の偶数チェック（W-up / W-down のみ 1本を例外許容）
+ */
+function isEvenSets(sets: number, blockType: string): boolean {
+  if (sets % 2 === 0) return true;
+  return (blockType === 'warmUp' || blockType === 'down') && sets === 1;
 }
 
 /**
  * 各ブロック×距離タイプの優先単位（大きい順 = 少ない本数優先）
  * 上級はこのまま（長距離少本数）。初級は配列を逆順にして短距離多本数を優先。
- * ルール: 25・50m はOK。それ以降は100m単位のみ（75m・150m・250m禁止）
+ * 有効単位: {25, 50, 75, 100, 200, 400}m のみ
  */
 const PREFERRED_UNITS: Record<string, Record<'S' | 'M' | 'D', number[]>> = {
-  warmUp:  { S: [100, 50, 25],   M: [200, 100, 50],     D: [200, 100]           },
-  drill:   { S: [50, 25],        M: [100, 50],           D: [200, 100]           },
-  kick:    { S: [50, 25],        M: [100, 50],           D: [200, 100]           },
-  pull:    { S: [100, 50, 25],   M: [200, 100, 50],      D: [400, 200, 100]      },
-  preMain: { S: [50, 25],        M: [100, 50],           D: [200, 100]           },
-  main:    { S: [100, 50, 25],   M: [200, 100, 50],      D: [400, 200, 100]      },
-  down:    { S: [100, 50, 25],   M: [200, 100, 50],      D: [200, 100]           },
+  warmUp:  { S: [100, 75, 50, 25],  M: [200, 100, 50],      D: [200, 100]           },
+  drill:   { S: [75, 50, 25],       M: [100, 75, 50],        D: [200, 100]           },
+  kick:    { S: [75, 50, 25],       M: [100, 75, 50],        D: [200, 100, 75]       },
+  pull:    { S: [100, 75, 50, 25],  M: [200, 100, 50],       D: [400, 200, 100]      },
+  preMain: { S: [75, 50, 25],       M: [100, 75, 50],        D: [200, 100]           },
+  main:    { S: [100, 75, 50, 25],  M: [200, 100, 50],       D: [400, 200, 100]      },
+  down:    { S: [100, 75, 50, 25],  M: [200, 100, 50],       D: [200, 100]           },
 };
 
 /** ベース単位（距離タイプ別）。すべてのブロック距離はこの倍数になる。 */
@@ -485,8 +489,8 @@ function findSetStructures(
       const seg1M = roundToUnit(totalM * ratio, baseUnit);
       const seg2M = totalM - seg1M;
       if (seg1M < baseUnit || seg2M < baseUnit) continue;
-      const s1 = findSingleSegment(seg1M, preferred, baseUnit, maxSets);
-      const s2 = findSingleSegment(seg2M, preferred, baseUnit, maxSets);
+      const s1 = findSingleSegment(seg1M, preferred, baseUnit, maxSets, blockType);
+      const s2 = findSingleSegment(seg2M, preferred, baseUnit, maxSets, blockType);
       if (s1 && s2) return [s1, s2];
     }
   }
@@ -495,7 +499,7 @@ function findSetStructures(
   for (const unit of preferred) {
     if (totalM % unit === 0) {
       const sets = totalM / unit;
-      if (sets >= 2 && sets <= maxSets) return [{ sets, mPerSet: unit }];
+      if (sets >= 2 && sets <= maxSets && isEvenSets(sets, blockType)) return [{ sets, mPerSet: unit }];
     }
   }
 
@@ -507,7 +511,7 @@ function findSetStructures(
         .filter(u => u >= baseUnit && totalM % u === 0 && isValidSetUnit(u));
   for (const unit of searchOrder) {
     const sets = totalM / unit;
-    if (sets >= 2 && sets <= maxSets) return [{ sets, mPerSet: unit }];
+    if (sets >= 2 && sets <= maxSets && isEvenSets(sets, blockType)) return [{ sets, mPerSet: unit }];
   }
 
   // 強制フォールバック: 1セットあたり最大 500m の制約内で maxSets を緩和して再探索
@@ -520,25 +524,27 @@ function findSetStructures(
         .filter(u => u >= baseUnit && isValidSetUnit(u) && totalM % u === 0);
   for (const mPerSet of relaxedOrder) {
     const sets = totalM / mPerSet;
-    if (sets >= 2) return [{ sets, mPerSet }]; // maxSets は緩和（500m上限を優先）
+    if (sets >= 2 && isEvenSets(sets, blockType)) return [{ sets, mPerSet }]; // maxSets は緩和（500m上限を優先）
   }
 
   // 真の最終フォールバック: 500m以下で割り切れる最大単位
   for (let mPerSet = MAX_M_PER_SET; mPerSet >= baseUnit; mPerSet -= baseUnit) {
     if (isValidSetUnit(mPerSet) && totalM % mPerSet === 0) {
-      return [{ sets: totalM / mPerSet, mPerSet }];
+      const sets = totalM / mPerSet;
+      if (isEvenSets(sets, blockType)) return [{ sets, mPerSet }];
     }
   }
-  // 距離が500m以下の場合は1セットも許容（500m以内なので問題なし）
-  return [{ sets: 1, mPerSet: totalM }];
+  // W-up / W-down のみ 1本を許容（他ブロックは偶数保証できない場合も最小偶数で返す）
+  if (blockType === 'warmUp' || blockType === 'down') return [{ sets: 1, mPerSet: totalM }];
+  return [{ sets: 2, mPerSet: Math.ceil(totalM / 2 / baseUnit) * baseUnit }];
 }
 
 /** 単一セグメントを探す（2分割用ヘルパー） */
-function findSingleSegment(totalM: number, preferred: number[], baseUnit: number, maxSets = 12): SetStructure | null {
+function findSingleSegment(totalM: number, preferred: number[], baseUnit: number, maxSets = 12, blockType = ''): SetStructure | null {
   for (const unit of preferred) {
     if (isValidSetUnit(unit) && totalM % unit === 0) {
       const sets = totalM / unit;
-      if (sets >= 2 && sets <= maxSets) return { sets, mPerSet: unit };
+      if (sets >= 2 && sets <= maxSets && isEvenSets(sets, blockType)) return { sets, mPerSet: unit };
     }
   }
   // baseUnit で網羅（有効単位のみ）
@@ -546,7 +552,7 @@ function findSingleSegment(totalM: number, preferred: number[], baseUnit: number
   for (let unit = Math.max(minUnit, baseUnit); unit >= baseUnit; unit -= baseUnit) {
     if (isValidSetUnit(unit) && totalM % unit === 0) {
       const sets = totalM / unit;
-      if (sets >= 2 && sets <= maxSets) return { sets, mPerSet: unit };
+      if (sets >= 2 && sets <= maxSets && isEvenSets(sets, blockType)) return { sets, mPerSet: unit };
     }
   }
   return null;
