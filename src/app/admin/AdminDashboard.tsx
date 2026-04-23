@@ -225,40 +225,38 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* ── プロダクト指標 ─────────────────────────────────────────── */}
+      {/* ── 機能別利用状況 ────────────────────────────────────────── */}
       <div>
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">プロダクト</p>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">機能別利用</p>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <KPICard
-            label="Quick / Custom"
+            label="Quick / Custom 比率"
             value={totalMenus > 0 ? `${Math.round((kpi.quickCount / totalMenus) * 100)}% Quick` : '—'}
-            sub={`${kpi.quickCount.toLocaleString()} / ${kpi.customCount.toLocaleString()} 件`}
+            sub={`Quick ${kpi.quickCount.toLocaleString()} / Custom ${kpi.customCount.toLocaleString()} 件`}
             accent="bg-indigo-50 text-indigo-500"
             icon={<SplitIcon />}
           />
           <KPICard
-            label="トレーニング計画"
+            label="計画登録数"
             value={kpi.activePlans.toLocaleString()}
-            sub="登録プラン数（全ユーザー計）"
+            sub={kpi.totalUsers > 0 ? `保有率 ${Math.round((kpi.activePlans / kpi.totalUsers) * 100)}%（全ユーザー比）` : '登録プラン総数'}
             accent="bg-cyan-50 text-cyan-500"
             icon={<PlanIcon />}
           />
           <KPICard
-            label="練習ログ累計"
+            label="練習ログ記録数"
             value={kpi.sessionLogs.toLocaleString()}
-            sub="完了ステータスのセッション数"
+            sub="完了済みセッション累計"
             accent="bg-emerald-50 text-emerald-500"
             icon={<SessionIcon />}
           />
-          <div className="bg-white rounded-2xl border border-dashed border-slate-200 p-5 flex flex-col items-center justify-center gap-2 text-center">
-            <p className="text-xs text-slate-500">詳細チャートは</p>
-            <Link
-              href="/admin/analytics"
-              className="text-sm font-bold text-sky-600 hover:text-sky-700 transition-colors underline underline-offset-2"
-            >
-              利用分析 →
-            </Link>
-          </div>
+          <KPICard
+            label="ログ / 計画 比率"
+            value={kpi.activePlans > 0 ? `${Math.round(kpi.sessionLogs / kpi.activePlans * 10) / 10}回` : '—'}
+            sub="計画1件あたり平均練習ログ数"
+            accent="bg-teal-50 text-teal-500"
+            icon={<SessionIcon />}
+          />
         </div>
       </div>
 

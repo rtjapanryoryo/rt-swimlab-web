@@ -144,12 +144,12 @@ const DOW_LABELS = ['月', '火', '水', '木', '金', '土', '日'];
 
 function DayCell({ cell }: { cell: CalendarDay }) {
   if (!cell.date || cell.day === null) {
-    return <div className="aspect-square" />;
+    return <div className="h-7" />;
   }
   if (cell.isFuture) {
     return (
-      <div className="aspect-square flex items-center justify-center">
-        <span className="text-[11px] text-slate-200 font-medium">{cell.day}</span>
+      <div className="h-7 flex items-center justify-center">
+        <span className="text-[10px] text-slate-200">{cell.day}</span>
       </div>
     );
   }
@@ -157,7 +157,7 @@ function DayCell({ cell }: { cell: CalendarDay }) {
   const hasPractice = cell.count > 0;
   const bg = hasPractice
     ? cell.count >= 3
-      ? 'bg-teal-500 shadow-sm shadow-teal-400/40'
+      ? 'bg-teal-500'
       : cell.count === 2
       ? 'bg-cyan-500'
       : 'bg-cyan-300'
@@ -166,19 +166,14 @@ function DayCell({ cell }: { cell: CalendarDay }) {
     : 'bg-slate-100';
 
   const textColor = hasPractice ? 'text-white' : cell.isToday ? 'text-cyan-600' : 'text-slate-400';
-  const ring = cell.isToday ? 'ring-2 ring-cyan-400 ring-offset-1' : '';
+  const ring = cell.isToday ? 'ring-1 ring-cyan-400' : '';
 
   return (
     <div
-      className={`aspect-square flex items-center justify-center rounded-lg ${bg} ${ring} transition-all`}
-      title={hasPractice ? `${cell.date}：${cell.count}回生成` : cell.isToday ? '今日' : cell.date}
+      className={`h-7 flex items-center justify-center rounded-md ${bg} ${ring} transition-all`}
+      title={hasPractice ? `${cell.date}：${cell.count}回生成` : cell.isToday ? '今日' : cell.date ?? ''}
     >
-      <span className={`text-[11px] font-bold ${textColor}`}>{cell.day}</span>
-      {hasPractice && cell.count >= 2 && (
-        <span className="absolute bottom-0.5 right-0.5 text-[7px] text-white/80 leading-none font-bold">
-          {cell.count}
-        </span>
-      )}
+      <span className={`text-[10px] font-semibold ${textColor}`}>{cell.day}</span>
     </div>
   );
 }
@@ -253,40 +248,30 @@ export function TrainingStatsSection() {
 
         {/* ─── カレンダー ─── */}
         <div>
-          {/* 曜日ヘッダー */}
-          <div className="grid grid-cols-7 gap-1 mb-1">
+          <div className="grid grid-cols-7 gap-0.5 mb-0.5">
             {DOW_LABELS.map((d, i) => (
-              <div key={i} className={`text-center text-[10px] font-bold ${i >= 5 ? 'text-slate-400' : 'text-slate-500'}`}>
+              <div key={i} className={`text-center text-[9px] font-bold ${i >= 5 ? 'text-slate-300' : 'text-slate-400'}`}>
                 {d}
               </div>
             ))}
           </div>
-          {/* 日付グリッド */}
-          <div className="grid grid-cols-7 gap-1">
+          <div className="grid grid-cols-7 gap-0.5">
             {calDays.map((cell, i) => (
-              <div key={i} className="relative">
-                <DayCell cell={cell} />
-              </div>
+              <DayCell key={i} cell={cell} />
             ))}
           </div>
-          {/* 凡例 */}
-          <div className="flex items-center gap-3 mt-2 justify-end">
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded-sm bg-slate-100" />
-              <span className="text-[9px] text-slate-400">なし</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded-sm bg-cyan-300" />
-              <span className="text-[9px] text-slate-400">1回</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded-sm bg-cyan-500" />
-              <span className="text-[9px] text-slate-400">2回</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded-sm bg-teal-500" />
-              <span className="text-[9px] text-slate-400">3回以上</span>
-            </div>
+          <div className="flex items-center gap-2 mt-1.5 justify-end">
+            {[
+              { bg: 'bg-slate-100', label: 'なし' },
+              { bg: 'bg-cyan-300',  label: '1回' },
+              { bg: 'bg-cyan-500',  label: '2回' },
+              { bg: 'bg-teal-500',  label: '3回+' },
+            ].map(({ bg, label }) => (
+              <div key={label} className="flex items-center gap-0.5">
+                <div className={`w-2.5 h-2.5 rounded-sm ${bg}`} />
+                <span className="text-[9px] text-slate-400">{label}</span>
+              </div>
+            ))}
           </div>
         </div>
 
