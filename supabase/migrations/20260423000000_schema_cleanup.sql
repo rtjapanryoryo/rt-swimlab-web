@@ -8,22 +8,25 @@
 -- ============================================================
 
 -- ── 1. menus.user_id: TEXT → UUID ────────────────────────────
--- 既存データのうち profiles に存在しない孤立レコードを先に削除
-DELETE FROM public.menus
-WHERE user_id::uuid NOT IN (SELECT id FROM public.profiles);
+-- user_id を参照しているポリシーを先に削除（型変更のために必須）
+DROP POLICY IF EXISTS "Users can view own menus"   ON public.menus;
+DROP POLICY IF EXISTS "Users can insert own menus" ON public.menus;
+DROP POLICY IF EXISTS "admin can read all menus"   ON public.menus;
 
+-- 孤立レコード削除（profiles に存在しない user_id）
+DELETE FROM public.menus
+WHERE user_id NOT IN (SELECT id::text FROM public.profiles);
+
+-- TEXT → UUID に型変換
 ALTER TABLE public.menus
   ALTER COLUMN user_id TYPE UUID USING user_id::uuid;
 
+-- FK 追加
 ALTER TABLE public.menus
   ADD CONSTRAINT menus_user_id_fkey
     FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE;
 
 -- ── 2. menus RLS: キャスト除去・DELETE 追加 ──────────────────
-DROP POLICY IF EXISTS "Users can view own menus"   ON public.menus;
-DROP POLICY IF EXISTS "Users can insert own menus" ON public.menus;
-DROP POLICY IF EXISTS "admin can read all menus"   ON public.menus;
-
 CREATE POLICY "Users can view own menus" ON public.menus
   FOR SELECT USING (auth.uid() = user_id);
 
@@ -33,15 +36,14 @@ CREATE POLICY "Users can insert own menus" ON public.menus
 CREATE POLICY "Users can delete own menus" ON public.menus
   FOR DELETE USING (auth.uid() = user_id);
 
+CREATE POLICY "admin can read all menus" ON public.menus
+  FOR SELECT USING (public.is_admin());
+
 -- ── 3. 全テーブルの admin ポリシーを is_admin() に統一 ────────
 
 -- generation_logs
 DROP POLICY IF EXISTS "admin can read all generation_logs" ON public.generation_logs;
 CREATE POLICY "admin can read all generation_logs" ON public.generation_logs
-  FOR SELECT USING (public.is_admin());
-
--- menus (admin)
-CREATE POLICY "admin can read all menus" ON public.menus
   FOR SELECT USING (public.is_admin());
 
 -- subscriptions
