@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getEffectiveUser } from '@/lib/supabase/server';
-import { getSupabaseServiceRole } from '@/lib/supabase/admin';
+import { getEffectiveUser, createClient } from '@/lib/supabase/server';
 import type { FeedbackStatus } from '@/types/feedback';
 
 const VALID_STATUSES: FeedbackStatus[] = ['pending', 'in_progress', 'resolved', 'dismissed'];
@@ -13,7 +12,7 @@ export async function PATCH(
   const user = await getEffectiveUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const sb = getSupabaseServiceRole();
+  const sb = await createClient();
   if (!sb) return NextResponse.json({ error: 'DB error' }, { status: 500 });
 
   const { data: profile } = await sb

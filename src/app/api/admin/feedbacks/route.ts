@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getEffectiveUser } from '@/lib/supabase/server';
-import { getSupabaseServiceRole } from '@/lib/supabase/admin';
+import { getEffectiveUser, createClient } from '@/lib/supabase/server';
 import type { FeedbackCategory, FeedbackStatus } from '@/types/feedback';
 
 // GET /api/admin/feedbacks?status=pending&category=bug&limit=50&offset=0
@@ -8,7 +7,7 @@ export async function GET(req: Request) {
   const user = await getEffectiveUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const sb = getSupabaseServiceRole();
+  const sb = await createClient();
   if (!sb) return NextResponse.json({ error: 'DB error' }, { status: 500 });
 
   // 管理者ロール確認
