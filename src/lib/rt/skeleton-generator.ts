@@ -218,6 +218,15 @@ function getAdjustedIntensities(
   let mainStep = baseMain;
   let nonMainStep = baseNonMain;
 
+  // ─── 一般スイマー補正（レベル補正の前に適用）───
+  // intermediate に分類されるが AN期の耐乳酸MAX/AN2 は非競技者には不適切。
+  // main を 1 ステップ下げて「ベストアベレージ (AN1)」に抑える。
+  // age 補正と重複しないよう main のみ対象とし non-main は触らない。
+  if (level.includes('一般スイマー')) {
+    mainStep = Math.max(1, mainStep - 1);
+    notes.push('一般スイマー: main強度-1（AN2→AN1相当に抑制）');
+  }
+
   // ─── レベル補正（最優先・年齢/状況より先に適用）───
   const lm = getLevelModifiers(level);
   if (lm.note) notes.push(lm.note);

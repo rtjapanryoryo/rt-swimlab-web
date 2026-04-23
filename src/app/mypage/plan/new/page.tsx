@@ -9,9 +9,10 @@ import { allocatePeriods } from '@/lib/training/period-allocator';
 const STROKES = ['Fr', 'Ba', 'Br', 'Fly', 'IM'];
 const EVENTS  = ['Fr', 'Ba', 'Br', 'Fly', 'IM'];
 const LEVELS  = [
-  'フィットネス（初心者）',
-  '中級（育成クラス〜県大会）',
-  '競技選手（インターハイ〜全国）',
+  'フィットネス（健康・運動目的 / マスターズ健康）',
+  '一般スイマー（定期練習 / マスターズ継続）',
+  'クラブ選手（育成〜県大会 / マスターズ大会参加）',
+  '競技選手（地区〜全国 / マスターズ記録挑戦）',
   'トップ選手（日本代表クラス）',
 ];
 const DISTANCE_TYPES = [
@@ -44,7 +45,7 @@ export default function NewPlanPage() {
     goal_meet_date:     '',
     goal_meet_name:     '',
     start_date:         today,
-    level:              '中級（育成クラス〜県大会）',
+    level:              'クラブ選手（育成〜県大会 / マスターズ大会参加）',
     stroke_primary:     'Fr',
     coach_memo:         '',
   });
