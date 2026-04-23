@@ -103,6 +103,21 @@ export function PlanIcon() {
   );
 }
 
+/** 目標シート：同心円ターゲット + 十字線 */
+export function GoalSheetIcon() {
+  return (
+    <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="5" />
+      <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
+      <line x1="12" y1="3" x2="12" y2="7" />
+      <line x1="12" y1="17" x2="12" y2="21" />
+      <line x1="3" y1="12" x2="7" y2="12" />
+      <line x1="17" y1="12" x2="21" y2="12" />
+    </svg>
+  );
+}
+
 /** コーチ：人 + 笛 */
 export function CoachIcon() {
   return (

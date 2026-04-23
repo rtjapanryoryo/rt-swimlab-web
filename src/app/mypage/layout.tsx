@@ -11,8 +11,8 @@ import {
   CommunityIcon,
   DashboardIcon,
   GeneProfileIcon,
+  GoalSheetIcon,
   LogoutIcon,
-  PlanIcon,
   SwimLabIcon,
 } from '@/components/icons/MypageNavIcons';
 
@@ -22,7 +22,7 @@ const COMMUNITY_URL = process.env.NEXT_PUBLIC_COMMUNITY_URL || '';
 const navItems = [
   { href: '/mypage', label: 'ダッシュボード', Icon: DashboardIcon },
   { href: '/mypage/menu', label: 'RT swim lab', Icon: SwimLabIcon, footerLabel: 'swim lab' },
-  { href: '/mypage/plan', label: 'トレーニング計画', Icon: PlanIcon, footerLabel: '計画' },
+  { href: '/mypage/goal-sheet', label: '目標シート', Icon: GoalSheetIcon, footerLabel: '目標' },
   { href: '/mypage/genetic', label: 'RT GENE PROFILE', Icon: GeneProfileIcon, hideInFooter: true },
   { href: COMMUNITY_URL || '#', label: 'RTコミュニティ', Icon: CommunityIcon, external: true, disabled: !COMMUNITY_URL, footerLabel: 'コミュニティ' },
   { href: '/mypage/settings', label: 'アカウント情報', Icon: AccountIcon },
