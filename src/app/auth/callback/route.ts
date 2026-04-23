@@ -56,7 +56,10 @@ export async function GET(request: NextRequest) {
       type,
     });
     if (!error && data.user) {
-      const redirect = next || (await getRedirectForUser(supabase, data.user.id, '/update-password'));
+      if (type === 'recovery') {
+        return NextResponse.redirect(`${origin}/update-password`);
+      }
+      const redirect = next || (await getRedirectForUser(supabase, data.user.id, '/mypage'));
       return NextResponse.redirect(`${origin}${redirect}`);
     }
     if (!error) return NextResponse.redirect(`${origin}${next || '/'}`);
