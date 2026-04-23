@@ -130,6 +130,16 @@ export function CoachIcon() {
   );
 }
 
+/** フィードバック：吹き出し + ハート */
+export function FeedbackIcon() {
+  return (
+    <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      <path d="M12 8c-.6 0-1.1.5-1.1 1.1 0 1.3 1.1 2 1.1 2s1.1-.7 1.1-2c0-.6-.5-1.1-1.1-1.1z" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 /** ログアウト：ドアから出る矢印 */
 export function LogoutIcon() {
   return (

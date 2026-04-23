@@ -40,7 +40,8 @@ export async function GET(req: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   // 集計データ
-  const { data: stats } = await sb.rpc('get_feedback_stats').maybeSingle().catch(() => ({ data: null }));
+  // stats は将来拡張用（RPC未定義のため省略）
+  const stats = null;
 
   // カテゴリ別件数
   const { data: catCounts } = await sb

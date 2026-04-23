@@ -10,6 +10,7 @@ import {
   CoachIcon,
   CommunityIcon,
   DashboardIcon,
+  FeedbackIcon,
   GeneProfileIcon,
   GoalSheetIcon,
   LogoutIcon,
@@ -25,6 +26,7 @@ const navItems = [
   { href: '/mypage/goal-sheet', label: '目標シート', Icon: GoalSheetIcon, footerLabel: '目標' },
   { href: '/mypage/genetic', label: 'RT GENE PROFILE', Icon: GeneProfileIcon, hideInFooter: true },
   { href: COMMUNITY_URL || '#', label: 'RTコミュニティ', Icon: CommunityIcon, external: true, disabled: !COMMUNITY_URL, footerLabel: 'コミュニティ' },
+  { href: '/mypage/feedback', label: 'フィードバック', Icon: FeedbackIcon, footerLabel: 'フィードバック' },
   { href: '/mypage/settings', label: 'アカウント情報', Icon: AccountIcon },
 ];
 

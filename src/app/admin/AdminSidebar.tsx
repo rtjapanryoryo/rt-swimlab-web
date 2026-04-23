@@ -11,6 +11,7 @@ function OverviewIcon()  { return <svg className={ic} viewBox="0 0 24 24" fill="
 function RevenueIcon()   { return <svg className={ic} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 6v2m0 8v2m-3-7h6m-6 3h4"/><path d="M9 9h1.5a1.5 1.5 0 0 1 0 3H9m0 0h4a1.5 1.5 0 0 1 0 3H9"/></svg>; }
 function CustomersIcon() { return <svg className={ic} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="7" r="3"/><path d="M3 20v-1a6 6 0 0 1 12 0v1"/><circle cx="18" cy="8" r="2.5"/><path d="M21 20v-.5a4 4 0 0 0-5-3.87"/></svg>; }
 function AnalyticsIcon() { return <svg className={ic} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>; }
+function FeedbackIcon()  { return <svg className={ic} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>; }
 function SettingsIcon()  { return <svg className={ic} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v3m0 16v3M4.22 4.22l2.12 2.12m11.32 11.32 2.12 2.12M1 12h3m16 0h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>; }
 function LogoutIcon()    { return <svg className={ic} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>; }
 
@@ -28,7 +29,8 @@ const NAV = [
   {
     section: '分析',
     items: [
-      { href: '/admin/analytics', label: '利用分析',   icon: AnalyticsIcon              },
+      { href: '/admin/analytics', label: '利用分析',         icon: AnalyticsIcon },
+      { href: '/admin/feedback',  label: 'フィードバック管理', icon: FeedbackIcon  },
     ],
   },
   {
