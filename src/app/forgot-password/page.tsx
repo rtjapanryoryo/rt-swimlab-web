@@ -25,7 +25,9 @@ function ForgotPasswordForm() {
 
     try {
       const supabase = createClient();
-      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      // 本番URLを環境変数から優先使用（localhost からメール送信すると localhost に飛ぶ問題を防ぐ）
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL
+        ?? (typeof window !== 'undefined' ? window.location.origin : '');
       const redirectTo = `${baseUrl}/auth/callback?next=/update-password`;
       const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim(), {
         redirectTo,

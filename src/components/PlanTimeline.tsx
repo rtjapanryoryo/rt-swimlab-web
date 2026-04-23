@@ -82,6 +82,7 @@ export function PlanTimeline({ cycles, sessions, meetDate, meetName, secondaryMe
             const meta     = PERIOD_META[cycle.period as PeriodKey];
             const isActive = cycle.start_date <= todayStr && cycle.end_date >= todayStr;
             const isPast   = cycle.end_date < todayStr;
+            const isFuture = cycle.start_date > todayStr;
             const cycleSessions = sessions.filter(
               s => s.scheduled_date >= cycle.start_date && s.scheduled_date <= cycle.end_date,
             );
@@ -90,6 +91,25 @@ export function PlanTimeline({ cycles, sessions, meetDate, meetName, secondaryMe
             const total    = cycleSessions.length;
             const pct      = total > 0 ? Math.round((done / total) * 100) : 0;
             const totalDist = doneSessions.reduce((sum, s) => sum + (s.actual_distance_m ?? 0), 0);
+
+            // 未来の空期は折りたたんでコンパクト表示
+            if (isFuture && total === 0) {
+              return (
+                <div
+                  key={cycle.id}
+                  className="rounded-xl border border-slate-200 overflow-hidden"
+                >
+                  <div className={`px-4 py-2 flex items-center gap-2 ${meta.color} opacity-60`}>
+                    <div className={`text-xs font-bold px-2 py-0.5 rounded-lg bg-white/60 ${meta.textColor}`}>
+                      期{cycle.period} {meta.label}
+                    </div>
+                    <div className="ml-auto text-xs text-slate-400">
+                      {fmtDate(cycle.start_date)} 〜 {fmtDate(cycle.end_date)}
+                    </div>
+                  </div>
+                </div>
+              );
+            }
 
             return (
               <div
