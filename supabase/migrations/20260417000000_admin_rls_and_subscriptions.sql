@@ -2,6 +2,7 @@
 -- 1. admin RLS: generation_logs・menus を全件読める
 -- ============================================================
 
+DROP POLICY IF EXISTS "admin can read all generation_logs" ON generation_logs;
 CREATE POLICY "admin can read all generation_logs"
 ON generation_logs FOR SELECT
 USING (
@@ -12,6 +13,7 @@ USING (
   )
 );
 
+DROP POLICY IF EXISTS "admin can read all menus" ON menus;
 CREATE POLICY "admin can read all menus"
 ON menus FOR SELECT
 USING (
@@ -48,11 +50,13 @@ CREATE INDEX IF NOT EXISTS idx_subscriptions_plan    ON subscriptions(plan);
 ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
 
 -- 本人のみ自分のサブスクを読める
+DROP POLICY IF EXISTS "users can read own subscription" ON subscriptions;
 CREATE POLICY "users can read own subscription"
 ON subscriptions FOR SELECT
 USING (auth.uid() = user_id);
 
 -- admin は全件読める
+DROP POLICY IF EXISTS "admin can read all subscriptions" ON subscriptions;
 CREATE POLICY "admin can read all subscriptions"
 ON subscriptions FOR SELECT
 USING (
@@ -64,6 +68,7 @@ USING (
 );
 
 -- admin は全件書ける（手動プラン変更用）
+DROP POLICY IF EXISTS "admin can manage subscriptions" ON subscriptions;
 CREATE POLICY "admin can manage subscriptions"
 ON subscriptions FOR ALL
 USING (
@@ -83,6 +88,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS subscriptions_updated_at ON subscriptions;
 CREATE TRIGGER subscriptions_updated_at
   BEFORE UPDATE ON subscriptions
   FOR EACH ROW EXECUTE FUNCTION update_subscriptions_updated_at();

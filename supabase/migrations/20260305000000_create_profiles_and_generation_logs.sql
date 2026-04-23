@@ -46,21 +46,26 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.generation_logs ENABLE ROW LEVEL SECURITY;
 
 -- profiles: 自分の行のみ閲覧・更新
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
 CREATE POLICY "Users can view own profile" ON public.profiles
   FOR SELECT USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 CREATE POLICY "Users can update own profile" ON public.profiles
   FOR UPDATE USING (auth.uid() = id);
 
 -- admin は全 profile を閲覧可能（API で service_role 使用する場合は RLS バイパス）
+DROP POLICY IF EXISTS "Admins can view all profiles" ON public.profiles;
 CREATE POLICY "Admins can view all profiles" ON public.profiles
   FOR SELECT USING (
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
   );
 
 -- generation_logs: 自分の行のみ閲覧・挿入
+DROP POLICY IF EXISTS "Users can view own generation logs" ON public.generation_logs;
 CREATE POLICY "Users can view own generation logs" ON public.generation_logs
   FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own generation logs" ON public.generation_logs;
 CREATE POLICY "Users can insert own generation logs" ON public.generation_logs
   FOR INSERT WITH CHECK (auth.uid() = user_id);
