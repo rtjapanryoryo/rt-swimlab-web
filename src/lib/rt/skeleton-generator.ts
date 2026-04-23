@@ -1115,7 +1115,7 @@ export function buildSkeletonTemplateStrings(skeleton: MenuSkeleton): {
     mainTemplate,
     downStr,
     totalStr: `合計距離：${skeleton.targetDist.toLocaleString()}m`,
-    diveStr: skeleton.hasDive ? `Dive 8×15m（A1）` : '',
+    diveStr: skeleton.hasDive ? `Dive 8×15m（MAX）` : '',
     restStr: skeleton.hasRest ? 'Rest / Free time（5~10min）' : '',
   };
 }

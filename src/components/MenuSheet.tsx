@@ -154,9 +154,9 @@ function parsePartToRow(
     intensity = circleMatch[0].replace(/[()（）]/g, '');
   } else {
     // EN1/EN2/EN3/AN1 等のテキスト表記を丸数字にマップ（RT Japan公式: ①=A1/A2 ②=EN1 ③=EN2 ④=EN3 ⑤=AN1 ⑥=AN2 ⑦=MAX）
-    const intensityCodes = ['AN1', 'AN2', 'AN3', 'AN', 'EN1', 'EN2', 'EN3', 'EN4', 'A1', 'A2'];
+    const intensityCodes = ['AN1', 'AN2', 'AN3', 'AN', 'EN1', 'EN2', 'EN3', 'EN4', 'A1', 'A2', 'MAX'];
     const intensityToLegendMap: Record<string, string> = {
-      A1: '①', A2: '①', EN1: '②', EN2: '③', EN3: '④', EN4: '④', AN1: '⑤', AN2: '⑥', AN3: '⑦', AN: '⑦',
+      A1: '①', A2: '①', EN1: '②', EN2: '③', EN3: '④', EN4: '④', AN1: '⑤', AN2: '⑥', AN3: '⑦', AN: '⑦', MAX: '⑦',
     };
     for (const code of intensityCodes) {
       const m = text.match(new RegExp(`[(\（]${code}[)\）]`, 'i'));
@@ -218,6 +218,36 @@ function parsePartToRow(
   };
 }
 
+/** 括弧の外側のトップレベルのみ → ＋ + で分割する */
+function splitTopLevel(text: string): string[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let current = '';
+  let i = 0;
+  while (i < text.length) {
+    const c = text[i];
+    if (c === '（' || c === '(' || c === '【' || c === '「') {
+      depth++;
+      current += c;
+    } else if (c === '）' || c === ')' || c === '】' || c === '」') {
+      if (depth > 0) depth--;
+      current += c;
+    } else if (depth === 0 && /[→＋+]/.test(c)) {
+      const trimmed = current.trim();
+      if (trimmed) parts.push(trimmed);
+      current = '';
+      // skip surrounding whitespace
+      while (i + 1 < text.length && /\s/.test(text[i + 1])) i++;
+    } else {
+      current += c;
+    }
+    i++;
+  }
+  const trimmed = current.trim();
+  if (trimmed) parts.push(trimmed);
+  return parts.length > 0 ? parts : [text];
+}
+
 /**
  * 複数構成（→ や +）のときは各部分を別行に分割し、距離・本数・セットを正確に表示。
  * 単一構成のときは1行のまま。
@@ -239,12 +269,12 @@ export function parseToSheetRow(section: string, raw: string, stroke?: string, t
     }];
   }
 
-  const parts = text.split(/\s*[→＋+]\s*/).map((p) => p.trim()).filter(Boolean);
+  const parts = splitTopLevel(text);
   const isComposite = parts.length > 1;
 
   if (isComposite) {
-    return parts.map((part, i) =>
-      parsePartToRow(section, part, i === 0 ? section : '〃', stroke, templateOnly)
+    return parts.map((part) =>
+      parsePartToRow(section, part, section, stroke, templateOnly)
     );
   }
 
