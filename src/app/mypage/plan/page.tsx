@@ -97,15 +97,17 @@ export default function PlanListPage() {
                 <div className="mt-3 flex flex-wrap gap-2">
                   {meta && (
                     <span className={`text-xs px-2.5 py-1 rounded-lg font-semibold ${meta.color} ${meta.textColor}`}>
-                      現在：期{currentPeriod} {meta.short}
+                      {meta.label} — {meta.description}
                     </span>
                   )}
                   <span className="text-xs px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-semibold">
-                    {plan.goal_event} {plan.goal_distance_type}
+                    {plan.goal_event} / {plan.goal_distance_type === 'S' ? '短距離' : plan.goal_distance_type === 'M' ? '中距離' : '長距離'}
                   </span>
-                  <span className="text-xs px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-semibold">
-                    {doneSessions.length}回完了 / {totalDist.toLocaleString()}m
-                  </span>
+                  {doneSessions.length > 0 && (
+                    <span className="text-xs px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-semibold">
+                      {doneSessions.length}回完了 · {(totalDist / 1000).toFixed(1)}km
+                    </span>
+                  )}
                 </div>
               </Link>
             );

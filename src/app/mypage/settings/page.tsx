@@ -134,20 +134,20 @@ export default function SettingsPage() {
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-colors"
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400 outline-none transition-colors"
                 placeholder="お名前"
               />
             </div>
             <button
               type="submit"
               disabled={saving}
-              className="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+              className="px-6 py-2.5 bg-cyan-600 text-white font-medium rounded-xl hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
             >
               {saving ? '保存中...' : '保存'}
             </button>
           </form>
           {message && (
-            <p className={`mt-4 text-sm ${message.includes('失敗') ? 'text-amber-600' : 'text-blue-600'}`}>
+            <p className={`mt-4 text-sm ${message.includes('失敗') ? 'text-amber-600' : 'text-cyan-600'}`}>
               {message}
             </p>
           )}
@@ -195,7 +195,7 @@ export default function SettingsPage() {
                 type="text"
                 value={goal}
                 onChange={(e) => setGoal(e.target.value)}
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-colors"
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400 outline-none transition-colors"
                 placeholder="例：100m自由形で1分を切る"
               />
             </div>
@@ -225,12 +225,12 @@ export default function SettingsPage() {
             <button
               type="submit"
               disabled={goalSaving}
-              className="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+              className="px-6 py-2.5 bg-cyan-600 text-white font-medium rounded-xl hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
             >
               {goalSaving ? '保存中...' : '目標を保存'}
             </button>
             {goalMessage && (
-              <p className={`text-sm ${goalMessage.includes('失敗') ? 'text-amber-600' : 'text-blue-600'}`}>
+              <p className={`text-sm ${goalMessage.includes('失敗') ? 'text-amber-600' : 'text-cyan-600'}`}>
                 {goalMessage}
               </p>
             )}
@@ -258,7 +258,7 @@ export default function SettingsPage() {
                   onChange={(e) => setNewPassword(e.target.value)}
                   minLength={6}
                   autoComplete="new-password"
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400 outline-none"
                   placeholder="6文字以上"
                 />
               </div>
@@ -273,20 +273,20 @@ export default function SettingsPage() {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   minLength={6}
                   autoComplete="new-password"
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400 outline-none"
                   placeholder="もう一度入力"
                 />
               </div>
               <button
                 type="submit"
                 disabled={passwordSaving}
-                className="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                className="px-6 py-2.5 bg-cyan-600 text-white font-medium rounded-xl hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
               >
                 {passwordSaving ? '変更中...' : 'パスワードを変更'}
               </button>
             </div>
             {passwordMessage && (
-              <p className={`text-sm ${passwordMessage.includes('失敗') || passwordMessage.includes('一致') ? 'text-amber-600' : 'text-blue-600'}`}>
+              <p className={`text-sm ${passwordMessage.includes('失敗') || passwordMessage.includes('一致') ? 'text-amber-600' : 'text-cyan-600'}`}>
                 {passwordMessage}
               </p>
             )}
@@ -333,7 +333,7 @@ export default function SettingsPage() {
           <div className="p-6">
             <Link
               href="/mypage"
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-cyan-600 hover:text-cyan-700 transition-colors"
             >
               ← マイページへ戻る
             </Link>
