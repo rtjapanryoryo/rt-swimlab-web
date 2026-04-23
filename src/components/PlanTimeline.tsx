@@ -1,13 +1,14 @@
 'use client';
 
 import { PERIOD_META } from '@/types/training';
-import type { TrainingCycle, TrainingSession, PeriodKey } from '@/types/training';
+import type { TrainingCycle, TrainingSession, PeriodKey, SecondaryMeet } from '@/types/training';
 
 interface Props {
-  cycles:   TrainingCycle[];
-  sessions: TrainingSession[];
-  meetDate: string;
-  meetName: string | null;
+  cycles:          TrainingCycle[];
+  sessions:        TrainingSession[];
+  meetDate:        string;
+  meetName:        string | null;
+  secondaryMeets?: SecondaryMeet[];
 }
 
 function daysUntil(dateStr: string): number {
@@ -22,17 +23,17 @@ function fmtDate(s: string) {
 
 const FATIGUE_EMOJI = ['', '😊', '🙂', '😐', '😓', '😵'];
 
-export function PlanTimeline({ cycles, sessions, meetDate, meetName }: Props) {
+export function PlanTimeline({ cycles, sessions, meetDate, meetName, secondaryMeets = [] }: Props) {
   const daysLeft = daysUntil(meetDate);
   const todayStr = new Date().toISOString().slice(0, 10);
 
   return (
     <div className="space-y-3">
-      {/* 試合日バナー */}
+      {/* 試合日バナー（Aマーク） */}
       <div className="rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 px-5 py-4 flex items-center gap-4">
         <div className="text-3xl">🏆</div>
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-bold text-amber-600 uppercase tracking-wider">目標試合</p>
+          <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">メインの試合（Aマーク）</p>
           <p className="text-base font-bold text-slate-900 truncate">{meetName ?? '目標試合'}</p>
           <p className="text-sm text-amber-700 font-semibold">
             {fmtDate(meetDate)} — あと <strong className="text-amber-900">{daysLeft}日</strong>
@@ -40,10 +41,37 @@ export function PlanTimeline({ cycles, sessions, meetDate, meetName }: Props) {
         </div>
         {daysLeft <= 7 && (
           <div className="shrink-0 px-3 py-1.5 bg-amber-500 text-white text-xs font-bold rounded-xl animate-pulse">
-            テーパー期
+            最終調整中
           </div>
         )}
       </div>
+
+      {/* 準備試合バナー（B/Cマーク） */}
+      {secondaryMeets.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {secondaryMeets
+            .sort((a, b) => a.date.localeCompare(b.date))
+            .map((m, i) => {
+              const d = daysUntil(m.date);
+              const isPast = d < 0;
+              return (
+                <div
+                  key={i}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold ${
+                    isPast
+                      ? 'bg-slate-50 border-slate-200 text-slate-400'
+                      : 'bg-violet-50 border-violet-200 text-violet-700'
+                  }`}
+                >
+                  <span>{isPast ? '済' : '準備'}</span>
+                  <span>{m.name}</span>
+                  <span className="opacity-70">{fmtDate(m.date)}</span>
+                  {!isPast && <span className="opacity-60">あと{d}日</span>}
+                </div>
+              );
+            })}
+        </div>
+      )}
 
       {/* 期サイクル一覧 */}
       <div className="space-y-2">

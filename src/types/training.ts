@@ -30,6 +30,11 @@ export const PERIOD_META: Record<PeriodKey, {
 
 // ── DB エンティティ ────────────────────────────────────────
 
+export interface SecondaryMeet {
+  date: string;   // ISO date
+  name: string;
+}
+
 export interface TrainingPlan {
   id: string;
   user_id: string;
@@ -37,8 +42,9 @@ export interface TrainingPlan {
   goal_event: string;
   goal_distance_type: 'S' | 'M' | 'D';
   goal_time_sec: number | null;
-  goal_meet_date: string;       // ISO date
+  goal_meet_date: string;       // ISO date（Aマーク・期配分の基準）
   goal_meet_name: string | null;
+  secondary_meets: SecondaryMeet[];  // B/Cマーク（タイムライン表示のみ）
   start_date: string;           // ISO date
   level: string;
   stroke_primary: string;

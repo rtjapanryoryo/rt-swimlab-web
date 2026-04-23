@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient, getEffectiveUser } from '@/lib/supabase/server';
 import { allocatePeriods } from '@/lib/training/period-allocator';
-import type { CreatePlanInput } from '@/types/training';
+import type { CreatePlanInput, SecondaryMeet } from '@/types/training';
 
 // GET /api/training/plans — アクティブプラン一覧
 export async function GET() {
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
   const sb = await createClient();
   if (!sb) return NextResponse.json({ error: 'DB error' }, { status: 500 });
 
-  const body = (await req.json()) as CreatePlanInput & { auto_allocate?: boolean };
+  const body = (await req.json()) as CreatePlanInput & { auto_allocate?: boolean; secondary_meets?: SecondaryMeet[] };
 
   // バリデーション
   if (!body.name?.trim())          return NextResponse.json({ error: 'name is required' }, { status: 400 });
@@ -53,6 +53,7 @@ export async function POST(req: Request) {
       goal_time_sec:      body.goal_time_sec       ?? null,
       goal_meet_date:     body.goal_meet_date,
       goal_meet_name:     body.goal_meet_name      ?? null,
+      secondary_meets:    body.secondary_meets     ?? [],
       start_date:         body.start_date,
       level:              body.level               ?? '中級（育成クラス〜県大会）',
       stroke_primary:     body.stroke_primary      ?? 'Fr',

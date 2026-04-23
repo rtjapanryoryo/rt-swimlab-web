@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PERIOD_META } from '@/types/training';
-import type { PeriodKey } from '@/types/training';
+import type { PeriodKey, SecondaryMeet } from '@/types/training';
 import { allocatePeriods } from '@/lib/training/period-allocator';
 
 const STROKES = ['Fr', 'Ba', 'Br', 'Fly', 'IM'];
@@ -16,9 +16,9 @@ const LEVELS  = [
   'トップ選手（日本代表クラス）',
 ];
 const DISTANCE_TYPES = [
-  { value: 'S', label: 'S — 短距離', hint: '50m / 100m 種目' },
-  { value: 'M', label: 'M — 中距離', hint: '200m / 400m 種目' },
-  { value: 'D', label: 'D — 長距離', hint: '800m以上・オープンウォーター' },
+  { value: 'S', label: 'S — 短距離', hint: '50m / 100m' },
+  { value: 'M', label: 'M — 中距離', hint: '200m / 400m' },
+  { value: 'D', label: 'D — 長距離', hint: '800m以上' },
 ];
 
 function toISODate(date: Date): string {
@@ -29,11 +29,19 @@ function fmtDate(s: string) {
   return new Date(s).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
+function fmtDateShort(s: string) {
+  return new Date(s).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
+}
+
+function daysUntil(s: string): number {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  return Math.ceil((new Date(s).getTime() - today.getTime()) / 86400000);
+}
+
 export default function NewPlanPage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState<string | null>(null);
-
   const today = toISODate(new Date());
 
   const [form, setForm] = useState({
@@ -50,6 +58,10 @@ export default function NewPlanPage() {
     coach_memo:         '',
   });
 
+  const [secondaryMeets, setSecondaryMeets] = useState<SecondaryMeet[]>([]);
+  const [newSecDate, setNewSecDate] = useState('');
+  const [newSecName, setNewSecName] = useState('');
+
   const set = (k: keyof typeof form) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
       setForm(p => ({ ...p, [k]: e.target.value }));
@@ -58,10 +70,22 @@ export default function NewPlanPage() {
     ? allocatePeriods(form.start_date, form.goal_meet_date)
     : [];
 
+  const addSecondaryMeet = () => {
+    if (!newSecDate) return;
+    setSecondaryMeets(p => [...p, { date: newSecDate, name: newSecName || '準備試合' }]
+      .sort((a, b) => a.date.localeCompare(b.date)));
+    setNewSecDate('');
+    setNewSecName('');
+  };
+
+  const removeSecondaryMeet = (i: number) => {
+    setSecondaryMeets(p => p.filter((_, idx) => idx !== i));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim())    return setError('計画名を入力してください');
-    if (!form.goal_meet_date) return setError('試合日を入力してください');
+    if (!form.goal_meet_date) return setError('メインの試合日を入力してください');
 
     const mm = parseInt(form.goal_time_mm);
     const ss = parseInt(form.goal_time_ss);
@@ -81,6 +105,7 @@ export default function NewPlanPage() {
           goal_time_sec,
           goal_meet_date:     form.goal_meet_date,
           goal_meet_name:     form.goal_meet_name || null,
+          secondary_meets:    secondaryMeets,
           start_date:         form.start_date,
           level:              form.level,
           stroke_primary:     form.stroke_primary,
@@ -98,11 +123,13 @@ export default function NewPlanPage() {
     }
   };
 
+  const daysLeft = form.goal_meet_date ? daysUntil(form.goal_meet_date) : null;
+
   return (
     <div className="max-w-2xl mx-auto space-y-5">
       <div>
         <h1 className="text-xl font-bold text-slate-900">新しいトレーニング計画</h1>
-        <p className="text-sm text-slate-500 mt-0.5">試合日を基準にAIがトレーニング期を自動で配分します</p>
+        <p className="text-sm text-slate-500 mt-0.5">メインの試合日を軸に、AIがトレーニング期を自動で組みます</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -112,13 +139,15 @@ export default function NewPlanPage() {
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">基本情報</p>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">計画名 <span className="text-red-400">*</span></label>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">
+              計画名 <span className="text-red-400">*</span>
+            </label>
             <input
               type="text"
               value={form.name}
               onChange={set('name')}
               required
-              placeholder="例：2026 インターハイ向けシーズン計画"
+              placeholder="例：2026 インターハイ シーズン"
               className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400"
             />
           </div>
@@ -134,19 +163,6 @@ export default function NewPlanPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">レベル</label>
-              <select
-                value={form.level}
-                onChange={set('level')}
-                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400"
-              >
-                {LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1">専門ストローク</label>
               <select
                 value={form.stroke_primary}
@@ -156,19 +172,33 @@ export default function NewPlanPage() {
                 {STROKES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
-            <div>
-              {/* spacer */}
-            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">レベル</label>
+            <select
+              value={form.level}
+              onChange={set('level')}
+              className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400"
+            >
+              {LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
+            </select>
+            <p className="text-xs text-slate-400 mt-1">AIの強度提案とメニュー内容に反映されます</p>
           </div>
         </div>
 
-        {/* 目標試合 */}
+        {/* メインの試合（Aマーク） */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">目標試合</p>
+          <div>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">メインの試合（Aマーク）</p>
+            <p className="text-xs text-slate-400 mt-0.5">この日程を基準にトレーニング期が決まります</p>
+          </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">試合日 <span className="text-red-400">*</span></label>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">
+                試合日 <span className="text-red-400">*</span>
+              </label>
               <input
                 type="date"
                 value={form.goal_meet_date}
@@ -190,7 +220,7 @@ export default function NewPlanPage() {
             </div>
           </div>
 
-          {/* 距離タイプ：ボタン選択 */}
+          {/* 距離タイプ */}
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-2">距離タイプ</label>
             <div className="grid grid-cols-3 gap-2">
@@ -246,13 +276,89 @@ export default function NewPlanPage() {
               </div>
             </div>
           </div>
+
+          {/* 日数カウンター */}
+          {daysLeft !== null && daysLeft > 0 && (
+            <div className={`px-4 py-3 rounded-xl flex items-center gap-3 ${
+              daysLeft <= 21 ? 'bg-amber-50 border border-amber-200' : 'bg-cyan-50 border border-cyan-200'
+            }`}>
+              <div className={`text-2xl font-black ${daysLeft <= 21 ? 'text-amber-600' : 'text-cyan-700'}`}>
+                {daysLeft}日
+              </div>
+              <div>
+                <p className={`text-xs font-semibold ${daysLeft <= 21 ? 'text-amber-700' : 'text-cyan-700'}`}>
+                  試合まで
+                </p>
+                <p className="text-[10px] text-slate-400">{fmtDate(form.goal_meet_date)}</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 準備試合（B/Cマーク） */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
+          <div>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">準備試合・通過点（任意）</p>
+            <p className="text-xs text-slate-400 mt-0.5">
+              予選・練習試合など。タイムラインに表示されます。期の配分はメインの試合日が基準です。
+            </p>
+          </div>
+
+          {/* 登録済み */}
+          {secondaryMeets.length > 0 && (
+            <div className="space-y-2">
+              {secondaryMeets.map((m, i) => (
+                <div key={i} className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-xl border border-slate-200">
+                  <span className="text-xs font-semibold text-slate-600">{fmtDateShort(m.date)}</span>
+                  <span className="text-xs text-slate-500 flex-1">{m.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeSecondaryMeet(i)}
+                    className="text-slate-400 hover:text-red-400 text-xs transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* 追加フォーム */}
+          {secondaryMeets.length < 4 && (
+            <div className="flex gap-2">
+              <input
+                type="date"
+                value={newSecDate}
+                onChange={e => setNewSecDate(e.target.value)}
+                min={form.start_date}
+                className="flex-shrink-0 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400"
+              />
+              <input
+                type="text"
+                value={newSecName}
+                onChange={e => setNewSecName(e.target.value)}
+                placeholder="試合名（例：県大会）"
+                className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400"
+              />
+              <button
+                type="button"
+                onClick={addSecondaryMeet}
+                disabled={!newSecDate}
+                className="px-4 py-2 bg-slate-100 text-slate-700 text-sm font-semibold rounded-xl hover:bg-slate-200 disabled:opacity-40 transition-colors shrink-0"
+              >
+                追加
+              </button>
+            </div>
+          )}
         </div>
 
         {/* コーチメモ */}
         <div className="bg-amber-50 rounded-2xl border border-amber-200 p-5 space-y-3">
           <div>
             <p className="text-sm font-bold text-amber-800">コーチメモ / 練習の方針（任意）</p>
-            <p className="text-xs text-amber-600 mt-0.5">ここに入力した内容はAIのすべての提案・メニュー生成に最優先で反映されます</p>
+            <p className="text-xs text-amber-600 mt-0.5">
+              AIへの最優先指示として反映されます。コーチの考え方や禁止事項を自由に書いてください。
+            </p>
           </div>
           <textarea
             value={form.coach_memo}
@@ -266,23 +372,25 @@ export default function NewPlanPage() {
         {/* 期自動配分プレビュー */}
         {preview.length > 0 && (
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-3">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-              トレーニング期の自動配分プレビュー
-            </p>
-            <p className="text-xs text-slate-500">試合日から逆算して以下の期に自動配分されます。作成後に調整できます。</p>
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                AIが組むトレーニング期（自動配分）
+              </p>
+              <p className="text-xs text-slate-400 mt-0.5">
+                試合日から逆算して自動で期を配分します。作成後にコーチが調整できます。
+              </p>
+            </div>
             <div className="space-y-1.5">
               {preview.map(a => {
                 const meta = PERIOD_META[a.period as PeriodKey];
                 return (
                   <div key={a.period} className={`flex items-center gap-3 px-3 py-2 rounded-xl ${meta.color}`}>
                     <span className={`text-xs font-bold px-2 py-0.5 bg-white/60 rounded-lg ${meta.textColor} shrink-0`}>
-                      期{a.period} {meta.label}
+                      {meta.label}
                     </span>
-                    <span className="text-xs text-slate-600 min-w-0 truncate">
-                      {fmtDate(a.start_date)} 〜 {fmtDate(a.end_date)}（{a.weeks}週間）
-                    </span>
-                    <span className="ml-auto text-xs text-slate-400 shrink-0">
-                      週{(a.target_weekly_volume_m / 1000).toFixed(0)}km
+                    <span className="text-[10px] text-slate-500 shrink-0">{meta.description}</span>
+                    <span className="ml-auto text-[10px] text-slate-400 shrink-0">
+                      {fmtDateShort(a.start_date)}〜{fmtDateShort(a.end_date)} · 週{(a.target_weekly_volume_m / 1000).toFixed(0)}km
                     </span>
                   </div>
                 );

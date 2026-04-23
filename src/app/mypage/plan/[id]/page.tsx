@@ -212,6 +212,7 @@ export default function PlanDetailPage({ params }: { params: Promise<{ id: strin
         sessions={plan.training_sessions}
         meetDate={plan.goal_meet_date}
         meetName={plan.goal_meet_name}
+        secondaryMeets={plan.secondary_meets ?? []}
       />
 
       {/* 練習記録フォーム */}
