@@ -41,9 +41,13 @@ export async function GET() {
     { count: totalUsers },
     { count: newUsersMonth },
     { count: newUsersPrevMonth },
+    { count: newUsersWeek },
+    { count: newUsersToday },
     { count: totalGens },
     { count: gensMonth },
     { count: gensPrevMonth },
+    { count: gensWeek },
+    { count: gensToday },
     { data: dauRows },
     { data: wauRows },
     { data: mauRows },
@@ -51,6 +55,7 @@ export async function GET() {
     { data: trendRows },
     { data: monthlyRows },
     { data: menuRows },
+    { data: userTrendRows },
     { count: activePlans },
     { count: sessionLogs },
     { count: feedbackTotal },
@@ -59,9 +64,13 @@ export async function GET() {
     pf(),
     pf().gte('created_at', monthStart),
     pf().gte('created_at', prevMonthStart).lt('created_at', monthStart),
+    pf().gte('created_at', weekAgo),
+    pf().gte('created_at', todayStart),
     glCount(),
     glCount().gte('created_at', monthStart),
     glCount().gte('created_at', prevMonthStart).lt('created_at', monthStart),
+    glCount().gte('created_at', weekAgo),
+    glCount().gte('created_at', todayStart),
     gl().gte('created_at', todayStart),
     gl().gte('created_at', weekAgo),
     gl().gte('created_at', thirtyDaysAgo),
@@ -69,6 +78,7 @@ export async function GET() {
     gl('created_at').gte('created_at', thirtyDaysAgo),
     gl('created_at').gte('created_at', twelveMonthsAgo),
     sb.from('menus').select('input'),
+    sb.from('profiles').select('created_at').neq('role', 'admin').gte('created_at', thirtyDaysAgo),
     sb.from('training_plans').select('id', { count: 'exact', head: true }),
     sb.from('training_sessions').select('id', { count: 'exact', head: true }).eq('status', 'done'),
     sb.from('feedbacks').select('id', { count: 'exact', head: true }),
@@ -167,6 +177,18 @@ export async function GET() {
     count,
   }));
 
+  // ── 新規登録者推移（30日・日別）──────────────────────────────────────────
+  const userRegMap = new Map<string, number>();
+  (userTrendRows as unknown as Array<{ created_at: string }> ?? []).forEach(r => {
+    const d = r.created_at.substring(0, 10);
+    userRegMap.set(d, (userRegMap.get(d) ?? 0) + 1);
+  });
+  const userRegistrationTrend = Array.from({ length: 30 }, (_, i) => {
+    const d = new Date(now.getTime() - (29 - i) * 24 * 60 * 60 * 1000);
+    const key = d.toISOString().substring(0, 10);
+    return { date: key.substring(5), count: userRegMap.get(key) ?? 0 };
+  });
+
   // ── ユーザーテーブル ─────────────────────────────────────────────────────
   const { data: topUsersWithName } = await sb
     .from('profiles')
@@ -193,9 +215,13 @@ export async function GET() {
       totalUsers:        totalUsers      ?? 0,
       newUsersMonth:     newUsersMonth   ?? 0,
       newUsersMoMPct,
+      newUsersWeek:      newUsersWeek    ?? 0,
+      newUsersToday:     newUsersToday   ?? 0,
       totalGenerations:  totalGens       ?? 0,
       generationsMonth:  gensMonth       ?? 0,
       gensMoMPct,
+      gensWeek:          gensWeek        ?? 0,
+      gensToday:         gensToday       ?? 0,
       dau,
       wau,
       mau,
@@ -212,6 +238,7 @@ export async function GET() {
       monthlyTrend,
       hourlyDist,
       weekdayDist,
+      userRegistrationTrend,
       strokeDist:   Array.from(strokeMap.entries()).sort(([, a], [, b]) => b - a)
                       .map(([name, count]) => ({ name, count })),
       periodDist:   Array.from(periodMap.entries()).sort(([a], [b]) => a.localeCompare(b))

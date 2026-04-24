@@ -85,7 +85,7 @@ export default function FeedbackPage() {
   }
 
   return (
-    <div className="max-w-xl space-y-6">
+    <div className="max-w-2xl mx-auto space-y-6">
       {/* ヘッダー */}
       <div>
         <h1 className="text-xl font-bold text-slate-900">フィードバック</h1>

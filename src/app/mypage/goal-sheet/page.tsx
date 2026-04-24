@@ -129,7 +129,7 @@ export default function GoalSheetPage() {
         .print-header { display: none; }
       `}</style>
 
-      <div className="space-y-5 max-w-2xl mx-auto">
+      <div className="space-y-5 max-w-3xl mx-auto">
         {/* 印刷時ヘッダー */}
         <div className="print-header mb-6">
           <img src="/RT-japan_Logo.svg" alt="RT-japan" className="h-10 w-auto mb-3" />

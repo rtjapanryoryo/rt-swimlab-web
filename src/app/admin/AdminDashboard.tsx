@@ -2,14 +2,22 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import {
+  BarChart, Bar, LineChart, Line,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+} from 'recharts';
 
 interface KPI {
   totalUsers:       number;
   newUsersMonth:    number;
   newUsersMoMPct:   number | null;
+  newUsersWeek:     number;
+  newUsersToday:    number;
   totalGenerations: number;
   generationsMonth: number;
   gensMoMPct:       number | null;
+  gensWeek:         number;
+  gensToday:        number;
   dau:              number;
   wau:              number;
   mau:              number;
@@ -34,10 +42,15 @@ interface UserRow {
 interface StatsData {
   kpi: KPI;
   users: UserRow[];
+  charts: {
+    userRegistrationTrend: { date: string; count: number }[];
+  };
 }
 
 const fmt = (s: string | null, opts: Intl.DateTimeFormatOptions) =>
   s ? new Date(s).toLocaleDateString('ja-JP', opts) : '—';
+
+const tt = { fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' };
 
 function MoMBadge({ pct }: { pct: number | null }) {
   if (pct === null) return null;
@@ -79,19 +92,17 @@ function KPICard({
 }
 
 const ic = 'w-5 h-5';
-const UsersIcon    = () => <svg className={ic} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="7" r="3"/><path d="M3 20v-1a6 6 0 0 1 12 0v1"/><circle cx="18" cy="8" r="2.5"/><path d="M21 20v-.5a4 4 0 0 0-5-3.87"/></svg>;
-const GenIcon      = () => <svg className={ic} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>;
-const ActiveIcon   = () => <svg className={ic} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>;
-const RetainIcon   = () => <svg className={ic} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
-const PlanIcon     = () => <svg className={ic} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
-const SessionIcon  = () => <svg className={ic} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>;
-const SplitIcon    = () => <svg className={ic} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="8" rx="1.5"/><rect x="14" y="3" width="7" height="4" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="10" width="7" height="11" rx="1.5"/></svg>;
-const EngageIcon   = () => <svg className={ic} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>;
+const UsersIcon   = () => <svg className={ic} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="7" r="3"/><path d="M3 20v-1a6 6 0 0 1 12 0v1"/><circle cx="18" cy="8" r="2.5"/><path d="M21 20v-.5a4 4 0 0 0-5-3.87"/></svg>;
+const GenIcon     = () => <svg className={ic} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>;
+const ActiveIcon  = () => <svg className={ic} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>;
+const RetainIcon  = () => <svg className={ic} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
+const EngageIcon  = () => <svg className={ic} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>;
+const CalIcon     = () => <svg className={ic} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
 
 export default function AdminDashboard() {
-  const [data, setData]     = useState<StatsData | null>(null);
+  const [data, setData]       = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError]   = useState<string | null>(null);
+  const [error, setError]     = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/admin/stats', { credentials: 'include' })
@@ -129,11 +140,10 @@ export default function AdminDashboard() {
     );
   }
 
-  const { kpi, users } = data;
-  const totalMenus = kpi.quickCount + kpi.customCount;
+  const { kpi, users, charts } = data;
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-8">
 
       {/* ヘッダー */}
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -146,13 +156,12 @@ export default function AdminDashboard() {
         </Link>
       </div>
 
-
       {/* ── ユーザー指標 ───────────────────────────────────────────── */}
       <div>
         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">ユーザー</p>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <KPICard
-            label="総ユーザー"
+            label="総ユーザー数"
             value={kpi.totalUsers.toLocaleString()}
             accent="bg-sky-50 text-sky-500"
             icon={<UsersIcon />}
@@ -211,43 +220,130 @@ export default function AdminDashboard() {
             value={kpi.avgGensPerMau > 0 ? `${kpi.avgGensPerMau}回` : '—'}
             sub="今月 MAU 1人あたり"
             accent="bg-rose-50 text-rose-500"
-            icon={<SplitIcon />}
+            icon={<EngageIcon />}
           />
         </div>
       </div>
 
-      {/* ── 機能別利用状況 ────────────────────────────────────────── */}
+      {/* ── 登録者数推移 ──────────────────────────────────────────── */}
       <div>
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">機能別利用</p>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <KPICard
-            label="カスタム生成（累計）"
-            value={kpi.customCount.toLocaleString()}
-            sub={totalMenus > 0 ? `全体の ${Math.round((kpi.customCount / totalMenus) * 100)}%・Quick ${kpi.quickCount} 件` : undefined}
-            accent="bg-indigo-50 text-indigo-500"
-            icon={<SplitIcon />}
-          />
-          <KPICard
-            label="計画登録（現在）"
-            value={kpi.activePlans.toLocaleString()}
-            sub={kpi.totalUsers > 0 ? `登録率 ${Math.round((kpi.activePlans / kpi.totalUsers) * 100)}%` : '登録プラン総数'}
-            accent="bg-cyan-50 text-cyan-500"
-            icon={<PlanIcon />}
-          />
-          <KPICard
-            label="練習ログ（累計）"
-            value={kpi.sessionLogs.toLocaleString()}
-            sub="完了済みセッション数"
-            accent="bg-emerald-50 text-emerald-500"
-            icon={<SessionIcon />}
-          />
-          <KPICard
-            label="ログ / 計画（比率）"
-            value={kpi.activePlans > 0 ? `${Math.round(kpi.sessionLogs / kpi.activePlans * 10) / 10}回` : '—'}
-            sub="計画1件あたり平均ログ数"
-            accent="bg-teal-50 text-teal-500"
-            icon={<SessionIcon />}
-          />
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">登録者数推移</p>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+          {/* 日/週/月ごとの新規登録数 */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
+            <p className="text-sm font-semibold text-slate-700">新規登録（期間別）</p>
+            <div className="space-y-3">
+              {[
+                { label: '今日',  value: kpi.newUsersToday, accent: 'text-sky-600',    bg: 'bg-sky-50'    },
+                { label: '今週',  value: kpi.newUsersWeek,  accent: 'text-violet-600', bg: 'bg-violet-50' },
+                { label: '今月',  value: kpi.newUsersMonth, accent: 'text-emerald-600', bg: 'bg-emerald-50', badge: kpi.newUsersMoMPct },
+              ].map(({ label, value, accent, bg, badge }) => (
+                <div key={label} className={`flex items-center justify-between px-4 py-3 rounded-xl ${bg}`}>
+                  <div className="flex items-center gap-2">
+                    <CalIcon />
+                    <span className="text-xs font-semibold text-slate-600">{label}</span>
+                  </div>
+                  <div className="flex items-baseline gap-1">
+                    <span className={`text-xl font-bold tabular-nums ${accent}`}>{value}</span>
+                    <span className="text-xs text-slate-500">人</span>
+                    {badge !== undefined && <MoMBadge pct={badge} />}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 30日間の登録者グラフ */}
+          <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+            <p className="text-sm font-semibold text-slate-700 mb-4">過去30日の日別新規登録</p>
+            {charts.userRegistrationTrend?.some(d => d.count > 0) ? (
+              <ResponsiveContainer width="100%" height={140}>
+                <BarChart data={charts.userRegistrationTrend} margin={{ top: 2, right: 4, bottom: 0, left: -20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis dataKey="date" tick={{ fontSize: 9, fill: '#94a3b8' }} tickLine={false} interval={6} />
+                  <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} allowDecimals={false} />
+                  <Tooltip contentStyle={tt} formatter={(v) => [v, '人']} />
+                  <Bar dataKey="count" fill="#10b981" radius={[4, 4, 0, 0]} name="新規登録" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-36 text-xs text-slate-300">
+                この期間の登録者データなし
+              </div>
+            )}
+          </div>
+
+        </div>
+      </div>
+
+      {/* ── 週報 / 月報 ───────────────────────────────────────────── */}
+      <div>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">週報 / 月報</p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+          {/* 週報 */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-sky-400" />
+              <p className="text-sm font-semibold text-slate-700">今週のサマリー（過去7日間）</p>
+            </div>
+            <div className="divide-y divide-slate-50">
+              {[
+                { label: '新規登録',   value: `${kpi.newUsersWeek} 人` },
+                { label: 'メニュー生成', value: `${kpi.gensWeek} 回` },
+                { label: '本日のアクティブ', value: `${kpi.dau} 人（DAU）` },
+                { label: '週間アクティブ', value: `${kpi.wau} 人（WAU）` },
+              ].map(({ label, value }) => (
+                <div key={label} className="flex items-center justify-between py-2.5">
+                  <span className="text-sm text-slate-500">{label}</span>
+                  <span className="text-sm font-semibold text-slate-800 tabular-nums">{value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 月報 */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-violet-400" />
+              <p className="text-sm font-semibold text-slate-700">今月のサマリー</p>
+            </div>
+            <div className="divide-y divide-slate-50">
+              {[
+                { label: '新規登録',   value: `${kpi.newUsersMonth} 人`, sub: kpi.newUsersMoMPct !== null ? `先月比 ${kpi.newUsersMoMPct >= 0 ? '+' : ''}${kpi.newUsersMoMPct}%` : undefined },
+                { label: 'メニュー生成', value: `${kpi.generationsMonth} 回`, sub: kpi.gensMoMPct !== null ? `先月比 ${kpi.gensMoMPct >= 0 ? '+' : ''}${kpi.gensMoMPct}%` : undefined },
+                { label: 'MAU',       value: `${kpi.mau} 人` },
+                { label: '平均生成/MAU', value: `${kpi.avgGensPerMau > 0 ? kpi.avgGensPerMau : '—'} 回` },
+              ].map(({ label, value, sub }) => (
+                <div key={label} className="flex items-center justify-between py-2.5">
+                  <div>
+                    <span className="text-sm text-slate-500">{label}</span>
+                    {sub && <p className="text-[10px] text-slate-400">{sub}</p>}
+                  </div>
+                  <span className="text-sm font-semibold text-slate-800 tabular-nums">{value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {/* ── 生成数推移（30日）───────────────────────────────────── */}
+      <div>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">本日 / 今週の生成数</p>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+            <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">本日の生成数</p>
+            <p className="text-3xl font-bold text-amber-500 tabular-nums mt-1">{kpi.gensToday.toLocaleString()}</p>
+            <p className="text-xs text-slate-400 mt-1">回</p>
+          </div>
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+            <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">今週の生成数</p>
+            <p className="text-3xl font-bold text-sky-500 tabular-nums mt-1">{kpi.gensWeek.toLocaleString()}</p>
+            <p className="text-xs text-slate-400 mt-1">回</p>
+          </div>
         </div>
       </div>
 
@@ -281,9 +377,14 @@ export default function AdminDashboard() {
                           {(u.display_name ?? '?').charAt(0)}
                         </span>
                       </div>
-                      <span className="text-sm font-medium text-slate-900">
-                        {u.display_name ?? '（未設定）'}
-                      </span>
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">{u.display_name ?? '（未設定）'}</p>
+                        {u.role !== 'user' && (
+                          <span className={`text-[10px] font-bold ${u.role === 'coach' ? 'text-cyan-600' : 'text-amber-600'}`}>
+                            {u.role.toUpperCase()}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-sm font-semibold text-slate-800 tabular-nums">
@@ -291,7 +392,9 @@ export default function AdminDashboard() {
                   </td>
                   <td className="px-4 py-3">
                     <span className={`px-2.5 py-0.5 text-xs rounded-full font-semibold ${
-                      u.role === 'admin' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'
+                      u.role === 'admin' ? 'bg-amber-100 text-amber-700' :
+                      u.role === 'coach' ? 'bg-cyan-100 text-cyan-700' :
+                      'bg-slate-100 text-slate-600'
                     }`}>
                       {u.role}
                     </span>
