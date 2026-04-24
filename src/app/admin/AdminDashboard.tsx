@@ -134,7 +134,7 @@ export default function AdminDashboard() {
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center space-y-2">
           <p className="text-red-500 text-sm">{error ?? 'データが取得できませんでした'}</p>
-          <Link href="/mypage" className="text-xs text-slate-400 hover:text-slate-600 transition-colors">← マイページへ戻る</Link>
+          <Link href="/login" className="text-xs text-slate-400 hover:text-slate-600 transition-colors">← ログインへ戻る</Link>
         </div>
       </div>
     );
@@ -151,9 +151,6 @@ export default function AdminDashboard() {
           <h1 className="text-xl font-bold text-slate-900">概要</h1>
           <p className="text-sm text-slate-500 mt-0.5">RT Swimlab — プラットフォーム速報</p>
         </div>
-        <Link href="/mypage" className="text-xs text-slate-400 hover:text-slate-700 transition-colors px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:border-slate-300">
-          ← マイページ
-        </Link>
       </div>
 
       {/* ── ユーザー指標 ───────────────────────────────────────────── */}
