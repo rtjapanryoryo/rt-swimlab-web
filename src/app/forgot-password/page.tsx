@@ -35,7 +35,7 @@ function ForgotPasswordForm() {
       );
       const baseUrl = process.env.NEXT_PUBLIC_SITE_URL
         ?? (typeof window !== 'undefined' ? window.location.origin : '');
-      const redirectTo = `${baseUrl}/auth/callback?next=/update-password`;
+      const redirectTo = `${baseUrl}/auth/reset`;
       const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim(), {
         redirectTo,
       });
