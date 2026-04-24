@@ -186,13 +186,14 @@ export default function AdminDashboard() {
         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">エンゲージメント</p>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <KPICard
-            label="累計メニュー生成"
+            label="累計生成数"
             value={kpi.totalGenerations.toLocaleString()}
+            sub="全期間"
             accent="bg-sky-50 text-sky-500"
             icon={<GenIcon />}
           />
           <KPICard
-            label="今月の生成"
+            label="今月の生成数"
             value={kpi.generationsMonth.toLocaleString()}
             momPct={kpi.gensMoMPct}
             accent="bg-amber-50 text-amber-500"
@@ -206,7 +207,7 @@ export default function AdminDashboard() {
             icon={<EngageIcon />}
           />
           <KPICard
-            label="平均生成 / MAU"
+            label="平均生成数 / MAU"
             value={kpi.avgGensPerMau > 0 ? `${kpi.avgGensPerMau}回` : '—'}
             sub="今月 MAU 1人あたり"
             accent="bg-rose-50 text-rose-500"
@@ -220,30 +221,30 @@ export default function AdminDashboard() {
         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">機能別利用</p>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <KPICard
-            label="カスタム生成数"
+            label="カスタム生成（累計）"
             value={kpi.customCount.toLocaleString()}
-            sub={totalMenus > 0 ? `全体の ${Math.round((kpi.customCount / totalMenus) * 100)}%（Quick ${kpi.quickCount} 件）` : undefined}
+            sub={totalMenus > 0 ? `全体の ${Math.round((kpi.customCount / totalMenus) * 100)}%・Quick ${kpi.quickCount} 件` : undefined}
             accent="bg-indigo-50 text-indigo-500"
             icon={<SplitIcon />}
           />
           <KPICard
-            label="計画登録数"
+            label="計画登録（現在）"
             value={kpi.activePlans.toLocaleString()}
-            sub={kpi.totalUsers > 0 ? `保有率 ${Math.round((kpi.activePlans / kpi.totalUsers) * 100)}%（全ユーザー比）` : '登録プラン総数'}
+            sub={kpi.totalUsers > 0 ? `登録率 ${Math.round((kpi.activePlans / kpi.totalUsers) * 100)}%` : '登録プラン総数'}
             accent="bg-cyan-50 text-cyan-500"
             icon={<PlanIcon />}
           />
           <KPICard
-            label="練習ログ記録数"
+            label="練習ログ（累計）"
             value={kpi.sessionLogs.toLocaleString()}
-            sub="完了済みセッション累計"
+            sub="完了済みセッション数"
             accent="bg-emerald-50 text-emerald-500"
             icon={<SessionIcon />}
           />
           <KPICard
-            label="ログ / 計画 比率"
+            label="ログ / 計画（比率）"
             value={kpi.activePlans > 0 ? `${Math.round(kpi.sessionLogs / kpi.activePlans * 10) / 10}回` : '—'}
-            sub="計画1件あたり平均練習ログ数"
+            sub="計画1件あたり平均ログ数"
             accent="bg-teal-50 text-teal-500"
             icon={<SessionIcon />}
           />

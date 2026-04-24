@@ -11,34 +11,39 @@ type Props = {
   onSave: (data: BeginnerContent) => Promise<void>;
 };
 
-function Section({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
+function Section({ num, title, subtitle, children }: {
+  num: string; title: string; subtitle?: string; children: React.ReactNode;
+}) {
   return (
-    <div className="rounded-2xl border border-emerald-100 overflow-hidden print-section">
-      <div className="bg-emerald-50 px-5 py-3.5 border-b border-emerald-100">
-        <h3 className="text-sm font-bold text-emerald-800">{title}</h3>
-        {subtitle && <p className="text-xs text-emerald-600 mt-0.5">{subtitle}</p>}
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden print-section">
+      <div className="px-5 pt-4 pb-3 flex items-start gap-3">
+        <div className="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center shrink-0 mt-0.5 shadow-sm shadow-emerald-200">
+          <span className="text-[11px] font-black text-white">{num}</span>
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-sm font-bold text-slate-800 leading-snug">{title}</h3>
+          {subtitle && <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">{subtitle}</p>}
+        </div>
       </div>
-      <div className="bg-white px-5 py-4 space-y-4">{children}</div>
+      <div className="border-t border-slate-50 px-5 py-4 space-y-4 bg-slate-50/40">{children}</div>
     </div>
   );
 }
 
-function Field({
-  label, value, onChange, placeholder, rows = 3, hint,
-}: {
+function Field({ label, value, onChange, placeholder, rows = 3, hint }: {
   label: string; value: string; onChange: (v: string) => void;
   placeholder?: string; rows?: number; hint?: string;
 }) {
   return (
     <div>
-      <label className="block text-sm font-semibold text-slate-700 mb-1.5">{label}</label>
-      {hint && <p className="text-xs text-slate-400 mb-1.5">{hint}</p>}
+      <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">{label}</label>
+      {hint && <p className="text-[11px] text-slate-400 mb-1.5 leading-relaxed">{hint}</p>}
       <textarea
         rows={rows}
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 transition resize-none"
+        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 transition-all resize-none shadow-sm"
       />
     </div>
   );
@@ -48,14 +53,14 @@ function InlineField({ label, value, onChange, placeholder }: {
   label: string; value: string; onChange: (v: string) => void; placeholder?: string;
 }) {
   return (
-    <div className="flex items-start gap-3">
-      <span className="text-sm font-semibold text-slate-600 mt-2.5 shrink-0 w-28">{label}</span>
+    <div className="space-y-1.5">
+      <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">{label}</label>
       <input
         type="text"
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="flex-1 rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-300 transition"
+        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 transition-all shadow-sm"
       />
     </div>
   );
@@ -79,18 +84,18 @@ export function BeginnerSheet({ initialData, aiAdvice, savedAt, onSave }: Props)
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* テーマ説明 */}
-      <div className="bg-emerald-50 border border-emerald-100 rounded-2xl px-5 py-4">
-        <p className="text-xs text-emerald-600 font-semibold uppercase tracking-wider mb-1">テーマ</p>
-        <p className="text-sm font-bold text-emerald-800">夢をカタチにしよう</p>
-        <p className="text-xs text-emerald-600 mt-1 leading-relaxed">
-          このシートはなんとなく頑張るだけでなく、目標に向かって少しずつ進むためのもの。大きな夢を決めて、小さな目標に分けて、毎日一歩ずつ進んでいく流れをまとめています。
+      <div className="bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl px-5 py-4 text-white">
+        <p className="text-[10px] font-bold uppercase tracking-widest opacity-75 mb-1">初級テーマ</p>
+        <p className="text-base font-bold">夢をカタチにしよう</p>
+        <p className="text-xs opacity-80 mt-1 leading-relaxed">
+          目標に向かって少しずつ進むためのシート。大きな夢を決めて、小さな目標に分けて、毎日一歩ずつ進んでいく流れをまとめます。
         </p>
       </div>
 
       {/* ① 夢・ビジョン */}
-      <Section title="① 夢・ビジョンを決めよう" subtitle="夢は大きくて大丈夫です">
+      <Section num="①" title="夢・ビジョンを決めよう" subtitle="夢は大きくて大丈夫です">
         <Field
           label="なぜその夢を持ったのですか？"
           value={form.why}
@@ -109,18 +114,18 @@ export function BeginnerSheet({ initialData, aiAdvice, savedAt, onSave }: Props)
           value={form.vision_how}
           onChange={v => set('vision_how', v)}
           placeholder="例：全国大会に出たい / JO決勝に残りたい / 日本一になりたい"
-          rows={3}
+          rows={2}
         />
       </Section>
 
       {/* ② 今の自分 */}
-      <Section title="② 今の自分を知ろう" subtitle="今の自分を知ることが、成長のスタートです">
+      <Section num="②" title="今の自分を知ろう" subtitle="今の自分を知ることが、成長のスタートです">
         <div className="grid grid-cols-2 gap-3">
           <InlineField label="専門種目" value={form.current_event} onChange={v => set('current_event', v)} placeholder="例：100m自由形" />
           <InlineField label="ベストタイム" value={form.current_best_time} onChange={v => set('current_best_time', v)} placeholder="例：1:05.23" />
         </div>
         <Field
-          label="① 自分の強み・得意なこと"
+          label="自分の強み・得意なこと"
           value={form.current_strengths}
           onChange={v => set('current_strengths', v)}
           placeholder="例：キックが強い / スタートが得意 / 最後まであきらめない / 練習を休まない"
@@ -128,7 +133,7 @@ export function BeginnerSheet({ initialData, aiAdvice, savedAt, onSave }: Props)
           hint="例文をヒントに、自分の言葉で書いてみましょう"
         />
         <Field
-          label="② 自分の弱み・苦手なこと"
+          label="自分の弱み・苦手なこと"
           value={form.current_weaknesses}
           onChange={v => set('current_weaknesses', v)}
           placeholder="例：後半バテる / 呼吸で頭が上がる / ターンが遅い"
@@ -145,7 +150,7 @@ export function BeginnerSheet({ initialData, aiAdvice, savedAt, onSave }: Props)
       </Section>
 
       {/* ③ 目標を段階に */}
-      <Section title="③ 目標を段階ごとにわけよう" subtitle="夢に近づくために、少しずつ分けて考えていきます">
+      <Section num="③" title="目標を段階ごとにわけよう" subtitle="夢に近づくために、少しずつ分けて考えていきます">
         <Field
           label="今週の目標"
           value={form.goal_this_week}
@@ -162,8 +167,8 @@ export function BeginnerSheet({ initialData, aiAdvice, savedAt, onSave }: Props)
         />
       </Section>
 
-      {/* ④ 小さなステップ・振り返り */}
-      <Section title="④ 小さなステップにわけよう" subtitle="着実に進めるため、振り返りの習慣をつくります">
+      {/* ④ 振り返り */}
+      <Section num="④" title="小さなステップにわけよう" subtitle="着実に進めるため、振り返りの習慣をつくります">
         <Field
           label="今日できたこと"
           value={form.reflection_did}
@@ -178,19 +183,18 @@ export function BeginnerSheet({ initialData, aiAdvice, savedAt, onSave }: Props)
           placeholder="例：呼吸のタイミングをもっと安定させる / スタートをもっと鋭く"
           rows={2}
         />
-        {/* 充実度スライダー */}
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-2">今日の練習の充実度</label>
-          <div className="flex items-center gap-3">
+          <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">今日の練習の充実度</label>
+          <div className="flex items-center gap-4">
             <input
               type="range"
               min={1}
               max={5}
               value={form.reflection_satisfaction}
               onChange={e => set('reflection_satisfaction', Number(e.target.value))}
-              className="flex-1 accent-emerald-500"
+              className="flex-1 accent-emerald-500 h-2"
             />
-            <span className="text-sm font-bold text-emerald-700 w-24 text-right">
+            <span className="text-sm font-bold text-emerald-700 shrink-0 w-20 text-right">
               {SATISFACTION_LABELS[form.reflection_satisfaction]}
             </span>
           </div>
@@ -198,25 +202,25 @@ export function BeginnerSheet({ initialData, aiAdvice, savedAt, onSave }: Props)
       </Section>
 
       {/* 保存ボタン */}
-      <div className="no-print flex items-center justify-between gap-3 pt-1">
+      <div className="no-print">
         {savedAt && (
-          <p className="text-xs text-slate-400">
+          <p className="text-[11px] text-slate-400 text-center mb-2">
             最終保存：{new Date(savedAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
           </p>
         )}
         <button
           onClick={handleSave}
           disabled={saving}
-          className="ml-auto px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-emerald-500/25 hover:from-emerald-400 hover:to-teal-400 disabled:opacity-60 transition-all"
+          className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-bold rounded-2xl shadow-lg shadow-emerald-200/60 hover:from-emerald-400 hover:to-teal-400 disabled:opacity-60 transition-all active:scale-[0.99]"
         >
-          {saving ? '保存中...' : '保存してAIアドバイスをもらう'}
+          {saving ? '保存中...' : '✓ 保存してAIアドバイスをもらう'}
         </button>
       </div>
 
       {/* AIフィードバック */}
       {aiAdvice && (
-        <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 p-5">
-          <div className="flex items-center gap-2 mb-2">
+        <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 p-5">
+          <div className="flex items-center gap-2 mb-2.5">
             <span className="text-base">🤖</span>
             <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">AI からの一言</span>
           </div>

@@ -20,12 +20,12 @@ export async function GET() {
   const adminFilter = adminIds.length > 0 ? `(${adminIds.join(',')})` : null;
 
   const now = new Date();
-  const monthStart      = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-  const prevMonthStart  = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
-  const weekAgo         = new Date(now.getTime() -  7 * 24 * 60 * 60 * 1000).toISOString();
-  const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString();
-  const todayStart      = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-  const thirtyDaysAgo   = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const monthStart        = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const prevMonthStart    = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
+  const weekAgo           = new Date(now.getTime() -  7 * 24 * 60 * 60 * 1000).toISOString();
+  const todayStart        = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+  const thirtyDaysAgo     = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const twelveMonthsAgo   = new Date(now.getFullYear(), now.getMonth() - 11, 1).toISOString();
 
   const pf  = () => sb.from('profiles').select('id', { count: 'exact', head: true }).neq('role', 'admin');
   const gl  = (col = 'user_id') => {
@@ -49,6 +49,7 @@ export async function GET() {
     { data: mauRows },
     { data: sourceRows },
     { data: trendRows },
+    { data: monthlyRows },
     { data: menuRows },
     { count: activePlans },
     { count: sessionLogs },
@@ -66,6 +67,7 @@ export async function GET() {
     gl().gte('created_at', thirtyDaysAgo),
     sb.from('menus').select('source'),
     gl('created_at').gte('created_at', thirtyDaysAgo),
+    gl('created_at').gte('created_at', twelveMonthsAgo),
     sb.from('menus').select('input'),
     sb.from('training_plans').select('id', { count: 'exact', head: true }),
     sb.from('training_sessions').select('id', { count: 'exact', head: true }).eq('status', 'done'),
@@ -125,8 +127,9 @@ export async function GET() {
   });
 
   // ── 日別トレンド（30日・欠損0埋め）────────────────────────────────────
+  const allRows = (trendRows as unknown as Array<{ created_at: string }> ?? []);
   const dailyMap = new Map<string, number>();
-  (trendRows as unknown as Array<{ created_at: string }> ?? []).forEach(r => {
+  allRows.forEach(r => {
     const d = r.created_at.substring(0, 10);
     dailyMap.set(d, (dailyMap.get(d) ?? 0) + 1);
   });
@@ -135,6 +138,34 @@ export async function GET() {
     const key = d.toISOString().substring(0, 10);
     return { date: key.substring(5), count: dailyMap.get(key) ?? 0 };
   });
+
+  // ── 曜日別・時間帯別（過去30日）────────────────────────────────────────
+  const WEEKDAY_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
+  const hourMap:    number[] = Array(24).fill(0);
+  const weekdayMap: number[] = Array(7).fill(0);
+  allRows.forEach(r => {
+    const d = new Date(r.created_at);
+    hourMap[d.getHours()]++;
+    weekdayMap[d.getDay()]++;
+  });
+  const hourlyDist  = hourMap.map((count, h) => ({ hour: `${h}時`, count }));
+  const weekdayDist = weekdayMap.map((count, i) => ({ day: WEEKDAY_LABELS[i], count }));
+
+  // ── 月間推移（過去12ヶ月）────────────────────────────────────────────
+  const monthlyMapData: Record<string, number> = {};
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    monthlyMapData[key] = 0;
+  }
+  (monthlyRows as unknown as Array<{ created_at: string }> ?? []).forEach(r => {
+    const key = r.created_at.substring(0, 7);
+    if (key in monthlyMapData) monthlyMapData[key]++;
+  });
+  const monthlyTrend = Object.entries(monthlyMapData).map(([month, count]) => ({
+    month: `${Number(month.substring(5))}月`,
+    count,
+  }));
 
   // ── ユーザーテーブル ─────────────────────────────────────────────────────
   const { data: topUsersWithName } = await sb
@@ -177,6 +208,9 @@ export async function GET() {
     },
     charts: {
       dailyTrend,
+      monthlyTrend,
+      hourlyDist,
+      weekdayDist,
       strokeDist:   Array.from(strokeMap.entries()).sort(([, a], [, b]) => b - a)
                       .map(([name, count]) => ({ name, count })),
       periodDist:   Array.from(periodMap.entries()).sort(([a], [b]) => a.localeCompare(b))

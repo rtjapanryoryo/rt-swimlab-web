@@ -9,44 +9,60 @@ import { AdvancedSheet } from '@/components/goal-sheet/AdvancedSheet';
 type LevelConfig = {
   key: GoalSheetLevel;
   label: string;
+  step: string;
   emoji: string;
-  theme: string;
   tagline: string;
   desc: string;
-  activeClass: string;
-  inactiveClass: string;
+  activeCard:   string;
+  activeStep:   string;
+  activeLabel:  string;
+  activeSub:    string;
+  activeBar:    string;
+  inactiveCard: string;
 };
 
 const LEVELS: LevelConfig[] = [
   {
     key: 'beginner',
     label: '初級',
+    step: '01',
     emoji: '🌱',
-    theme: 'emerald',
     tagline: '夢をカタチにしよう',
     desc: '考える習慣をつくる',
-    activeClass: 'bg-emerald-500 text-white shadow-emerald-200',
-    inactiveClass: 'text-slate-500 hover:text-emerald-600 hover:bg-emerald-50',
+    activeCard:   'border-emerald-400 bg-gradient-to-b from-emerald-50 to-white shadow-md shadow-emerald-100/60',
+    activeStep:   'text-emerald-400',
+    activeLabel:  'text-emerald-700',
+    activeSub:    'text-emerald-500',
+    activeBar:    'bg-emerald-400',
+    inactiveCard: 'border-slate-100 bg-white hover:border-emerald-200 hover:bg-emerald-50/30 shadow-sm',
   },
   {
     key: 'intermediate',
     label: '中級',
+    step: '02',
     emoji: '🔷',
-    theme: 'blue',
     tagline: '具体化と数値化',
     desc: '目標をわける',
-    activeClass: 'bg-blue-500 text-white shadow-blue-200',
-    inactiveClass: 'text-slate-500 hover:text-blue-600 hover:bg-blue-50',
+    activeCard:   'border-blue-400 bg-gradient-to-b from-blue-50 to-white shadow-md shadow-blue-100/60',
+    activeStep:   'text-blue-400',
+    activeLabel:  'text-blue-700',
+    activeSub:    'text-blue-500',
+    activeBar:    'bg-blue-400',
+    inactiveCard: 'border-slate-100 bg-white hover:border-blue-200 hover:bg-blue-50/30 shadow-sm',
   },
   {
     key: 'advanced',
     label: '上級',
+    step: '03',
     emoji: '🔥',
-    theme: 'amber',
     tagline: '再現性と戦略',
     desc: '戦略を練る',
-    activeClass: 'bg-amber-500 text-white shadow-amber-200',
-    inactiveClass: 'text-slate-500 hover:text-amber-600 hover:bg-amber-50',
+    activeCard:   'border-amber-400 bg-gradient-to-b from-amber-50 to-white shadow-md shadow-amber-100/60',
+    activeStep:   'text-amber-400',
+    activeLabel:  'text-amber-700',
+    activeSub:    'text-amber-500',
+    activeBar:    'bg-amber-400',
+    inactiveCard: 'border-slate-100 bg-white hover:border-amber-200 hover:bg-amber-50/30 shadow-sm',
   },
 ];
 
@@ -98,11 +114,10 @@ export default function GoalSheetPage() {
   };
 
   const activeConfig = LEVELS.find(l => l.key === activeLevel)!;
-  const activeSheet = sheets[activeLevel];
+  const activeSheet  = sheets[activeLevel];
 
   return (
     <>
-      {/* 印刷用スタイル */}
       <style>{`
         @media print {
           aside, footer, .no-print { display: none !important; }
@@ -114,13 +129,11 @@ export default function GoalSheetPage() {
         .print-header { display: none; }
       `}</style>
 
-      <div className="space-y-6">
-        {/* 印刷時のみ表示するヘッダー */}
+      <div className="space-y-5 max-w-2xl mx-auto">
+        {/* 印刷時ヘッダー */}
         <div className="print-header mb-6">
           <img src="/RT-japan_Logo.svg" alt="RT-japan" className="h-10 w-auto mb-3" />
-          <h1 className="text-xl font-bold text-slate-900">
-            目標達成ワークシート【{activeConfig.label}】
-          </h1>
+          <h1 className="text-xl font-bold text-slate-900">目標達成ワークシート【{activeConfig.label}】</h1>
           <p className="text-sm text-slate-500">テーマ：{activeConfig.tagline}</p>
           <p className="text-xs text-slate-400 mt-1">
             印刷日：{new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })}
@@ -129,42 +142,53 @@ export default function GoalSheetPage() {
         </div>
 
         {/* ページヘッダー */}
-        <div className="no-print flex items-start justify-between gap-4">
+        <div className="no-print flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl font-bold text-slate-900">目標シート</h1>
-            <p className="text-sm text-slate-500 mt-0.5">夢を言語化し、勝利への道筋をつくります</p>
+            <h1 className="text-lg sm:text-xl font-bold text-slate-900">目標シート</h1>
+            <p className="text-xs sm:text-sm text-slate-400 mt-0.5">夢を言語化し、勝利への道筋をつくります</p>
           </div>
           <button
             onClick={() => window.print()}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 shadow-sm transition-colors shrink-0"
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 shadow-sm transition-colors shrink-0"
           >
             <PrintIcon />
-            <span className="hidden sm:inline">印刷・PDF保存</span>
+            <span className="hidden sm:inline">PDF保存</span>
           </button>
         </div>
 
         {/* レベルタブ */}
-        <div className="no-print flex gap-2 p-1.5 bg-slate-100/80 rounded-2xl">
-          {LEVELS.map(level => (
-            <button
-              key={level.key}
-              onClick={() => setActiveLevel(level.key)}
-              className={`flex-1 flex flex-col items-center py-2.5 px-2 rounded-xl text-xs font-bold shadow-sm transition-all ${
-                activeLevel === level.key ? level.activeClass : level.inactiveClass
-              }`}
-            >
-              <span className="text-base mb-0.5">{level.emoji}</span>
-              <span>{level.label}</span>
-              <span className={`text-[10px] font-normal mt-0.5 ${activeLevel === level.key ? 'opacity-80' : 'text-slate-400'}`}>
-                {level.desc}
-              </span>
-            </button>
-          ))}
+        <div className="no-print grid grid-cols-3 gap-2 sm:gap-3">
+          {LEVELS.map(level => {
+            const isActive = activeLevel === level.key;
+            return (
+              <button
+                key={level.key}
+                onClick={() => setActiveLevel(level.key)}
+                className={`relative flex flex-col items-center gap-1 pt-3 pb-4 px-2 rounded-2xl border-2 transition-all duration-200 ${
+                  isActive ? level.activeCard : level.inactiveCard
+                }`}
+              >
+                <span className={`text-[10px] font-black tracking-widest ${isActive ? level.activeStep : 'text-slate-300'}`}>
+                  {level.step}
+                </span>
+                <span className="text-xl sm:text-2xl leading-none">{level.emoji}</span>
+                <span className={`text-xs sm:text-sm font-bold mt-0.5 ${isActive ? level.activeLabel : 'text-slate-600'}`}>
+                  {level.label}
+                </span>
+                <span className={`text-[9px] sm:text-[10px] font-medium leading-tight text-center ${isActive ? level.activeSub : 'text-slate-400'}`}>
+                  {level.desc}
+                </span>
+                {isActive && (
+                  <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-1 rounded-t-full ${level.activeBar}`} />
+                )}
+              </button>
+            );
+          })}
         </div>
 
-        {/* ローディング */}
+        {/* コンテンツ */}
         {loading ? (
-          <div className="flex items-center justify-center py-20">
+          <div className="flex items-center justify-center py-24">
             <div className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
@@ -196,7 +220,7 @@ export default function GoalSheetPage() {
           </>
         )}
 
-        {/* 印刷時フッター */}
+        {/* 印刷フッター */}
         <div className="print-header border-t border-slate-200 pt-4 mt-8 text-xs text-slate-400">
           <p>RT swim lab — 目標達成ワークシート | このシートはコーチとのカウンセリングにもご活用ください</p>
         </div>

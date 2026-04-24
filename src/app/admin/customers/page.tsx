@@ -52,8 +52,11 @@ export default function CustomersPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const regularCustomers = useMemo(() => customers.filter(c => c.role !== 'admin'), [customers]);
+  const adminAccounts    = useMemo(() => customers.filter(c => c.role === 'admin'), [customers]);
+
   const filtered = useMemo(() => {
-    let list = customers;
+    let list = regularCustomers;
     if (search) {
       const q = search.toLowerCase();
       list = list.filter(c => (c.display_name ?? '').toLowerCase().includes(q));
@@ -67,11 +70,11 @@ export default function CustomersPage() {
         : String(bv).localeCompare(String(av), undefined, { numeric: true });
     });
     return list;
-  }, [customers, search, planFilter, sortKey, sortAsc]);
+  }, [regularCustomers, search, planFilter, sortKey, sortAsc]);
 
-  const totalRevenue = customers.reduce((s, c) => s + c.total_spend, 0);
-  const avgFreq      = customers.length ? (customers.reduce((s, c) => s + c.freq_per_week, 0) / customers.length).toFixed(1) : '0';
-  const paidCount    = customers.filter(c => c.plan !== 'free').length;
+  const totalRevenue = regularCustomers.reduce((s, c) => s + c.total_spend, 0);
+  const avgFreq      = regularCustomers.length ? (regularCustomers.reduce((s, c) => s + c.freq_per_week, 0) / regularCustomers.length).toFixed(1) : '0';
+  const paidCount    = regularCustomers.filter(c => c.plan !== 'free').length;
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortAsc(p => !p);
@@ -128,7 +131,7 @@ export default function CustomersPage() {
       {/* サマリカード */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: '総顧客数',     value: customers.length,              accent: 'bg-sky-50 text-sky-600' },
+          { label: '総顧客数',     value: regularCustomers.length,       accent: 'bg-sky-50 text-sky-600' },
           { label: '累計収益',     value: `¥${totalRevenue.toLocaleString()}`, accent: 'bg-emerald-50 text-emerald-600' },
           { label: '有料会員',     value: paidCount,                      accent: 'bg-violet-50 text-violet-600' },
           { label: '平均週間頻度', value: `${avgFreq} 回/週`,             accent: 'bg-amber-50 text-amber-600' },
@@ -267,6 +270,24 @@ export default function CustomersPage() {
           </table>
         </div>
       </div>
+
+      {/* 管理者アカウント一覧 */}
+      {adminAccounts.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
+          <p className="text-xs font-bold text-amber-700 uppercase tracking-widest mb-3">管理者アカウント（{adminAccounts.length} 件）</p>
+          <div className="flex flex-wrap gap-2">
+            {adminAccounts.map(a => (
+              <div key={a.id} className="flex items-center gap-2 bg-white border border-amber-200 rounded-xl px-3 py-2 shadow-sm">
+                <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                  <span className="text-[10px] font-bold text-amber-700">{(a.display_name ?? '?').charAt(0)}</span>
+                </div>
+                <span className="text-sm font-medium text-slate-700">{a.display_name ?? '（未設定）'}</span>
+                <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full">ADMIN</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
