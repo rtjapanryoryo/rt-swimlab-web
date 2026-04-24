@@ -41,7 +41,6 @@ export default function CustomersPage() {
   const [loading, setLoading]     = useState(true);
   const [search, setSearch]       = useState('');
   const [planFilter, setPlan]     = useState('all');
-  const [roleFilter, setRole]     = useState('all');
   const [sortKey, setSortKey]     = useState<SortKey>('reg_no');
   const [sortAsc, setSortAsc]     = useState(true);
 
@@ -71,7 +70,6 @@ export default function CustomersPage() {
       list = list.filter(c => (c.display_name ?? '').toLowerCase().includes(q));
     }
     if (planFilter !== 'all') list = list.filter(c => c.plan === planFilter);
-    if (roleFilter !== 'all') list = list.filter(c => c.role === roleFilter);
 
     list = [...list].sort((a, b) => {
       let av: string | number;
@@ -87,7 +85,7 @@ export default function CustomersPage() {
       return sortAsc ? cmp : -cmp;
     });
     return list;
-  }, [regularCustomers, search, planFilter, roleFilter, sortKey, sortAsc, regNoMap]);
+  }, [regularCustomers, search, planFilter, sortKey, sortAsc, regNoMap]);
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortAsc(p => !p);
@@ -194,17 +192,6 @@ export default function CustomersPage() {
           <option value="pro">Pro</option>
         </select>
 
-        {/* ロールフィルター */}
-        <select
-          value={roleFilter}
-          onChange={e => setRole(e.target.value)}
-          className="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-sky-400"
-        >
-          <option value="all">すべてのロール</option>
-          <option value="user">一般ユーザー</option>
-          <option value="coach">コーチ</option>
-        </select>
-
         {/* ソート */}
         <select
           value={sortKey}
@@ -230,6 +217,17 @@ export default function CustomersPage() {
             <><svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>降順</>
           )}
         </button>
+
+        {/* リセット */}
+        {(search || planFilter !== 'all' || sortKey !== 'reg_no' || !sortAsc) && (
+          <button
+            onClick={() => { setSearch(''); setPlan('all'); setSortKey('reg_no'); setSortAsc(true); }}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm text-slate-500 border border-slate-200 rounded-lg bg-white hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition-colors"
+          >
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            リセット
+          </button>
+        )}
 
         <span className="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded-full">{filtered.length} 件</span>
       </div>
