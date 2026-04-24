@@ -13,7 +13,11 @@ export async function GET() {
   if (me?.role !== 'admin') return NextResponse.json({ error: 'forbidden' }, { status: 403 });
 
   const sb = getSupabaseServiceRole() ?? authSb;
-  const usingServiceRole = !!getSupabaseServiceRole();
+
+  // admin を除外するため先にIDを取得
+  const { data: adminRows } = await sb.from('profiles').select('id').eq('role', 'admin');
+  const adminIds = (adminRows ?? []).map(r => r.id);
+  const adminFilter = adminIds.length > 0 ? `(${adminIds.join(',')})` : null;
 
   const now = new Date();
   const monthStart      = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
@@ -22,6 +26,16 @@ export async function GET() {
   const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString();
   const todayStart      = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
   const thirtyDaysAgo   = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  const pf  = () => sb.from('profiles').select('id', { count: 'exact', head: true }).neq('role', 'admin');
+  const gl  = (col = 'user_id') => {
+    const q = sb.from('generation_logs').select(col);
+    return adminFilter ? q.not('user_id', 'in', adminFilter) : q;
+  };
+  const glCount = () => {
+    const q = sb.from('generation_logs').select('id', { count: 'exact', head: true });
+    return adminFilter ? q.not('user_id', 'in', adminFilter) : q;
+  };
 
   const [
     { count: totalUsers },
@@ -32,45 +46,38 @@ export async function GET() {
     { count: gensPrevMonth },
     { data: dauRows },
     { data: wauRows },
-    { data: prevWeekRows },
     { data: mauRows },
     { data: sourceRows },
     { data: trendRows },
     { data: menuRows },
-    { data: topUserRows },
     { count: activePlans },
     { count: sessionLogs },
+    { count: feedbackTotal },
+    { count: feedbackPending },
   ] = await Promise.all([
-    sb.from('profiles').select('id', { count: 'exact', head: true }),
-    sb.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', monthStart),
-    sb.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', prevMonthStart).lt('created_at', monthStart),
-    sb.from('generation_logs').select('id', { count: 'exact', head: true }),
-    sb.from('generation_logs').select('id', { count: 'exact', head: true }).gte('created_at', monthStart),
-    sb.from('generation_logs').select('id', { count: 'exact', head: true }).gte('created_at', prevMonthStart).lt('created_at', monthStart),
-    sb.from('generation_logs').select('user_id').gte('created_at', todayStart),
-    sb.from('generation_logs').select('user_id').gte('created_at', weekAgo),
-    sb.from('generation_logs').select('user_id').gte('created_at', fourteenDaysAgo).lt('created_at', weekAgo),
-    sb.from('generation_logs').select('user_id').gte('created_at', thirtyDaysAgo),
+    pf(),
+    pf().gte('created_at', monthStart),
+    pf().gte('created_at', prevMonthStart).lt('created_at', monthStart),
+    glCount(),
+    glCount().gte('created_at', monthStart),
+    glCount().gte('created_at', prevMonthStart).lt('created_at', monthStart),
+    gl().gte('created_at', todayStart),
+    gl().gte('created_at', weekAgo),
+    gl().gte('created_at', thirtyDaysAgo),
     sb.from('menus').select('source'),
-    sb.from('generation_logs').select('created_at').gte('created_at', thirtyDaysAgo),
+    gl('created_at').gte('created_at', thirtyDaysAgo),
     sb.from('menus').select('input'),
-    sb.from('profiles').select('id', { count: 'exact', head: true }).order('total_usage_count', { ascending: false }).limit(20),
     sb.from('training_plans').select('id', { count: 'exact', head: true }),
     sb.from('training_sessions').select('id', { count: 'exact', head: true }).eq('status', 'done'),
+    sb.from('feedbacks').select('id', { count: 'exact', head: true }),
+    sb.from('feedbacks').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
   ]);
 
   // ── DAU / WAU / MAU ───────────────────────────────────────────────────────
-  const dau = new Set((dauRows ?? []).map(r => r.user_id)).size;
-  const wau = new Set((wauRows ?? []).map(r => r.user_id)).size;
-  const mau = new Set((mauRows ?? []).map(r => r.user_id)).size;
-
-  // ── Week-over-Week リテンション ─────────────────────────────────────────
-  const prevWeekSet    = new Set((prevWeekRows ?? []).map(r => r.user_id));
-  const currentWeekSet = new Set((wauRows ?? []).map(r => r.user_id));
-  const retainedCount  = [...prevWeekSet].filter(id => currentWeekSet.has(id)).length;
-  const wowRetentionPct = prevWeekSet.size > 0
-    ? Math.round((retainedCount / prevWeekSet.size) * 100)
-    : null;
+  const toUids = (rows: unknown) => (rows as Array<{ user_id: string }> ?? []).map(r => r.user_id);
+  const dau = new Set(toUids(dauRows)).size;
+  const wau = new Set(toUids(wauRows)).size;
+  const mau = new Set(toUids(mauRows)).size;
 
   // ── MoM 成長率 ───────────────────────────────────────────────────────────
   const newUsersMoMPct = (newUsersPrevMonth ?? 0) > 0
@@ -119,8 +126,8 @@ export async function GET() {
 
   // ── 日別トレンド（30日・欠損0埋め）────────────────────────────────────
   const dailyMap = new Map<string, number>();
-  (trendRows ?? []).forEach(r => {
-    const d = (r.created_at as string).substring(0, 10);
+  (trendRows as unknown as Array<{ created_at: string }> ?? []).forEach(r => {
+    const d = r.created_at.substring(0, 10);
     dailyMap.set(d, (dailyMap.get(d) ?? 0) + 1);
   });
   const dailyTrend = Array.from({ length: 30 }, (_, i) => {
@@ -130,7 +137,13 @@ export async function GET() {
   });
 
   // ── ユーザーテーブル ─────────────────────────────────────────────────────
-  const userIds = (topUserRows ?? []).map((u: { id: string }) => u.id);
+  const { data: topUsersWithName } = await sb
+    .from('profiles')
+    .select('id, display_name, role, total_usage_count, created_at')
+    .order('total_usage_count', { ascending: false })
+    .limit(20);
+
+  const userIds = (topUsersWithName ?? []).map(u => u.id);
   const { data: lastActiveLogs } = userIds.length > 0
     ? await sb.from('generation_logs')
         .select('user_id, created_at')
@@ -143,14 +156,7 @@ export async function GET() {
     if (!lastActiveMap.has(r.user_id)) lastActiveMap.set(r.user_id, r.created_at);
   });
 
-  const { data: topUsersWithName } = await sb
-    .from('profiles')
-    .select('id, display_name, role, total_usage_count, created_at')
-    .order('total_usage_count', { ascending: false })
-    .limit(20);
-
   return NextResponse.json({
-    serviceRoleActive: usingServiceRole,
     kpi: {
       totalUsers:        totalUsers      ?? 0,
       newUsersMonth:     newUsersMonth   ?? 0,
@@ -162,11 +168,12 @@ export async function GET() {
       wau,
       mau,
       avgGensPerMau,
-      wowRetentionPct,
       quickCount:  sourceCounts.quick,
       customCount: sourceCounts.custom,
-      activePlans:   activePlans  ?? 0,
-      sessionLogs:   sessionLogs  ?? 0,
+      activePlans:     activePlans    ?? 0,
+      sessionLogs:     sessionLogs    ?? 0,
+      feedbackTotal:   feedbackTotal  ?? 0,
+      feedbackPending: feedbackPending ?? 0,
     },
     charts: {
       dailyTrend,

@@ -199,9 +199,17 @@ export default function CustomersPage() {
                           </span>
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-slate-900 leading-tight">
-                            {c.display_name ?? '（未設定）'}
-                          </p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-sm font-medium text-slate-900 leading-tight">
+                              {c.display_name ?? '（未設定）'}
+                            </p>
+                            {c.role === 'admin' && (
+                              <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 text-amber-700">ADMIN</span>
+                            )}
+                            {c.role === 'coach' && (
+                              <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-cyan-100 text-cyan-700">COACH</span>
+                            )}
+                          </div>
                           <p className="text-[11px] text-slate-400 leading-tight">{c.days_active} 日アクティブ</p>
                         </div>
                       </div>

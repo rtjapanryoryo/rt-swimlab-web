@@ -14,11 +14,12 @@ interface KPI {
   wau:              number;
   mau:              number;
   avgGensPerMau:    number;
-  wowRetentionPct:  number | null;
   quickCount:       number;
   customCount:      number;
   activePlans:      number;
   sessionLogs:      number;
+  feedbackTotal:    number;
+  feedbackPending:  number;
 }
 
 interface UserRow {
@@ -31,7 +32,6 @@ interface UserRow {
 }
 
 interface StatsData {
-  serviceRoleActive: boolean;
   kpi: KPI;
   users: UserRow[];
 }
@@ -146,16 +146,6 @@ export default function AdminDashboard() {
         </Link>
       </div>
 
-      {/* SERVICE_ROLE 未設定警告 */}
-      {!data.serviceRoleActive && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl px-5 py-4 flex gap-3">
-          <span className="text-amber-500 shrink-0">⚠</span>
-          <div className="text-sm text-amber-800">
-            <strong>SUPABASE_SERVICE_ROLE_KEY が未設定です。</strong>
-            <span className="ml-1">マイグレーション（20260423130000）を実行すると admin RLS ポリシーが追加され、このキーなしでも全データを参照できます。</span>
-          </div>
-        </div>
-      )}
 
       {/* ── ユーザー指標 ───────────────────────────────────────────── */}
       <div>
@@ -182,9 +172,9 @@ export default function AdminDashboard() {
             icon={<UsersIcon />}
           />
           <KPICard
-            label="WoW リテンション"
-            value={kpi.wowRetentionPct !== null ? `${kpi.wowRetentionPct}%` : '—'}
-            sub="先週→今週 復帰率"
+            label="フィードバック受信"
+            value={kpi.feedbackTotal.toLocaleString()}
+            sub={kpi.feedbackPending > 0 ? `未対応 ${kpi.feedbackPending} 件` : '未対応なし'}
             accent="bg-teal-50 text-teal-500"
             icon={<RetainIcon />}
           />
@@ -230,9 +220,9 @@ export default function AdminDashboard() {
         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">機能別利用</p>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <KPICard
-            label="Quick / Custom 比率"
-            value={totalMenus > 0 ? `${Math.round((kpi.quickCount / totalMenus) * 100)}% Quick` : '—'}
-            sub={`Quick ${kpi.quickCount.toLocaleString()} / Custom ${kpi.customCount.toLocaleString()} 件`}
+            label="カスタム生成数"
+            value={kpi.customCount.toLocaleString()}
+            sub={totalMenus > 0 ? `全体の ${Math.round((kpi.customCount / totalMenus) * 100)}%（Quick ${kpi.quickCount} 件）` : undefined}
             accent="bg-indigo-50 text-indigo-500"
             icon={<SplitIcon />}
           />
