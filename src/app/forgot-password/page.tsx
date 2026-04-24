@@ -3,7 +3,7 @@
 import { Suspense, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { WebViewOpenInBrowser } from '@/components/WebViewOpenInBrowser';
 
 function ForgotPasswordForm() {
@@ -24,8 +24,15 @@ function ForgotPasswordForm() {
     setLoading(true);
 
     try {
-      const supabase = createClient();
-      // 本番URLを環境変数から優先使用（localhost からメール送信すると localhost に飛ぶ問題を防ぐ）
+      // PKCE を使わないクライアントを使用。
+      // PKCE は code_verifier を送信元ブラウザの cookie に保存するため、
+      // メールリンクを別のブラウザ/アプリで開いた場合に検証が失敗する。
+      // token_hash フローなら code_verifier 不要でコールバックが処理できる。
+      const supabase = createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { auth: { flowType: 'implicit' } }
+      );
       const baseUrl = process.env.NEXT_PUBLIC_SITE_URL
         ?? (typeof window !== 'undefined' ? window.location.origin : '');
       const redirectTo = `${baseUrl}/auth/callback?next=/update-password`;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -13,6 +13,22 @@ export default function UpdatePasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    // メールリンク経由（hash fragment）の PASSWORD_RECOVERY イベントを処理
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
+        setSessionReady(true);
+      }
+    });
+    // すでにセッションがある場合（サーバー側コールバック経由）
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) setSessionReady(true);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -62,6 +78,25 @@ export default function UpdatePasswordPage() {
               className="block w-full text-center px-4 py-3 bg-slate-800 text-white rounded-md hover:bg-slate-900 font-medium"
             >
               マイページへ
+            </Link>
+          </div>
+        </div>
+      </WebViewOpenInBrowser>
+    );
+  }
+
+  if (!sessionReady) {
+    return (
+      <WebViewOpenInBrowser path="/update-password">
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="bg-white rounded-lg shadow-md p-8 max-w-md w-full text-center space-y-4">
+            <div className="w-8 h-8 border-2 border-slate-400 border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-sm text-gray-500">セッションを確認中...</p>
+            <p className="text-xs text-gray-400">
+              このページはパスワードリセットメールのリンクから開く必要があります。
+            </p>
+            <Link href="/forgot-password" className="block text-sm text-slate-700 underline">
+              リセットメールを再送する
             </Link>
           </div>
         </div>
