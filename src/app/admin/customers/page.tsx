@@ -53,7 +53,6 @@ export default function CustomersPage() {
   }, []);
 
   const regularCustomers = useMemo(() => customers.filter(c => c.role !== 'admin'), [customers]);
-  const adminAccounts    = useMemo(() => customers.filter(c => c.role === 'admin'), [customers]);
 
   const filtered = useMemo(() => {
     let list = regularCustomers;
@@ -271,23 +270,6 @@ export default function CustomersPage() {
         </div>
       </div>
 
-      {/* 管理者アカウント一覧 */}
-      {adminAccounts.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
-          <p className="text-xs font-bold text-amber-700 uppercase tracking-widest mb-3">管理者アカウント（{adminAccounts.length} 件）</p>
-          <div className="flex flex-wrap gap-2">
-            {adminAccounts.map(a => (
-              <div key={a.id} className="flex items-center gap-2 bg-white border border-amber-200 rounded-xl px-3 py-2 shadow-sm">
-                <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
-                  <span className="text-[10px] font-bold text-amber-700">{(a.display_name ?? '?').charAt(0)}</span>
-                </div>
-                <span className="text-sm font-medium text-slate-700">{a.display_name ?? '（未設定）'}</span>
-                <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full">ADMIN</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -171,6 +171,7 @@ export async function GET() {
   const { data: topUsersWithName } = await sb
     .from('profiles')
     .select('id, display_name, role, total_usage_count, created_at')
+    .neq('role', 'admin')
     .order('total_usage_count', { ascending: false })
     .limit(20);
 
