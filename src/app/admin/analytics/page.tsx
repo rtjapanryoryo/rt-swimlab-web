@@ -11,14 +11,15 @@ const fmtCount = (v: ValueType | undefined) => [v ?? 0, '件'] as [ValueType, st
 const COLORS = ['#0ea5e9', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#64748b', '#06b6d4'];
 const tt = { fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' };
 
-type Period = '7d' | '30d' | '3m' | '6m' | 'all';
+type Period = '7d' | '30d' | '3m' | '6m' | 'all' | 'custom';
 
 const PERIODS: { id: Period; label: string; shortLabel: string }[] = [
-  { id: '7d',  label: '過去7日',   shortLabel: '7日' },
-  { id: '30d', label: '過去30日',  shortLabel: '30日' },
-  { id: '3m',  label: '過去3ヶ月', shortLabel: '3ヶ月' },
-  { id: '6m',  label: '過去6ヶ月', shortLabel: '6ヶ月' },
-  { id: 'all', label: '累計',      shortLabel: '累計' },
+  { id: '7d',     label: '過去7日',   shortLabel: '7日' },
+  { id: '30d',    label: '過去30日',  shortLabel: '30日' },
+  { id: '3m',     label: '過去3ヶ月', shortLabel: '3ヶ月' },
+  { id: '6m',     label: '過去6ヶ月', shortLabel: '6ヶ月' },
+  { id: 'all',    label: '累計',      shortLabel: '累計' },
+  { id: 'custom', label: 'カスタム',  shortLabel: 'カスタム' },
 ];
 
 interface AnalyticsData {
@@ -100,21 +101,26 @@ function NoData() {
 }
 
 export default function AnalyticsPage() {
-  const [period, setPeriod]   = useState<Period>('30d');
-  const [data, setData]       = useState<AnalyticsData | null>(null);
-  const [stats, setStats]     = useState<StatsKPI | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [period, setPeriod]       = useState<Period>('30d');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo]     = useState('');
+  const [data, setData]             = useState<AnalyticsData | null>(null);
+  const [stats, setStats]           = useState<StatsKPI | null>(null);
+  const [loading, setLoading]       = useState(true);
 
-  const fetchAnalytics = useCallback((p: Period) => {
+  const fetchAnalytics = useCallback((p: Period, from?: string, to?: string) => {
+    if (p === 'custom' && (!from || !to)) return;
     setLoading(true);
-    fetch(`/api/admin/analytics?period=${p}`, { credentials: 'include' })
+    const params = new URLSearchParams({ period: p });
+    if (p === 'custom' && from && to) { params.set('from', from); params.set('to', to); }
+    fetch(`/api/admin/analytics?${params}`, { credentials: 'include' })
       .then(r => r.json())
       .then(setData)
       .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
-    fetchAnalytics(period);
+    if (period !== 'custom') fetchAnalytics(period);
   }, [period, fetchAnalytics]);
 
   useEffect(() => {
@@ -126,12 +132,23 @@ export default function AnalyticsPage() {
 
   const handlePeriod = (p: Period) => {
     setPeriod(p);
+    if (p !== 'custom') setData(null);
+  };
+
+  const handleCustomApply = () => {
+    if (customFrom && customTo && customFrom <= customTo) {
+      fetchAnalytics('custom', customFrom, customTo);
+    }
   };
 
   const downloadLogs = () => { window.location.href = '/api/admin/export?type=logs'; };
 
-  const useDailyView = period === '7d' || period === '30d';
-  const periodLabel = PERIODS.find(p => p.id === period)?.label ?? period;
+  const useDailyView = period === '7d' || period === '30d' ||
+    (period === 'custom' && customFrom && customTo &&
+      Math.round((new Date(customTo).getTime() - new Date(customFrom).getTime()) / 86400000) <= 60);
+  const periodLabel = period === 'custom' && customFrom && customTo
+    ? `${customFrom} 〜 ${customTo}`
+    : (PERIODS.find(p => p.id === period)?.label ?? period);
 
   // trendData を共通フォーマット { label, count } に正規化
   const trendData: { label: string; count: number }[] = data
@@ -173,20 +190,51 @@ export default function AnalyticsPage() {
       </div>
 
       {/* ── 期間セレクター ─────────────────────────────────────────── */}
-      <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl w-fit">
-        {PERIODS.map(p => (
-          <button
-            key={p.id}
-            onClick={() => handlePeriod(p.id)}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-              period === p.id
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            {p.label}
-          </button>
-        ))}
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center gap-1 bg-slate-100 p-1 rounded-xl w-fit">
+          {PERIODS.map(p => (
+            <button
+              key={p.id}
+              onClick={() => handlePeriod(p.id)}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                period === p.id
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+
+        {/* カスタム期間入力 */}
+        {period === 'custom' && (
+          <div className="flex flex-wrap items-center gap-2 bg-white border border-slate-200 rounded-xl px-4 py-3 w-fit">
+            <span className="text-xs font-semibold text-slate-500">期間</span>
+            <input
+              type="date"
+              value={customFrom}
+              max={customTo || undefined}
+              onChange={e => setCustomFrom(e.target.value)}
+              className="px-2 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400"
+            />
+            <span className="text-slate-400 text-sm">〜</span>
+            <input
+              type="date"
+              value={customTo}
+              min={customFrom || undefined}
+              onChange={e => setCustomTo(e.target.value)}
+              className="px-2 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400"
+            />
+            <button
+              onClick={handleCustomApply}
+              disabled={!customFrom || !customTo || customFrom > customTo}
+              className="px-4 py-1.5 bg-sky-500 text-white text-sm font-semibold rounded-lg hover:bg-sky-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              適用
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── Section 1: 主要指標サマリ ──────────────────────────────────── */}

@@ -2,15 +2,23 @@ import { NextResponse } from 'next/server';
 import { getEffectiveUser, createClient } from '@/lib/supabase/server';
 import { getSupabaseServiceRole } from '@/lib/supabase/admin';
 
-type Period = '7d' | '30d' | '3m' | '6m' | 'all';
+type Period = '7d' | '30d' | '3m' | '6m' | 'all' | 'custom';
 
-function getPeriodConfig(period: Period, now: Date) {
+function getPeriodConfig(period: Period, now: Date, from?: string, to?: string) {
+  if (period === 'custom' && from && to) {
+    const fromDate = new Date(from);
+    const toDate   = new Date(to);
+    toDate.setHours(23, 59, 59, 999);
+    const diffDays = Math.round((toDate.getTime() - fromDate.getTime()) / 86400000);
+    return { days: diffDays <= 60 ? diffDays : null, months: diffDays > 60 ? 24 : null, since: fromDate.toISOString(), until: toDate.toISOString() };
+  }
   switch (period) {
-    case '7d':  return { days: 7,   months: null, since: new Date(now.getTime() - 7  * 86400000).toISOString() };
-    case '30d': return { days: 30,  months: null, since: new Date(now.getTime() - 30 * 86400000).toISOString() };
-    case '3m':  return { days: 90,  months: 3,    since: new Date(now.getFullYear(), now.getMonth() - 2, 1).toISOString() };
-    case '6m':  return { days: 180, months: 6,    since: new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString() };
-    case 'all': return { days: null, months: 24,  since: null };
+    case '7d':  return { days: 7,   months: null, since: new Date(now.getTime() - 7  * 86400000).toISOString(), until: undefined };
+    case '30d': return { days: 30,  months: null, since: new Date(now.getTime() - 30 * 86400000).toISOString(), until: undefined };
+    case '3m':  return { days: 90,  months: 3,    since: new Date(now.getFullYear(), now.getMonth() - 2, 1).toISOString(), until: undefined };
+    case '6m':  return { days: 180, months: 6,    since: new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString(), until: undefined };
+    case 'all': return { days: null, months: 24,  since: null, until: undefined };
+    default:    return { days: 30,  months: null, since: new Date(now.getTime() - 30 * 86400000).toISOString(), until: undefined };
   }
 }
 
@@ -28,9 +36,11 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const period = (searchParams.get('period') ?? '30d') as Period;
+  const from   = searchParams.get('from') ?? undefined;
+  const to     = searchParams.get('to')   ?? undefined;
 
   const now = new Date();
-  const cfg = getPeriodConfig(period, now);
+  const cfg = getPeriodConfig(period, now, from, to);
 
   // admin 除外フィルター
   const { data: adminRows } = await sb.from('profiles').select('id').eq('role', 'admin');
@@ -46,15 +56,21 @@ export async function GET(req: Request) {
     return adminFilter ? q.not('user_id', 'in', adminFilter) : q;
   };
 
+  const applyRange = <T extends ReturnType<typeof gl>>(q: T) => {
+    let r = q;
+    if (cfg.since) r = r.gte('created_at', cfg.since) as T;
+    if (cfg.until) r = r.lte('created_at', cfg.until) as T;
+    return r;
+  };
+
   // 期間内の generation_logs を取得（トレンド計算用）
-  const glWithPeriod = cfg.since
-    ? gl('created_at').gte('created_at', cfg.since)
-    : gl('created_at');
+  const glWithPeriod = applyRange(gl('created_at'));
 
   // ユーザー登録トレンド用
+  const userRegBase = sb.from('profiles').select('created_at').neq('role', 'admin');
   const userRegQuery = cfg.since
-    ? sb.from('profiles').select('created_at').neq('role', 'admin').gte('created_at', cfg.since)
-    : sb.from('profiles').select('created_at').neq('role', 'admin');
+    ? (cfg.until ? userRegBase.gte('created_at', cfg.since).lte('created_at', cfg.until) : userRegBase.gte('created_at', cfg.since))
+    : userRegBase;
 
   const [
     { count: totalGens },
