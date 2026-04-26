@@ -1,232 +1,339 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 
-const APP_PLANS = [
+type PlanId = 'free' | 'basic' | 'standard' | 'pro';
+
+const APP_PLANS: {
+  id: PlanId;
+  name: string;
+  price: string;
+  priceNote: string;
+  customGen: string;
+  badge: string | null;
+  highlight: boolean;
+  features: { label: string; value: string; available: boolean }[];
+}[] = [
   {
     id: 'free',
     name: 'フリー',
     price: '¥0',
-    period: '永久無料',
+    priceNote: '永久無料',
+    customGen: '累計3回',
     badge: null,
     highlight: false,
-    customGen: '累計3回',
-    customNote: '体験版',
     features: [
-      'クイック生成：無制限',
-      'カスタム生成（AI）：累計3回',
-      'メニュー履歴：直近10件',
-      'PDF保存・テキストコピー',
-      'シーズン管理',
-      'GENE PROFILE：1件',
+      { label: 'クイック生成',       value: '無制限',    available: true },
+      { label: 'カスタム生成（AI）', value: '累計3回',   available: true },
+      { label: 'メニュー履歴',       value: '直近10件',  available: true },
+      { label: 'PDF保存',            value: '◯',         available: true },
+      { label: 'GENE PROFILE',       value: '1件',       available: true },
+      { label: '残回数の繰越',       value: '—',         available: false },
     ],
   },
   {
     id: 'basic',
     name: 'ベーシック',
-    price: '¥500',
-    period: '/ 月（税込）',
+    price: '検討中',
+    priceNote: '/ 月（税込）',
+    customGen: '検討中',
     badge: null,
     highlight: false,
-    customGen: '6回 / 月',
-    customNote: '週1回＋やり直し分',
     features: [
-      'クイック生成：無制限',
-      'カスタム生成（AI）：6回 / 月',
-      'メニュー履歴：全件',
-      'PDF保存・テキストコピー',
-      'シーズン管理',
-      'GENE PROFILE：無制限',
-      '残回数の繰越（有効期限30日）',
+      { label: 'クイック生成',       value: '無制限',   available: true },
+      { label: 'カスタム生成（AI）', value: '検討中',   available: true },
+      { label: 'メニュー履歴',       value: '全件',     available: true },
+      { label: 'PDF保存',            value: '◯',        available: true },
+      { label: 'GENE PROFILE',       value: '無制限',   available: true },
+      { label: '残回数の繰越',       value: '◯',        available: true },
     ],
   },
   {
     id: 'standard',
     name: 'スタンダード',
-    price: '¥980',
-    period: '/ 月（税込）',
+    price: '検討中',
+    priceNote: '/ 月（税込）',
+    customGen: '検討中',
     badge: 'おすすめ',
     highlight: true,
-    customGen: '12回 / 月',
-    customNote: '週2〜3回使用',
     features: [
-      'クイック生成：無制限',
-      'カスタム生成（AI）：12回 / 月',
-      'メニュー履歴：全件',
-      'PDF保存・テキストコピー',
-      'シーズン管理',
-      'GENE PROFILE：無制限',
-      '残回数の繰越（有効期限30日）',
+      { label: 'クイック生成',       value: '無制限',   available: true },
+      { label: 'カスタム生成（AI）', value: '検討中',   available: true },
+      { label: 'メニュー履歴',       value: '全件',     available: true },
+      { label: 'PDF保存',            value: '◯',        available: true },
+      { label: 'GENE PROFILE',       value: '無制限',   available: true },
+      { label: '残回数の繰越',       value: '◯',        available: true },
     ],
   },
   {
     id: 'pro',
     name: 'プロ',
-    price: '¥1,500',
-    period: '/ 月（税込）',
+    price: '検討中',
+    priceNote: '/ 月（税込）',
+    customGen: '検討中',
     badge: null,
     highlight: false,
-    customGen: '30回 / 月',
-    customNote: '週7回使用',
     features: [
-      'クイック生成：無制限',
-      'カスタム生成（AI）：30回 / 月',
-      'メニュー履歴：全件',
-      'PDF保存・テキストコピー',
-      'シーズン管理',
-      'GENE PROFILE：無制限',
-      '残回数の繰越（有効期限30日）',
-      '超過利用：¥80 / 回',
+      { label: 'クイック生成',       value: '無制限',   available: true },
+      { label: 'カスタム生成（AI）', value: '検討中',   available: true },
+      { label: 'メニュー履歴',       value: '全件',     available: true },
+      { label: 'PDF保存',            value: '◯',        available: true },
+      { label: 'GENE PROFILE',       value: '無制限',   available: true },
+      { label: '残回数の繰越',       value: '◯',        available: true },
+      { label: '超過利用',           value: '検討中',   available: true },
     ],
   },
 ];
 
 const COUNSELING_PLANS = [
   {
-    id: 'free_counseling',
+    id: 'counseling_free',
     tag: '初回無料',
     name: '無料カウンセリング',
     price: '¥0',
     detail: '20分 / 1人1回限り',
-    description: '練習の方向性や目標の立て方について、コーチと一緒に確認します。まずは気軽にご相談ください。',
-    cta: '申し込む',
+    desc: '練習の方向性や目標の立て方を、コーチと一緒に確認します。',
     href: '/mypage/counseling',
-    ctaStyle: 'border-2 border-slate-300 text-slate-600 hover:border-slate-400 hover:bg-slate-50',
+    ctaLabel: '申し込む',
   },
   {
-    id: 'athlete',
+    id: 'counseling_athlete',
     tag: '個人向け',
     name: '選手プラン',
     price: '¥1,500',
     detail: '/ 回（30分）',
-    description: '目標シート作成・レビュー、アプリ設定相談、次回までのアクション設定。',
-    cta: '申し込む',
+    desc: '目標シート作成・レビューとアクション設定。',
     href: '/mypage/counseling?plan=athlete',
-    ctaStyle: 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/20 hover:from-cyan-400 hover:to-teal-400',
+    ctaLabel: '申し込む',
   },
   {
-    id: 'coach_plan',
+    id: 'counseling_coach',
     tag: '指導者向け',
     name: 'コーチプラン',
-    price: '¥2,980',
-    detail: '/ 回（60分）4名以上 +¥1,000/人',
-    description: 'チームへのヒアリング・ソリューション提案、次回までのアクション設定。',
-    cta: '申し込む',
+    price: '¥2,980〜',
+    detail: '/ 回（60分）',
+    desc: 'チームへのヒアリングと解決策の提案。',
     href: '/mypage/counseling?plan=coach',
-    ctaStyle: 'border-2 border-amber-400 text-amber-700 hover:bg-amber-50',
+    ctaLabel: '申し込む',
   },
 ];
 
+type ModalState = 'closed' | 'confirm' | 'done';
+
 export default function SubscriptionPage() {
+  const [selected, setSelected] = useState<PlanId>('free');
+  const [modal, setModal]       = useState<ModalState>('closed');
+  const [saving, setSaving]     = useState(false);
+
+  const handleSelect = (id: PlanId) => {
+    setSelected(id);
+    if (id !== 'free') setModal('confirm');
+  };
+
+  const handleRegisterInterest = async () => {
+    setSaving(true);
+    try {
+      await fetch('/api/plan-interest', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan_id: selected }),
+      });
+      setModal('done');
+    } catch {
+      setModal('done');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-10 max-w-4xl mx-auto">
 
       {/* デモ期間バナー */}
-      <div className="rounded-2xl border-2 border-amber-300 bg-gradient-to-r from-amber-50 to-yellow-50 px-6 py-5 flex items-start gap-4">
-        <span className="text-2xl shrink-0">🎁</span>
+      <div className="rounded-2xl border-2 border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50 px-6 py-4 flex items-start gap-3">
+        <span className="text-xl shrink-0">🎁</span>
         <div>
-          <p className="text-base font-black text-amber-800">現在、3ヶ月間のデモ期間中です</p>
-          <p className="text-sm text-amber-700 mt-1 leading-relaxed">
-            すべての機能を無料でご利用いただけます。料金の請求はございません。<br />
-            下記はいずれ有料化する際の予定料金です。参考としてご確認ください。
+          <p className="text-sm font-black text-amber-800">現在、3ヶ月間のデモ期間中です</p>
+          <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">
+            すべての機能を無料でご利用いただけます。料金の請求は一切ございません。<br />
+            下記は今後の有料プラン（予定）です。内容・金額は検討中です。
           </p>
         </div>
       </div>
 
       {/* アプリプラン */}
-      <section className="space-y-5">
-        <header>
+      <section className="space-y-4">
+        <div>
           <p className="text-[10px] font-bold text-cyan-500 uppercase tracking-widest mb-1">App Plans</p>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">アプリ課金プラン</h1>
+          <h2 className="text-xl font-black text-slate-900">練習メニュー生成プラン</h2>
           <p className="text-sm text-slate-500 mt-1">
-            クイック生成は全プラン無制限。カスタム生成（AI）の回数で選ぶ。
+            クイック生成は全プラン無制限。カスタム生成（AI）の回数でプランが変わります。
           </p>
-        </header>
+        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {APP_PLANS.map((plan) => (
-            <div
-              key={plan.id}
-              className={`relative rounded-2xl border-2 p-5 flex flex-col ${
-                plan.highlight
-                  ? 'border-cyan-400 bg-gradient-to-b from-cyan-50 to-white shadow-lg shadow-cyan-500/10'
-                  : 'border-slate-200 bg-white'
-              }`}
-            >
-              {plan.badge && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-md whitespace-nowrap">
-                  {plan.badge}
-                </span>
-              )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {APP_PLANS.map((plan) => {
+            const isSelected = selected === plan.id;
+            return (
+              <button
+                key={plan.id}
+                type="button"
+                onClick={() => handleSelect(plan.id)}
+                className={`relative text-left rounded-2xl border-2 p-4 flex flex-col transition-all ${
+                  isSelected
+                    ? plan.highlight
+                      ? 'border-cyan-400 bg-cyan-50 shadow-lg shadow-cyan-500/10'
+                      : 'border-slate-400 bg-white shadow-md'
+                    : plan.highlight
+                      ? 'border-cyan-200 bg-white hover:border-cyan-300'
+                      : 'border-slate-200 bg-white hover:border-slate-300'
+                }`}
+              >
+                {plan.badge && (
+                  <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-cyan-500 to-teal-500 text-white whitespace-nowrap shadow">
+                    {plan.badge}
+                  </span>
+                )}
 
-              <div className="mb-4">
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{plan.name}</p>
-                <div className="flex items-baseline gap-1 flex-wrap">
-                  <span className="text-2xl font-black text-slate-900">{plan.price}</span>
-                  <span className="text-xs text-slate-400">{plan.period}</span>
+                {/* 選択インジケーター */}
+                <div className={`absolute top-3 right-3 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
+                  isSelected ? 'border-cyan-500 bg-cyan-500' : 'border-slate-300'
+                }`}>
+                  {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                 </div>
-                <div className="mt-2 px-2 py-1 bg-slate-50 rounded-lg border border-slate-100">
-                  <p className="text-xs font-bold text-slate-700">{plan.customGen}</p>
-                  <p className="text-[10px] text-slate-400">{plan.customNote}</p>
+
+                <div className="mb-3 pr-5">
+                  <p className="text-xs font-bold text-slate-500 mb-0.5">{plan.name}</p>
+                  <p className={`text-xl font-black ${plan.price === '検討中' ? 'text-slate-400' : 'text-slate-900'}`}>
+                    {plan.price}
+                  </p>
+                  <p className="text-[10px] text-slate-400">{plan.priceNote}</p>
                 </div>
-              </div>
 
-              <ul className="space-y-1.5 flex-1 mb-5">
-                {plan.features.map((f) => (
-                  <li key={f} className="flex items-start gap-1.5 text-xs text-slate-600">
-                    <span className="text-cyan-500 mt-0.5 shrink-0">✓</span>
-                    {f}
-                  </li>
-                ))}
-              </ul>
+                <div className="mb-3 px-2 py-1.5 bg-slate-50 rounded-xl border border-slate-100">
+                  <p className="text-[10px] text-slate-400">カスタム生成</p>
+                  <p className={`text-sm font-bold ${plan.customGen === '検討中' ? 'text-slate-400' : 'text-slate-700'}`}>
+                    {plan.customGen}
+                  </p>
+                </div>
 
-              <div className="w-full py-2 text-center text-xs font-semibold text-slate-400 border border-slate-200 rounded-xl bg-slate-50/60">
-                {plan.id === 'free' ? '現在のプラン' : '準備中'}
-              </div>
-            </div>
-          ))}
+                <ul className="space-y-1 flex-1">
+                  {plan.features.map((f) => (
+                    <li key={f.label} className={`flex items-center justify-between text-xs gap-1 ${f.available ? '' : 'opacity-35'}`}>
+                      <span className="text-slate-600 truncate">{f.label}</span>
+                      <span className={`font-semibold shrink-0 ${f.value === '検討中' ? 'text-slate-400' : f.available ? 'text-slate-700' : 'text-slate-400'}`}>
+                        {f.value}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                <div className={`mt-3 w-full py-1.5 rounded-xl text-xs font-bold text-center transition-all ${
+                  isSelected
+                    ? 'bg-slate-800 text-white'
+                    : 'bg-slate-100 text-slate-500'
+                }`}>
+                  {isSelected ? '選択中' : 'このプランを選ぶ'}
+                </div>
+              </button>
+            );
+          })}
         </div>
 
         <p className="text-xs text-slate-400 leading-relaxed">
-          繰越：残回数 ＋ 新プラン回数を加算（有効期限30日）　／　返金：購入・契約後の返金なし（特商法表記に明記）　／　超過：プロのみ ¥80/回で無制限利用可
+          ※ 金額・回数は検討中です。デモ期間中は料金の請求は一切ありません。
         </p>
       </section>
 
       {/* カウンセリングプラン */}
-      <section className="space-y-5">
-        <header>
+      <section className="space-y-4">
+        <div>
           <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-1">Counseling Plans</p>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight">カウンセリングプラン</h2>
+          <h2 className="text-xl font-black text-slate-900">カウンセリングプラン</h2>
           <p className="text-sm text-slate-500 mt-1">
-            アプリサブスクとは別課金。コーチが伴走することで継続率と転換率を最大化。
+            アプリサブスクとは別課金。コーチが直接伴走します。
           </p>
-        </header>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {COUNSELING_PLANS.map((plan) => (
-            <div key={plan.id} className="rounded-2xl border-2 border-slate-200 bg-white p-5 flex flex-col">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">{plan.tag}</p>
-              <p className="text-base font-black text-slate-900 mb-1">{plan.name}</p>
-              <div className="flex items-baseline gap-1 mb-1">
-                <span className="text-2xl font-black text-slate-900">{plan.price}</span>
+            <div key={plan.id} className="rounded-2xl border border-slate-200 bg-white p-5 flex flex-col shadow-sm">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">{plan.tag}</span>
+              <p className="text-base font-bold text-slate-900">{plan.name}</p>
+              <div className="flex items-baseline gap-1 mt-1 mb-1">
+                <span className="text-xl font-black text-slate-900">{plan.price}</span>
               </div>
               <p className="text-xs text-slate-400 mb-3">{plan.detail}</p>
-              <p className="text-xs text-slate-600 leading-relaxed flex-1 mb-4">{plan.description}</p>
+              <p className="text-xs text-slate-600 leading-relaxed flex-1 mb-4">{plan.desc}</p>
               <Link
                 href={plan.href}
-                className={`w-full py-2.5 text-center text-sm font-bold rounded-xl transition-all ${plan.ctaStyle}`}
+                className="w-full py-2.5 text-center text-sm font-bold rounded-xl border-2 border-slate-200 text-slate-700 hover:border-cyan-400 hover:text-cyan-700 transition-all"
               >
-                {plan.cta}
+                {plan.ctaLabel}
               </Link>
             </div>
           ))}
         </div>
-
-        <p className="text-xs text-slate-400">
-          運用：渡部コーチ（メイン）/ 島谷（補佐）　無料枠は常時開放 / 返金なし統一
-        </p>
       </section>
 
+      {/* 確認モーダル */}
+      {modal !== 'closed' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full space-y-5">
+            {modal === 'confirm' ? (
+              <>
+                <div className="text-center space-y-2">
+                  <div className="w-14 h-14 rounded-full bg-cyan-50 flex items-center justify-center mx-auto text-2xl">📋</div>
+                  <h3 className="text-lg font-black text-slate-900">
+                    {APP_PLANS.find(p => p.id === selected)?.name} に興味を登録
+                  </h3>
+                  <p className="text-sm text-slate-500 leading-relaxed">
+                    現在このプランは準備中です。<br />
+                    ご興味を登録しておくと、開始時にお知らせします。
+                  </p>
+                  <p className="text-xs text-slate-400 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+                    現在デモ期間中のため、料金の請求は一切ありません。
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setModal('closed')}
+                    className="flex-1 py-2.5 rounded-xl border-2 border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all"
+                  >
+                    キャンセル
+                  </button>
+                  <button
+                    onClick={handleRegisterInterest}
+                    disabled={saving}
+                    className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-sm font-bold shadow-lg shadow-cyan-500/20 hover:from-cyan-400 hover:to-teal-400 disabled:opacity-50 transition-all"
+                  >
+                    {saving ? '登録中...' : '興味を登録する'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-center space-y-2">
+                  <div className="w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center mx-auto text-2xl">✓</div>
+                  <h3 className="text-lg font-black text-slate-900">登録しました</h3>
+                  <p className="text-sm text-slate-500 leading-relaxed">
+                    プランの提供が開始される際にご連絡します。<br />
+                    引き続き全機能を無料でお使いいただけます。
+                  </p>
+                </div>
+                <button
+                  onClick={() => setModal('closed')}
+                  className="w-full py-2.5 rounded-xl bg-slate-800 text-white text-sm font-bold hover:bg-slate-700 transition-all"
+                >
+                  閉じる
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
