@@ -32,16 +32,20 @@ CREATE TRIGGER goal_sheets_updated_at
 ALTER TABLE public.goal_sheets ENABLE ROW LEVEL SECURITY;
 
 -- 本人は読み書き可
+DROP POLICY IF EXISTS "goal_sheets_select_own" ON public.goal_sheets;
 CREATE POLICY "goal_sheets_select_own" ON public.goal_sheets
   FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "goal_sheets_insert_own" ON public.goal_sheets;
 CREATE POLICY "goal_sheets_insert_own" ON public.goal_sheets
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "goal_sheets_update_own" ON public.goal_sheets;
 CREATE POLICY "goal_sheets_update_own" ON public.goal_sheets
   FOR UPDATE USING (auth.uid() = user_id);
 
 -- コーチは担当選手のシートを閲覧可（coach_athletes 経由）
+DROP POLICY IF EXISTS "goal_sheets_coach_select" ON public.goal_sheets;
 CREATE POLICY "goal_sheets_coach_select" ON public.goal_sheets
   FOR SELECT USING (
     EXISTS (
@@ -55,6 +59,7 @@ CREATE POLICY "goal_sheets_coach_select" ON public.goal_sheets
   );
 
 -- 管理者は全件閲覧可
+DROP POLICY IF EXISTS "goal_sheets_admin_select" ON public.goal_sheets;
 CREATE POLICY "goal_sheets_admin_select" ON public.goal_sheets
   FOR SELECT USING (
     EXISTS (

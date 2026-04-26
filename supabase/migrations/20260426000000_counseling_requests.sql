@@ -19,13 +19,16 @@ create table if not exists public.counseling_requests (
 alter table public.counseling_requests enable row level security;
 
 -- ユーザーは自分の申し込みのみ参照・作成可
+DROP POLICY IF EXISTS "users_select_own" ON public.counseling_requests;
 create policy "users_select_own" on public.counseling_requests
   for select using (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "users_insert_own" ON public.counseling_requests;
 create policy "users_insert_own" on public.counseling_requests
   for insert with check (auth.uid() = user_id);
 
 -- 管理者は全件参照・更新可
+DROP POLICY IF EXISTS "admins_all" ON public.counseling_requests;
 create policy "admins_all" on public.counseling_requests
   for all using (
     exists (
@@ -43,6 +46,7 @@ begin
 end;
 $$;
 
+drop trigger if exists counseling_requests_updated_at on public.counseling_requests;
 create trigger counseling_requests_updated_at
   before update on public.counseling_requests
   for each row execute function public.set_updated_at();

@@ -9,9 +9,11 @@ create table if not exists legal_documents (
 
 alter table legal_documents enable row level security;
 
+drop policy if exists "public_read_legal" on legal_documents;
 create policy "public_read_legal" on legal_documents
   for select using (true);
 
+drop policy if exists "admin_write_legal" on legal_documents;
 create policy "admin_write_legal" on legal_documents
   for all to authenticated
   using (
@@ -46,7 +48,8 @@ insert into legal_documents (id, doc_title, intro, sections, footer) values (
     {"title":"第9条（準拠法・管轄裁判所）","body":"本規約は日本法に準拠します。本規約に関して紛争が生じた場合は、当社所在地を管轄する地方裁判所を第一審の専属的合意管轄裁判所とします。"}
   ]'::jsonb,
   'お問い合わせ：サービス内のフィードバック機能またはコーチへのご連絡をご利用ください。'
-);
+)
+ON CONFLICT (id) DO NOTHING;
 
 -- Seed: プライバシーポリシー
 insert into legal_documents (id, doc_title, intro, sections, footer) values (
@@ -65,4 +68,5 @@ insert into legal_documents (id, doc_title, intro, sections, footer) values (
     {"title":"9. プライバシーポリシーの変更","body":"当社は、法令の改正やサービス内容の変更に伴い、本ポリシーを変更することがあります。変更後は本ページに掲載し、重要な変更の場合はサービス内でお知らせします。"}
   ]'::jsonb,
   'お問い合わせ：サービス内のフィードバック機能よりご連絡ください。'
-);
+)
+ON CONFLICT (id) DO NOTHING;

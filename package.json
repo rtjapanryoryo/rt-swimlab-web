@@ -11,6 +11,7 @@
     "verify:supabase": "node scripts/verify-supabase.mjs",
     "supabase:disable-email-confirm": "node scripts/disable-email-confirmation.mjs",
     "db:migrate": "node scripts/run-migration.mjs",
+    "db:push": "node scripts/db-push.mjs",
     "web:fetch": "node scripts/fetch-web-sources.mjs",
     "simulate:menu-distance": "node scripts/simulate-custom-menu-distance.mjs",
     "db:setup": "open 'https://supabase.com/dashboard/project/lpzrrblueipqhgtttzlw/settings/database'",

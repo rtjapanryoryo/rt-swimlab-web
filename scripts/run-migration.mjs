@@ -154,7 +154,7 @@ async function run() {
       console.error('❌ Pooler 接続も失敗:', lastErr?.message);
     }
 
-    if (isTenant || lastErr?.message?.includes('Tenant or user not found')) {
+    if (isTenant) {
       console.error(`
 💡 ヒント: パスワードを確認してください。
    - [YOUR-PASSWORD] はプレースホルダーです。実際のDBパスワードに置き換えてください。

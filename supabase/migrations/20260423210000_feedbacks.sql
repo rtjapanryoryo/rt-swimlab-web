@@ -39,13 +39,16 @@ CREATE TRIGGER feedbacks_updated_at
 ALTER TABLE public.feedbacks ENABLE ROW LEVEL SECURITY;
 
 -- ユーザーは自分のフィードバックを投稿・閲覧できる
+DROP POLICY IF EXISTS "feedbacks_insert_own" ON public.feedbacks;
 CREATE POLICY "feedbacks_insert_own" ON public.feedbacks
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "feedbacks_select_own" ON public.feedbacks;
 CREATE POLICY "feedbacks_select_own" ON public.feedbacks
   FOR SELECT USING (auth.uid() = user_id);
 
 -- 管理者は全件操作可
+DROP POLICY IF EXISTS "feedbacks_admin_all" ON public.feedbacks;
 CREATE POLICY "feedbacks_admin_all" ON public.feedbacks
   FOR ALL USING (
     EXISTS (

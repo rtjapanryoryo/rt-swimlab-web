@@ -18,13 +18,16 @@ create table if not exists public.subscriptions (
 
 alter table public.subscriptions enable row level security;
 
+DROP POLICY IF EXISTS "users_read_own" ON public.subscriptions;
 create policy "users_read_own" on public.subscriptions
   for select using (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "admins_read_all" ON public.subscriptions;
 create policy "admins_read_all" on public.subscriptions
   for select using (
     exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
   );
 
+DROP POLICY IF EXISTS "service_role_all" ON public.subscriptions;
 create policy "service_role_all" on public.subscriptions
   for all using (true);
