@@ -220,6 +220,20 @@ export default function GoalSheetPage() {
           </>
         )}
 
+        {/* カウンセリング導線 */}
+        <div className="no-print mt-8 rounded-2xl border border-cyan-200 bg-gradient-to-r from-cyan-50 to-teal-50 px-5 py-4 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-bold text-slate-800">目標シートをコーチと一緒に作る</p>
+            <p className="text-xs text-slate-500 mt-0.5">書き方で迷ったら、無料カウンセリングで相談できます（20分）</p>
+          </div>
+          <a
+            href="/mypage/counseling"
+            className="shrink-0 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-xs font-bold shadow-lg shadow-cyan-500/20 hover:from-cyan-400 hover:to-teal-400 transition-all whitespace-nowrap"
+          >
+            無料相談
+          </a>
+        </div>
+
         {/* 印刷フッター */}
         <div className="print-header border-t border-slate-200 pt-4 mt-8 text-xs text-slate-400">
           <p>RT swim lab — 目標達成ワークシート | このシートはコーチとのカウンセリングにもご活用ください</p>

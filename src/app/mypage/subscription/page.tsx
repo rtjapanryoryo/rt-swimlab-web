@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 
 const APP_PLANS = [
@@ -82,11 +84,11 @@ const APP_PLANS = [
 const COUNSELING_PLANS = [
   {
     id: 'free_counseling',
-    tag: '導線として',
+    tag: '初回無料',
     name: '無料カウンセリング',
     price: '¥0',
-    detail: '20分 / 月20枠 / 1人1回',
-    description: 'ツール理解・遺伝子検査紹介・パーソナル誘導を目的とした初回限定セッション。',
+    detail: '20分 / 1人1回限り',
+    description: '練習の方向性や目標の立て方について、コーチと一緒に確認します。まずは気軽にご相談ください。',
     cta: '申し込む',
     href: '/mypage/counseling',
     ctaStyle: 'border-2 border-slate-300 text-slate-600 hover:border-slate-400 hover:bg-slate-50',
@@ -118,6 +120,18 @@ const COUNSELING_PLANS = [
 export default function SubscriptionPage() {
   return (
     <div className="space-y-10 max-w-4xl mx-auto">
+
+      {/* デモ期間バナー */}
+      <div className="rounded-2xl border-2 border-amber-300 bg-gradient-to-r from-amber-50 to-yellow-50 px-6 py-5 flex items-start gap-4">
+        <span className="text-2xl shrink-0">🎁</span>
+        <div>
+          <p className="text-base font-black text-amber-800">現在、3ヶ月間のデモ期間中です</p>
+          <p className="text-sm text-amber-700 mt-1 leading-relaxed">
+            すべての機能を無料でご利用いただけます。料金の請求はございません。<br />
+            下記はいずれ有料化する際の予定料金です。参考としてご確認ください。
+          </p>
+        </div>
+      </div>
 
       {/* アプリプラン */}
       <section className="space-y-5">

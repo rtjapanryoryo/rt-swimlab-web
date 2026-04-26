@@ -994,6 +994,20 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                 )
               ) : null}
             </div>
+            {/* コーチに相談する導線 */}
+            <div className="mt-4 p-4 rounded-2xl bg-gradient-to-r from-cyan-50 to-teal-50 border border-cyan-200/60 flex items-center justify-between gap-4 no-print">
+              <div>
+                <p className="text-sm font-bold text-slate-800">このメニューについてコーチに相談する</p>
+                <p className="text-xs text-slate-500 mt-0.5">目標設定・強度調整など、無料でご相談いただけます</p>
+              </div>
+              <Link
+                href="/mypage/counseling"
+                className="shrink-0 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-xs font-bold shadow-lg shadow-cyan-500/20 hover:from-cyan-400 hover:to-teal-400 transition-all"
+              >
+                無料相談
+              </Link>
+            </div>
+
             <div className="flex flex-wrap justify-center gap-3 pt-6 pb-2 no-print">
               {/* 同じ条件で再生成（カスタムのみ） */}
               {resultSource === 'custom' && mode === 'custom' && (

@@ -97,6 +97,31 @@ export default function MyPageDashboard() {
         </div>
       </div>
 
+      {/* ════════ デモ期間バナー ════════ */}
+      <div className="rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50 px-5 py-4 flex items-start gap-3">
+        <span className="text-xl shrink-0">🎁</span>
+        <div>
+          <p className="text-sm font-bold text-amber-800">現在、3ヶ月間のデモ期間中です</p>
+          <p className="text-xs text-amber-600 mt-0.5 leading-relaxed">
+            すべての機能を無料でご利用いただけます。料金の請求はございません。
+          </p>
+        </div>
+      </div>
+
+      {/* ════════ カウンセリングCTA ════════ */}
+      <div className="rounded-2xl border border-cyan-200 bg-gradient-to-r from-cyan-50 to-teal-50 px-5 py-4 flex items-center justify-between gap-4">
+        <div>
+          <p className="text-sm font-bold text-slate-800">コーチに無料相談する</p>
+          <p className="text-xs text-slate-500 mt-0.5">練習の方向性・目標の立て方を一緒に確認します（20分・1回限り）</p>
+        </div>
+        <Link
+          href="/mypage/counseling"
+          className="shrink-0 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-xs font-bold shadow-lg shadow-cyan-500/20 hover:from-cyan-400 hover:to-teal-400 transition-all whitespace-nowrap"
+        >
+          無料相談
+        </Link>
+      </div>
+
       {/* ════════ アクティビティ ════════ */}
       <TrainingStatsSection />
 

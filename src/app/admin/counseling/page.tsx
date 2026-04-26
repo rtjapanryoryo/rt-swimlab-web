@@ -74,20 +74,85 @@ export default function AdminCounselingPage() {
     ? requests
     : requests.filter(r => r.status === statusFilter);
 
-  const pendingCount = requests.filter(r => r.status === 'pending').length;
+  const pendingCount   = requests.filter(r => r.status === 'pending').length;
+  const confirmedCount = requests.filter(r => r.status === 'confirmed').length;
+  const completedCount = requests.filter(r => r.status === 'completed').length;
+
+  const freeCount    = requests.filter(r => r.plan_type === 'free').length;
+  const athleteCount = requests.filter(r => r.plan_type === 'athlete').length;
+  const coachCount   = requests.filter(r => r.plan_type === 'coach').length;
+
+  // 無料→有料への転換数（無料申し込み後に選手/コーチ申し込みしたuser_idの数）
+  const freeUserIds = new Set(requests.filter(r => r.plan_type === 'free').map(r => r.user_id));
+  const convertedCount = requests.filter(
+    r => (r.plan_type === 'athlete' || r.plan_type === 'coach') && freeUserIds.has(r.user_id)
+  ).length;
+  const conversionRate = freeCount > 0 ? Math.round((convertedCount / freeCount) * 100) : 0;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-white">カウンセリング管理</h1>
-          <p className="text-sm text-slate-400 mt-0.5">申し込み一覧とステータス管理</p>
+          <p className="text-sm text-slate-400 mt-0.5">申し込み一覧・ステータス管理・分析</p>
         </div>
         {pendingCount > 0 && (
           <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/30">
             未対応 {pendingCount}件
           </span>
         )}
+      </div>
+
+      {/* 分析カード */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: '総申し込み',   value: requests.length,  color: 'text-white',       sub: '件' },
+          { label: '未対応',       value: pendingCount,      color: 'text-red-400',     sub: '件' },
+          { label: '対応中',       value: confirmedCount,    color: 'text-blue-400',    sub: '件' },
+          { label: '完了',         value: completedCount,    color: 'text-emerald-400', sub: '件' },
+        ].map(s => (
+          <div key={s.label} className="bg-slate-800/60 border border-slate-700 rounded-2xl px-4 py-3">
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{s.label}</p>
+            <p className={`text-2xl font-black mt-1 ${s.color}`}>{s.value}<span className="text-sm font-medium ml-0.5">{s.sub}</span></p>
+          </div>
+        ))}
+      </div>
+
+      {/* プラン内訳・転換率 */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="bg-slate-800/60 border border-slate-700 rounded-2xl px-4 py-4 space-y-2">
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">プラン別内訳</p>
+          {[
+            { label: '無料カウンセリング', count: freeCount,    color: 'bg-slate-500' },
+            { label: '選手プラン',         count: athleteCount, color: 'bg-cyan-500' },
+            { label: 'コーチプラン',       count: coachCount,   color: 'bg-amber-500' },
+          ].map(p => (
+            <div key={p.label} className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full shrink-0 ${p.color}`} />
+              <span className="text-xs text-slate-300 flex-1">{p.label}</span>
+              <span className="text-xs font-bold text-white">{p.count}件</span>
+              {requests.length > 0 && (
+                <div className="w-16 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${p.color}`}
+                    style={{ width: `${Math.round((p.count / requests.length) * 100)}%` }}
+                  />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="bg-slate-800/60 border border-slate-700 rounded-2xl px-4 py-4 space-y-3">
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">無料→有料 転換率</p>
+          <div className="flex items-end gap-2">
+            <p className="text-3xl font-black text-cyan-400">{conversionRate}<span className="text-lg">%</span></p>
+            <p className="text-xs text-slate-400 pb-1">{freeCount}件中 {convertedCount}件が有料申し込み</p>
+          </div>
+          <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-cyan-500 to-teal-500 rounded-full" style={{ width: `${conversionRate}%` }} />
+          </div>
+        </div>
       </div>
 
       {/* フィルター */}
