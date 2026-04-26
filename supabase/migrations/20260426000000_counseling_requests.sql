@@ -1,7 +1,8 @@
 -- カウンセリング申し込みテーブル
+-- user_id は profiles(id) を参照することで PostgREST の JOIN を有効化
 create table if not exists public.counseling_requests (
   id                    uuid primary key default gen_random_uuid(),
-  user_id               uuid not null references auth.users(id) on delete cascade,
+  user_id               uuid not null references public.profiles(id) on delete cascade,
   plan_type             text not null check (plan_type in ('free', 'athlete', 'coach')),
   preferred_datetime_1  text not null,
   preferred_datetime_2  text,

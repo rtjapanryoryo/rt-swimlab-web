@@ -100,13 +100,20 @@ export async function POST(request: NextRequest) {
     // 即時反映用に新件数を返す（楽観的更新でラグ解消）
     let quick_count = 0;
     let custom_count = 0;
+    let custom_count_this_month = 0;
     try {
-      const [quickRes, customRes] = await Promise.all([
+      const monthStart = new Date();
+      monthStart.setDate(1);
+      monthStart.setHours(0, 0, 0, 0);
+
+      const [quickRes, customRes, customMonthRes] = await Promise.all([
         sb.from('menus').select('id', { count: 'exact', head: true }).eq('user_id', user_id).eq('source', 'quick'),
         sb.from('menus').select('id', { count: 'exact', head: true }).eq('user_id', user_id).eq('source', 'custom'),
+        sb.from('menus').select('id', { count: 'exact', head: true }).eq('user_id', user_id).eq('source', 'custom').gte('created_at', monthStart.toISOString()),
       ]);
       quick_count = quickRes.count ?? 0;
       custom_count = customRes.count ?? 0;
+      custom_count_this_month = customMonthRes.count ?? 0;
     } catch {
       /* 非致命的 */
     }
@@ -117,6 +124,7 @@ export async function POST(request: NextRequest) {
       total_usage_count: quick_count + custom_count,
       quick_count,
       custom_count,
+      custom_count_this_month,
     });
   } catch (e) {
     console.error('[menus] POST error:', e);

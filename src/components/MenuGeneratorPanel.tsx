@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/components/AuthProvider';
+import { useProfile } from '@/contexts/ProfileContext';
 import {
   generateTrainingMenu,
   type TrainingInput,
@@ -13,6 +14,7 @@ import { MenuSheet } from '@/components/MenuSheet';
 import { PracticeVolumeField } from '@/components/PracticeVolumeField';
 import { PurposeField } from '@/components/PurposeField';
 import { isDistanceValidForType, isQuickDistanceValid } from '@/lib/rt/distance-time-validation';
+import { calcUsageStatus, IS_DEMO_PERIOD } from '@/lib/plan-limits';
 import Link from 'next/link';
 
 /** クイック用テンプレ（API不要・常にメニュー生成可能） */
@@ -78,7 +80,14 @@ export type MenuGeneratorPanelProps = {
 export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
   const { embedded, onSaved, planId, initialValues } = props ?? {};
   const { user, loading: sessionStatus } = useAuth();
+  const { profile } = useProfile();
   const { viewMode, setViewMode } = useViewMode();
+
+  const usageStatus = calcUsageStatus({
+    planId: 'free',
+    customCountTotal: profile?.custom_count ?? 0,
+    customCountThisMonth: profile?.custom_count_this_month ?? 0,
+  });
 
   const [mode, setMode] = useState<'quick' | 'custom'>(initialValues ? 'custom' : 'quick');
   const [customStep, setCustomStep] = useState<1 | 2>(1);
@@ -844,13 +853,26 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                       itemNumberPrefix="6"
                     />
                   </div>
-                  <div className="mt-6 flex flex-wrap gap-3">
+                  <div className="mt-6 flex flex-wrap gap-3 items-center">
                     <button onClick={() => setCustomStep(1)} className="px-6 py-3 border border-slate-200 bg-white text-slate-700 font-semibold rounded-xl shadow-sm hover:bg-slate-50">
                       戻る
                     </button>
-                    <button onClick={generateMenuWithAI} disabled={!isCustomFormValid() || customIsGenerating || openaiConfigured === false} className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-bold rounded-2xl shadow-lg shadow-cyan-500/25 hover:from-cyan-600 hover:to-teal-600 disabled:from-slate-400 disabled:to-slate-400 disabled:cursor-not-allowed transition-all" title={openaiConfigured === false ? 'カスタム作成はOPENAI_API_KEY設定後に利用できます' : undefined}>
+                    <button onClick={generateMenuWithAI} disabled={!isCustomFormValid() || customIsGenerating || openaiConfigured === false || (!IS_DEMO_PERIOD && usageStatus.isLimitReached)} className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-bold rounded-2xl shadow-lg shadow-cyan-500/25 hover:from-cyan-600 hover:to-teal-600 disabled:from-slate-400 disabled:to-slate-400 disabled:cursor-not-allowed transition-all" title={openaiConfigured === false ? 'カスタム作成はOPENAI_API_KEY設定後に利用できます' : undefined}>
                       {customIsGenerating ? '生成中...' : 'AIでメニューを生成'}
                     </button>
+                    {/* 残り回数表示 */}
+                    {IS_DEMO_PERIOD ? (
+                      <span className="text-xs text-slate-400">デモ期間中 · 無制限</span>
+                    ) : usageStatus.isLimitReached ? (
+                      <Link href="/mypage/subscription" className="text-xs text-amber-600 font-semibold underline underline-offset-2">
+                        上限に達しました · プランを確認
+                      </Link>
+                    ) : usageStatus.remaining !== null ? (
+                      <span className="text-xs text-slate-400">
+                        残り {usageStatus.remaining} 回
+                        {usageStatus.planId === 'free' ? '（累計）' : '（今月）'}
+                      </span>
+                    ) : null}
                   </div>
                 </>
               )}

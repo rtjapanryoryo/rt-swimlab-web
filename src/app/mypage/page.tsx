@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useProfile } from '@/contexts/ProfileContext';
 import { MenuLogSection } from '@/components/MenuLogSection';
 import { TrainingStatsSection } from '@/components/TrainingStatsSection';
-
+import { calcUsageStatus, IS_DEMO_PERIOD } from '@/lib/plan-limits';
 
 export default function MyPageDashboard() {
   const { profile } = useProfile();
@@ -14,6 +14,12 @@ export default function MyPageDashboard() {
   const totalCount = profile?.total_usage_count ?? 0;
   const quickCount = profile?.quick_count ?? 0;
   const customCount = profile?.custom_count ?? 0;
+
+  const usage = calcUsageStatus({
+    planId: 'free',
+    customCountTotal: customCount,
+    customCountThisMonth: profile?.custom_count_this_month ?? 0,
+  });
 
   return (
     <div className="space-y-6">
@@ -78,8 +84,32 @@ export default function MyPageDashboard() {
             ))}
           </div>
 
+          {/* カスタム生成 残り回数バッジ */}
+          <div className="mt-4">
+            {IS_DEMO_PERIOD ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-slate-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                デモ期間中 · カスタム生成 無制限
+              </span>
+            ) : usage.isLimitReached ? (
+              <Link
+                href="/mypage/subscription"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/30 text-xs text-amber-300 hover:bg-amber-500/30 transition-all"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                カスタム生成の上限に達しました · プランを確認
+              </Link>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-slate-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-violet-400" />
+                カスタム生成 あと{usage.remaining}回
+                {usage.planId === 'free' ? '（累計）' : '（今月）'}
+              </span>
+            )}
+          </div>
+
           {/* CTA */}
-          <div className="mt-6 flex flex-wrap gap-3">
+          <div className="mt-5 flex flex-wrap gap-3">
             <Link
               href="/mypage/menu"
               className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-bold rounded-2xl hover:from-cyan-400 hover:to-teal-400 transition-all shadow-xl shadow-cyan-500/30 hover:shadow-cyan-500/50 hover:-translate-y-0.5 text-sm"

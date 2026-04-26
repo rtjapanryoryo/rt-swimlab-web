@@ -4,8 +4,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
-import { ExternalLinks } from '@/components/ExternalLinks';
-
 type Subscription = {
   plan_id: 'free' | 'basic' | 'standard' | 'pro';
   status: string;

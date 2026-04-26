@@ -8,6 +8,7 @@ export type ProfileData = {
   role?: string;
   quick_count?: number;
   custom_count?: number;
+  custom_count_this_month?: number;
   goal?: string | null;
   show_goal?: boolean;
 };
@@ -43,7 +44,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const onMenuSaved = (e: Event) => {
       const detail = (e as CustomEvent).detail as
-        | { total_usage_count?: number; quick_count?: number; custom_count?: number }
+        | { total_usage_count?: number; quick_count?: number; custom_count?: number; custom_count_this_month?: number }
         | undefined;
       if (detail?.total_usage_count != null) {
         setProfile((prev) =>
@@ -53,6 +54,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
                 total_usage_count: detail.total_usage_count ?? prev.total_usage_count,
                 quick_count: detail.quick_count ?? prev.quick_count,
                 custom_count: detail.custom_count ?? prev.custom_count,
+                custom_count_this_month: detail.custom_count_this_month ?? prev.custom_count_this_month,
               }
             : null
         );
