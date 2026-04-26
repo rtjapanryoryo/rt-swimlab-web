@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient, getEffectiveUser } from '@/lib/supabase/server';
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
 const VALID_PLAN_TYPES = ['free', 'athlete', 'coach'] as const;
 type PlanType = typeof VALID_PLAN_TYPES[number];
@@ -23,11 +23,18 @@ async function sendNotificationEmail(params: {
   message: string | null;
   requestId: string;
 }) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return; // 未設定時はスキップ（ログのみ）
+  const appPassword = process.env.GMAIL_APP_PASSWORD;
+  if (!appPassword) return;
 
-  const resend = new Resend(apiKey);
   const { userName, userEmail, planType, dt1, dt2, dt3, message, requestId } = params;
+
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: ADMIN_EMAIL,
+      pass: appPassword,
+    },
+  });
 
   const body = `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -54,8 +61,8 @@ ${dt2 ? `　第2希望：${dt2}\n` : ''}${dt3 ? `　第3希望：${dt3}\n` : ''}
 申し込みID：${requestId}
 `.trim();
 
-  await resend.emails.send({
-    from: 'RT swim lab <onboarding@resend.dev>',
+  await transporter.sendMail({
+    from: `"RT swim lab" <${ADMIN_EMAIL}>`,
     to: ADMIN_EMAIL,
     subject: `【申し込み】${PLAN_LABELS[planType]} — ${userName}様`,
     text: body,
