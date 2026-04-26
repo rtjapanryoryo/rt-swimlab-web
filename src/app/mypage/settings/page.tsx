@@ -6,6 +6,28 @@ import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { ExternalLinks } from '@/components/ExternalLinks';
 
+type Subscription = {
+  plan_id: 'free' | 'basic' | 'standard' | 'pro';
+  status: string;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean;
+};
+
+const PLAN_NAMES: Record<string, string> = {
+  free: 'フリー',
+  basic: 'ベーシック',
+  standard: 'スタンダード',
+  pro: 'プロ',
+};
+
+const STATUS_NAMES: Record<string, string> = {
+  active: '有効',
+  trialing: 'トライアル中',
+  past_due: '支払い遅延',
+  canceled: 'キャンセル済み',
+  incomplete: '未完了',
+};
+
 export default function SettingsPage() {
   const { user } = useAuth();
   const accountEmail = user?.email ?? null;
@@ -13,6 +35,8 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [portalLoading, setPortalLoading] = useState(false);
 
   // パスワード変更
   const [newPassword, setNewPassword] = useState('');
@@ -27,15 +51,32 @@ export default function SettingsPage() {
   const [goalMessage, setGoalMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/profile', { credentials: 'include' })
-      .then((r) => r.json())
-      .then((d) => {
-        setDisplayName(d.profile?.display_name ?? '');
-        setGoal(d.profile?.goal ?? '');
-        setShowGoal(d.profile?.show_goal !== false);
-      })
-      .finally(() => setLoading(false));
+    Promise.all([
+      fetch('/api/profile', { credentials: 'include' }).then(r => r.json()),
+      fetch('/api/subscription', { credentials: 'include' }).then(r => r.ok ? r.json() : null).catch(() => null),
+    ]).then(([profileData, subData]) => {
+      setDisplayName(profileData.profile?.display_name ?? '');
+      setGoal(profileData.profile?.goal ?? '');
+      setShowGoal(profileData.profile?.show_goal !== false);
+      if (subData?.subscription) setSubscription(subData.subscription);
+    }).finally(() => setLoading(false));
   }, []);
+
+  const handleOpenPortal = async () => {
+    setPortalLoading(true);
+    try {
+      const res = await fetch('/api/stripe/portal', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ return_url: window.location.href }),
+      });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    } finally {
+      setPortalLoading(false);
+    }
+  };
 
   async function handleSaveName(e: React.FormEvent) {
     e.preventDefault();
@@ -309,17 +350,93 @@ export default function SettingsPage() {
       {/* 有料プラン */}
       <section className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
         <div className="px-6 py-5 border-b border-slate-100">
-          <h2 className="text-sm font-semibold text-slate-800">有料プラン</h2>
-          <p className="text-xs text-slate-500 mt-0.5">プレミアム機能の利用状況とプラン変更</p>
+          <h2 className="text-sm font-semibold text-slate-800">プランと請求</h2>
+          <p className="text-xs text-slate-500 mt-0.5">現在のプラン・領収書・キャンセルの管理</p>
         </div>
-        <div className="py-12 px-6 text-center">
-          <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-xl">◆</div>
-          <p className="text-slate-600 font-medium">準備中</p>
-          <p className="text-slate-400 text-sm mt-1">Stripe との連携は準備中です。しばらくお待ちください</p>
-          <div className="mt-6 pt-6 border-t border-slate-100">
-            <p className="text-xs text-slate-500 mb-3">お問い合わせ・最新情報はこちら</p>
-            <ExternalLinks variant="buttons" />
+        <div className="p-6 space-y-5">
+
+          {/* デモ期間バナー */}
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex items-start gap-2.5">
+            <span className="text-base shrink-0">🎁</span>
+            <div>
+              <p className="text-xs font-bold text-amber-800">現在、3ヶ月間のデモ期間中です</p>
+              <p className="text-xs text-amber-700 mt-0.5">料金の請求は一切ございません。すべての機能を無料でご利用いただけます。</p>
+            </div>
           </div>
+
+          {/* 現在のプラン */}
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 space-y-3">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">現在のプラン</p>
+
+            <div className="flex items-center gap-3">
+              <div className="flex-1">
+                <p className="text-lg font-black text-slate-900">
+                  {subscription ? PLAN_NAMES[subscription.plan_id] : 'フリー'}
+                </p>
+                {subscription ? (
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      subscription.status === 'active' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                      subscription.status === 'past_due' ? 'bg-red-50 text-red-600 border border-red-200' :
+                      'bg-slate-100 text-slate-500 border border-slate-200'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${
+                        subscription.status === 'active' ? 'bg-emerald-500' :
+                        subscription.status === 'past_due' ? 'bg-red-500' : 'bg-slate-400'
+                      }`} />
+                      {STATUS_NAMES[subscription.status] ?? subscription.status}
+                    </span>
+                    {subscription.current_period_end && (
+                      <span className="text-xs text-slate-400">
+                        次回更新：{new Date(subscription.current_period_end).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-400 mt-0.5">デモ期間中 — 無料</p>
+                )}
+              </div>
+              <Link
+                href="/mypage/subscription"
+                className="shrink-0 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 hover:border-cyan-400 hover:text-cyan-600 transition-all"
+              >
+                プランを見る
+              </Link>
+            </div>
+
+            {/* キャンセル予告 */}
+            {subscription?.cancel_at_period_end && subscription.current_period_end && (
+              <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5 text-xs text-amber-700 leading-relaxed">
+                <span className="font-bold">解約予定：</span>
+                {new Date(subscription.current_period_end).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })}
+                にプランが終了します。それまでは引き続きご利用いただけます。
+              </div>
+            )}
+          </div>
+
+          {/* Stripeポータルボタン */}
+          <div className="space-y-2">
+            <button
+              onClick={handleOpenPortal}
+              disabled={portalLoading}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-slate-800 text-white text-sm font-semibold rounded-xl hover:bg-slate-700 disabled:opacity-50 transition-all shadow-sm"
+            >
+              {portalLoading ? (
+                <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+              ) : (
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="2" y="5" width="20" height="14" rx="2" />
+                  <line x1="2" y1="10" x2="22" y2="10" />
+                </svg>
+              )}
+              {portalLoading ? '読み込み中...' : 'プラン・領収書・解約を管理する'}
+            </button>
+            <p className="text-xs text-slate-400">
+              Stripeの安全な管理画面で、領収書の発行・プランのキャンセルができます。
+              キャンセルは当月末まで有効で、翌月分から停止されます。
+            </p>
+          </div>
+
         </div>
       </section>
 
