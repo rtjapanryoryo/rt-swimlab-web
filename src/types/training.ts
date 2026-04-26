@@ -130,8 +130,10 @@ export interface SessionContext {
   avg_fatigue_7days: number | null;
   weekly_volume_done_m: number;
   weekly_volume_target_m: number | null;
-  coach_memo: string | null;        // AIプロンプトに注入するコーチ思想
-  intensity_ceiling_step: number | null; // 試合前ガード
+  coach_memo: string | null;
+  intensity_ceiling_step: number | null;
+  goal_context: string | null;          // 目標シートから抽出した選手の目標・課題
+  recent_menu_intentions: string[];     // 直近3回の生成メニューのintention（重複防止用）
 }
 
 export interface RecentSession {
@@ -140,6 +142,7 @@ export interface RecentSession {
   fatigue_after: FatigueLevel | null;
   period: PeriodKey | null;
   status: SessionStatus;
+  athlete_note: string | null;          // 選手の感想・メモ（次回生成に反映）
 }
 
 // ── 期自動配分 ────────────────────────────────────────────
