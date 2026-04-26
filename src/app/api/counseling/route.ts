@@ -1,8 +1,66 @@
 import { NextResponse } from 'next/server';
 import { createClient, getEffectiveUser } from '@/lib/supabase/server';
+import { Resend } from 'resend';
 
 const VALID_PLAN_TYPES = ['free', 'athlete', 'coach'] as const;
 type PlanType = typeof VALID_PLAN_TYPES[number];
+
+const PLAN_LABELS: Record<PlanType, string> = {
+  free:    '無料カウンセリング（20分）',
+  athlete: '選手プラン（30分 / ¥1,500）',
+  coach:   'コーチプラン（60分 / ¥2,980〜）',
+};
+
+const ADMIN_EMAIL = '06ra.ra06@gmail.com';
+
+async function sendNotificationEmail(params: {
+  userName: string;
+  userEmail: string;
+  planType: PlanType;
+  dt1: string;
+  dt2: string | null;
+  dt3: string | null;
+  message: string | null;
+  requestId: string;
+}) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return; // 未設定時はスキップ（ログのみ）
+
+  const resend = new Resend(apiKey);
+  const { userName, userEmail, planType, dt1, dt2, dt3, message, requestId } = params;
+
+  const body = `
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【RT swim lab】カウンセリング申し込みが届きました
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+■ 申し込み者
+　名前：${userName}
+　メール：${userEmail}
+
+■ プラン
+　${PLAN_LABELS[planType]}
+
+■ 希望日時
+　第1希望：${dt1}
+${dt2 ? `　第2希望：${dt2}\n` : ''}${dt3 ? `　第3希望：${dt3}\n` : ''}
+■ 相談内容
+　${message ?? '（記入なし）'}
+
+■ 管理画面で確認
+　https://rt-swimlab-web-tl3a.vercel.app/admin/counseling
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+申し込みID：${requestId}
+`.trim();
+
+  await resend.emails.send({
+    from: 'RT swim lab <onboarding@resend.dev>',
+    to: ADMIN_EMAIL,
+    subject: `【申し込み】${PLAN_LABELS[planType]} — ${userName}様`,
+    text: body,
+  });
+}
 
 export async function POST(req: Request) {
   const user = await getEffectiveUser();
@@ -44,6 +102,17 @@ export async function POST(req: Request) {
     }
   }
 
+  // プロフィール取得（氏名・メール）
+  const { data: profile } = await sb
+    .from('profiles')
+    .select('display_name')
+    .eq('id', user.id)
+    .single();
+
+  const userName  = profile?.display_name ?? '（名前未設定）';
+  const userEmail = user.email ?? '（メール不明）';
+
+  // DB保存
   const { data, error } = await sb
     .from('counseling_requests')
     .insert({
@@ -59,6 +128,19 @@ export async function POST(req: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // メール通知（失敗してもレスポンスには影響させない）
+  sendNotificationEmail({
+    userName,
+    userEmail,
+    planType: plan_type,
+    dt1: preferred_datetime_1.trim(),
+    dt2: preferred_datetime_2?.trim() || null,
+    dt3: preferred_datetime_3?.trim() || null,
+    message: message?.trim() || null,
+    requestId: data.id,
+  }).catch(err => console.error('[counseling] email send failed:', err));
+
   return NextResponse.json({ request: data }, { status: 201 });
 }
 
