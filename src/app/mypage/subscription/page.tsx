@@ -93,8 +93,9 @@ const COUNSELING_PLANS = [
     name: '無料カウンセリング',
     price: '¥0',
     regularPrice: null,
-    detail: '20分 / 1人1回限り',
-    desc: '練習の方向性や目標の立て方を、コーチと一緒に確認します。',
+    paid: false,
+    detail: '15分 / 1人1回限り',
+    desc: '目標シートを作成した初心者の方へ、コーチがフィードバック。RTメソッドの考え方や練習への向き合い方を一緒に確認します。',
     href: '/mypage/counseling',
     ctaLabel: '申し込む',
   },
@@ -104,6 +105,7 @@ const COUNSELING_PLANS = [
     name: '選手プラン',
     price: '¥1,500',
     regularPrice: '¥1,950',
+    paid: true,
     detail: '/ 回（30分）',
     desc: '目標シート作成・レビューとアクション設定。',
     href: '/mypage/counseling?plan=athlete',
@@ -115,6 +117,7 @@ const COUNSELING_PLANS = [
     name: 'コーチプラン',
     price: '¥2,980〜',
     regularPrice: '¥3,880〜',
+    paid: true,
     detail: '/ 回（60分）',
     desc: 'チームへのヒアリングと解決策の提案。',
     href: '/mypage/counseling?plan=coach',
@@ -276,9 +279,14 @@ export default function SubscriptionPage() {
             <div key={plan.id} className="rounded-2xl border border-slate-200 bg-white p-5 flex flex-col shadow-sm">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{plan.tag}</span>
-                {plan.regularPrice && (
-                  <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">キャンペーン価格</span>
-                )}
+                <div className="flex items-center gap-1.5">
+                  {plan.paid && (
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-white">有料</span>
+                  )}
+                  {plan.regularPrice && (
+                    <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">キャンペーン価格</span>
+                  )}
+                </div>
               </div>
               <p className="text-base font-bold text-slate-900">{plan.name}</p>
               <div className="mt-1 mb-0.5">
