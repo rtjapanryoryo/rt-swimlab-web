@@ -14,11 +14,11 @@ export interface Feedback {
 }
 
 export const CATEGORY_META: Record<FeedbackCategory, { label: string; color: string; icon: string }> = {
-  bug:     { label: 'バグ・不具合',       color: 'bg-red-100 text-red-700 border-red-200',     icon: '🐛' },
-  feature: { label: '機能改善の要望',     color: 'bg-blue-100 text-blue-700 border-blue-200',   icon: '✨' },
+  feature: { label: '機能・改善の要望',   color: 'bg-blue-100 text-blue-700 border-blue-200',       icon: '✨' },
   ux:      { label: '使いやすさについて', color: 'bg-purple-100 text-purple-700 border-purple-200', icon: '🎨' },
-  content: { label: 'コンテンツについて', color: 'bg-teal-100 text-teal-700 border-teal-200',   icon: '📝' },
-  other:   { label: 'その他',             color: 'bg-slate-100 text-slate-600 border-slate-200', icon: '💬' },
+  content: { label: 'コンテンツについて', color: 'bg-teal-100 text-teal-700 border-teal-200',       icon: '📝' },
+  bug:     { label: 'バグ・不具合',       color: 'bg-red-100 text-red-700 border-red-200',           icon: '🐛' },
+  other:   { label: 'その他',             color: 'bg-slate-100 text-slate-600 border-slate-200',     icon: '💬' },
 };
 
 export const STATUS_META: Record<FeedbackStatus, { label: string; color: string; dot: string }> = {

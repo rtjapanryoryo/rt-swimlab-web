@@ -8,84 +8,6 @@ type PlanId = 'free' | 'athlete' | 'coach';
 
 const ADMIN_EMAIL = '06ra.ra06@gmail.com';
 
-// 時間帯：週末と平日夜で分岐
-const WEEKEND_SLOTS = ['10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
-const WEEKDAY_SLOTS = ['19:00', '20:00', '21:00'];
-
-function isWeekend(dateStr: string) {
-  if (!dateStr) return false;
-  const d = new Date(dateStr);
-  const day = d.getDay();
-  return day === 0 || day === 6;
-}
-
-function getSlots(dateStr: string) {
-  return isWeekend(dateStr) ? WEEKEND_SLOTS : WEEKDAY_SLOTS;
-}
-
-function todayStr() {
-  return new Date().toISOString().split('T')[0];
-}
-
-interface DateTimePick {
-  date: string;
-  time: string;
-}
-
-function DateTimePicker({
-  label,
-  required,
-  value,
-  onChange,
-}: {
-  label: string;
-  required: boolean;
-  value: DateTimePick;
-  onChange: (v: DateTimePick) => void;
-}) {
-  const slots = value.date ? getSlots(value.date) : [];
-  const slotLabel = value.date
-    ? isWeekend(value.date) ? '土日（10:00〜17:00）' : '平日夜（19:00〜21:00）'
-    : '';
-
-  return (
-    <div className="space-y-2">
-      <p className="text-xs font-bold text-slate-500">
-        {label} {required && <span className="text-red-400">*</span>}
-      </p>
-      <input
-        type="date"
-        min={todayStr()}
-        value={value.date}
-        onChange={e => onChange({ date: e.target.value, time: '' })}
-        required={required}
-        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-300 bg-white"
-      />
-      {value.date && (
-        <div className="space-y-1.5">
-          <p className="text-[10px] text-slate-400">{slotLabel}</p>
-          <div className="flex flex-wrap gap-1.5">
-            {slots.map(slot => (
-              <button
-                key={slot}
-                type="button"
-                onClick={() => onChange({ ...value, time: slot })}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  value.time === slot
-                    ? 'bg-cyan-500 text-white shadow-md shadow-cyan-500/25'
-                    : 'bg-slate-100 text-slate-600 hover:bg-cyan-50 hover:text-cyan-700'
-                }`}
-              >
-                {slot}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 const PLANS = [
   {
     id: 'free' as PlanId,
@@ -142,16 +64,13 @@ function CounselingPageInner() {
   const initialPlan = (searchParams.get('plan') as PlanId | null) ?? null;
 
   const [selectedPlan, setSelectedPlan] = useState<PlanId | null>(initialPlan);
-  const [dt1, setDt1] = useState<DateTimePick>({ date: '', time: '' });
-  const [dt2, setDt2] = useState<DateTimePick>({ date: '', time: '' });
-  const [dt3, setDt3] = useState<DateTimePick>({ date: '', time: '' });
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
 
   const plan = PLANS.find(p => p.id === selectedPlan);
-  const canSubmit = !!selectedPlan && !!dt1.date && !!dt1.time;
+  const canSubmit = !!selectedPlan;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -159,16 +78,15 @@ function CounselingPageInner() {
     setSubmitting(true);
     setError('');
     try {
-      const fmt = (d: DateTimePick) => d.date && d.time ? `${d.date} ${d.time}` : '';
       const res = await fetch('/api/counseling', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           plan_type: selectedPlan,
-          preferred_datetime_1: fmt(dt1),
-          preferred_datetime_2: fmt(dt2) || null,
-          preferred_datetime_3: fmt(dt3) || null,
+          preferred_datetime_1: null,
+          preferred_datetime_2: null,
+          preferred_datetime_3: null,
           message: message.trim() || null,
         }),
       });
@@ -188,7 +106,8 @@ function CounselingPageInner() {
         <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center text-2xl">✓</div>
         <h2 className="text-lg font-bold text-slate-900">申し込みを受け付けました</h2>
         <p className="text-sm text-slate-500 leading-relaxed">
-          3〜5営業日以内にコーチよりご連絡いたします。
+          コーチより改めてご連絡いたします。<br />
+          しばらくお待ちください。
         </p>
         <p className="text-xs text-slate-400">{ADMIN_EMAIL}</p>
       </div>
@@ -251,7 +170,7 @@ function CounselingPageInner() {
                   <p className="text-xs text-slate-500 mt-1 leading-relaxed">{p.tagline}</p>
                 </div>
 
-                {/* 金額：常時表示（選択時はキャンペーン表示を追加） */}
+                {/* 金額：常時表示 */}
                 <div className="shrink-0 text-right">
                   {isSelected && p.regularPrice && (
                     <p className="text-[10px] text-slate-400 line-through">{p.regularPrice}</p>
@@ -286,14 +205,10 @@ function CounselingPageInner() {
 
       {/* 申し込みフォーム */}
       {selectedPlan && (
-        <form onSubmit={handleSubmit} className="space-y-6 bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-          <p className="text-sm font-bold text-slate-700">{plan?.name}を申し込む</p>
-
-          {/* 日時ピッカー */}
-          <div className="space-y-4">
-            <DateTimePicker label="第1希望" required value={dt1} onChange={setDt1} />
-            <DateTimePicker label="第2希望" required={false} value={dt2} onChange={setDt2} />
-            <DateTimePicker label="第3希望" required={false} value={dt3} onChange={setDt3} />
+        <form onSubmit={handleSubmit} className="space-y-5 bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+          <div>
+            <p className="text-sm font-bold text-slate-700">{plan?.name}を申し込む</p>
+            <p className="text-xs text-slate-400 mt-0.5">送信後、コーチより日程のご連絡をいたします。</p>
           </div>
 
           {/* 相談内容 */}

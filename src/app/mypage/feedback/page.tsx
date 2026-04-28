@@ -90,7 +90,7 @@ export default function FeedbackPage() {
       <div>
         <h1 className="text-xl font-bold text-slate-900">フィードバック</h1>
         <p className="text-sm text-slate-500 mt-0.5">
-          ご意見・ご要望をお聞かせください。サービスをより良くするために活用させていただきます。
+          使ってみた感想や、あったら嬉しい機能など、何でもお聞かせください。
         </p>
       </div>
 
@@ -131,7 +131,7 @@ export default function FeedbackPage() {
             rows={5}
             value={message}
             onChange={e => setMessage(e.target.value)}
-            placeholder="具体的に教えていただけると、改善に役立てやすくなります。&#10;&#10;例：〇〇ページで△△しようとしたとき、□□という問題が起きました。"
+            placeholder="練習メニューの感想、使ってみて良かった点、こんな機能があったら嬉しいなど、何でもお聞かせください。&#10;&#10;例：〇〇の機能がとても使いやすかったです。△△もできると、さらに練習に活かせそうです。"
             className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:border-cyan-300 transition resize-none"
           />
           <p className={`text-xs mt-1 text-right ${message.length > 1900 ? 'text-red-400' : 'text-slate-400'}`}>
