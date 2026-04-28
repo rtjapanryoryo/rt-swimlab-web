@@ -20,7 +20,23 @@ interface Customer {
   first_menu_at: string | null;
   last_active: string | null;
   sub_started_at: string | null;
+  counseling_count: number;
+  counseling_plan: string | null;
+  counseling_status: string | null;
 }
+
+const COUNSELING_PLAN_LABEL: Record<string, string> = {
+  free:    '無料',
+  athlete: '選手',
+  coach:   'コーチ',
+};
+
+const COUNSELING_STATUS_STYLE: Record<string, { label: string; cls: string }> = {
+  pending:   { label: '受付中',   cls: 'bg-amber-100 text-amber-700' },
+  confirmed: { label: '確定',     cls: 'bg-sky-100 text-sky-700'     },
+  completed: { label: '完了',     cls: 'bg-emerald-100 text-emerald-700' },
+  cancelled: { label: 'キャンセル', cls: 'bg-slate-100 text-slate-500' },
+};
 
 type SortKey = 'reg_no' | 'total_usage_count' | 'total_spend' | 'freq_per_week' | 'last_active' | 'created_at';
 
@@ -246,6 +262,7 @@ export default function CustomersPage() {
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Quick / Custom</th>
                 <SortTh k="freq_per_week"     label="週頻度" />
                 <SortTh k="last_active"       label="最終利用" />
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">カウンセリング</th>
                 <SortTh k="created_at"        label="登録日" />
               </tr>
             </thead>
@@ -318,6 +335,28 @@ export default function CustomersPage() {
                     </td>
                     {/* 最終利用 */}
                     <td className="px-4 py-3 text-sm text-slate-500 whitespace-nowrap">{fmtDate(c.last_active)}</td>
+                    {/* カウンセリング */}
+                    <td className="px-4 py-3">
+                      {c.counseling_count === 0 ? (
+                        <span className="text-slate-300 text-xs">—</span>
+                      ) : (
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-bold text-slate-700">{c.counseling_count}件</span>
+                            {c.counseling_plan && (
+                              <span className="text-[10px] text-slate-500">
+                                ({COUNSELING_PLAN_LABEL[c.counseling_plan] ?? c.counseling_plan})
+                              </span>
+                            )}
+                          </div>
+                          {c.counseling_status && COUNSELING_STATUS_STYLE[c.counseling_status] && (
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${COUNSELING_STATUS_STYLE[c.counseling_status].cls}`}>
+                              {COUNSELING_STATUS_STYLE[c.counseling_status].label}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </td>
                     {/* 登録日 */}
                     <td className="px-4 py-3 text-sm text-slate-400 whitespace-nowrap">{fmtDateShort(c.created_at)}</td>
                   </tr>
@@ -325,7 +364,7 @@ export default function CustomersPage() {
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-4 py-14 text-center">
+                  <td colSpan={10} className="px-4 py-14 text-center">
                     <p className="text-sm text-slate-400">該当する顧客が見つかりません</p>
                     <p className="text-xs text-slate-300 mt-1">検索条件を変更してください</p>
                   </td>

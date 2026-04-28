@@ -89,9 +89,6 @@ export async function POST(req: Request) {
   if (!plan_type || !VALID_PLAN_TYPES.includes(plan_type)) {
     return NextResponse.json({ error: 'Invalid plan type' }, { status: 400 });
   }
-  if (!preferred_datetime_1?.trim()) {
-    return NextResponse.json({ error: '第1希望日時は必須です' }, { status: 400 });
-  }
 
   // 無料カウンセリングは1アカウント1回まで
   if (plan_type === 'free') {

@@ -28,7 +28,7 @@ export async function GET() {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
-  const [{ data: allLogs }, { data: monthLogs }, { data: menuRows }] = await Promise.all([
+  const [{ data: allLogs }, { data: monthLogs }, { data: menuRows }, { data: counselingRows }] = await Promise.all([
     sb.from('generation_logs')
       .select('user_id, created_at')
       .in('user_id', userIds)
@@ -40,6 +40,10 @@ export async function GET() {
     sb.from('menus')
       .select('user_id, source, created_at')
       .in('user_id', userIds),
+    sb.from('counseling_requests')
+      .select('user_id, plan_type, status, created_at')
+      .in('user_id', userIds)
+      .order('created_at', { ascending: false }),
   ]);
 
   let subRows: { user_id: string; plan: string; status: string; price_monthly: number; started_at: string | null; cancelled_at: string | null }[] | null = null;
@@ -84,6 +88,18 @@ export async function GET() {
     });
   });
 
+  // カウンセリング情報（最新1件 + 件数）
+  type CounselingInfo = { count: number; latest_plan: string | null; latest_status: string | null };
+  const counselingMap = new Map<string, CounselingInfo>();
+  (counselingRows ?? []).forEach(r => {
+    const existing = counselingMap.get(r.user_id);
+    if (!existing) {
+      counselingMap.set(r.user_id, { count: 1, latest_plan: r.plan_type, latest_status: r.status });
+    } else {
+      counselingMap.set(r.user_id, { ...existing, count: existing.count + 1 });
+    }
+  });
+
   const customers = profiles.map(p => {
     const created = new Date(p.created_at);
     const daysSince = Math.max(1, Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24)));
@@ -112,8 +128,11 @@ export async function GET() {
       days_active:      daysSince,
       created_at:       p.created_at,
       first_menu_at:    firstMenuMap.get(p.id) ?? null,
-      last_active:      lastActiveMap.get(p.id) ?? null,
-      sub_started_at:   sub?.started_at ?? null,
+      last_active:        lastActiveMap.get(p.id) ?? null,
+      sub_started_at:     sub?.started_at ?? null,
+      counseling_count:   counselingMap.get(p.id)?.count ?? 0,
+      counseling_plan:    counselingMap.get(p.id)?.latest_plan ?? null,
+      counseling_status:  counselingMap.get(p.id)?.latest_status ?? null,
     };
   });
 
