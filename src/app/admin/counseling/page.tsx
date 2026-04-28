@@ -8,7 +8,7 @@ interface CounselingRequest {
   id: string;
   user_id: string;
   plan_type: 'free' | 'athlete' | 'coach';
-  preferred_datetime_1: string;
+  preferred_datetime_1: string | null;
   preferred_datetime_2: string | null;
   preferred_datetime_3: string | null;
   message: string | null;
@@ -219,34 +219,26 @@ export default function AdminCounselingPage() {
                     </span>
                     <span className="text-xs text-slate-400 ml-auto shrink-0">{fmtDate(r.created_at)}</span>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1.5 truncate">
-                    第1希望：{r.preferred_datetime_1}
-                  </p>
+                  {r.message ? (
+                    <p className="text-xs text-slate-500 mt-1.5 truncate">
+                      {r.message}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-slate-400 mt-1.5">（相談内容なし）</p>
+                  )}
                 </button>
 
                 {/* 展開エリア */}
                 {isExpanded && (
                   <div className="border-t border-slate-100 px-5 py-4 space-y-4 bg-slate-50/60">
 
-                    {/* 希望日時 */}
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">希望日時</p>
-                      {[r.preferred_datetime_1, r.preferred_datetime_2, r.preferred_datetime_3]
-                        .filter(Boolean)
-                        .map((dt, i) => (
-                          <p key={i} className="text-sm text-slate-700">
-                            <span className="text-slate-400 text-xs mr-2">第{i + 1}希望</span>{dt}
-                          </p>
-                        ))}
-                    </div>
-
                     {/* 相談内容 */}
-                    {r.message && (
-                      <div className="bg-white border border-slate-200 rounded-xl p-3">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">相談内容</p>
-                        <p className="text-sm text-slate-700 leading-relaxed">{r.message}</p>
-                      </div>
-                    )}
+                    <div className="bg-white border border-slate-200 rounded-xl p-3">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">相談内容</p>
+                      <p className="text-sm text-slate-700 leading-relaxed">
+                        {r.message ?? '（記入なし）'}
+                      </p>
+                    </div>
 
                     {/* 管理者メモ */}
                     <div>

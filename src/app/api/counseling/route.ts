@@ -17,16 +17,13 @@ async function sendNotificationEmail(params: {
   userName: string;
   userEmail: string;
   planType: PlanType;
-  dt1: string;
-  dt2: string | null;
-  dt3: string | null;
   message: string | null;
   requestId: string;
 }) {
   const appPassword = process.env.GMAIL_APP_PASSWORD;
   if (!appPassword) return;
 
-  const { userName, userEmail, planType, dt1, dt2, dt3, message, requestId } = params;
+  const { userName, userEmail, planType, message, requestId } = params;
 
   const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -48,9 +45,6 @@ async function sendNotificationEmail(params: {
 ■ プラン
 　${PLAN_LABELS[planType]}
 
-■ 希望日時
-　第1希望：${dt1}
-${dt2 ? `　第2希望：${dt2}\n` : ''}${dt3 ? `　第3希望：${dt3}\n` : ''}
 ■ 相談内容
 　${message ?? '（記入なし）'}
 
@@ -122,7 +116,7 @@ export async function POST(req: Request) {
     .insert({
       user_id: user.id,
       plan_type,
-      preferred_datetime_1: preferred_datetime_1.trim(),
+      preferred_datetime_1: preferred_datetime_1?.trim() || null,
       preferred_datetime_2: preferred_datetime_2?.trim() || null,
       preferred_datetime_3: preferred_datetime_3?.trim() || null,
       message: message?.trim() || null,
@@ -138,9 +132,6 @@ export async function POST(req: Request) {
     userName,
     userEmail,
     planType: plan_type,
-    dt1: preferred_datetime_1.trim(),
-    dt2: preferred_datetime_2?.trim() || null,
-    dt3: preferred_datetime_3?.trim() || null,
     message: message?.trim() || null,
     requestId: data.id,
   }).catch(err => console.error('[counseling] email send failed:', err));
