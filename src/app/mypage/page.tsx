@@ -142,7 +142,7 @@ export default function MyPageDashboard() {
       <div className="rounded-2xl border border-cyan-200 bg-gradient-to-r from-cyan-50 to-teal-50 px-5 py-4 flex items-center justify-between gap-4">
         <div>
           <p className="text-sm font-bold text-slate-800">コーチに無料相談する</p>
-          <p className="text-xs text-slate-500 mt-0.5">練習の方向性・目標の立て方を一緒に確認します（20分・1回限り）</p>
+          <p className="text-xs text-slate-500 mt-0.5">練習の方向性・目標の立て方を一緒に確認します（15分・1回限り）</p>
         </div>
         <Link
           href="/mypage/counseling"

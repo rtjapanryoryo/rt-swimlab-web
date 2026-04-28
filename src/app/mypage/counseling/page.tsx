@@ -6,8 +6,6 @@ import { Suspense } from 'react';
 
 type PlanId = 'free' | 'athlete' | 'coach';
 
-const ADMIN_EMAIL = '06ra.ra06@gmail.com';
-
 const PLANS = [
   {
     id: 'free' as PlanId,
@@ -20,7 +18,7 @@ const PLANS = [
     paid: false,
     description: '目標シートを作成した初心者の方を対象に、コーチがフィードバックを行います。目標の立て方・練習への向き合い方など、RTメソッドの考え方を一緒に確認します。',
     points: ['目標シートへのコーチフィードバック', 'RTメソッドの考え方・練習への向き合い方', '今後の練習の方向性の確認'],
-    note: '1アカウント1回限りのご利用となります。',
+    note: '1アカウント1回限りのご利用となります。初心者の方を対象としており、中級・上級レベルの方、選手プラン・コーチプランは適用外となります。',
     border: 'border-slate-200',
     activeBorder: 'border-slate-400',
     tagStyle: 'bg-slate-100 text-slate-600',
@@ -106,10 +104,9 @@ function CounselingPageInner() {
         <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center text-2xl">✓</div>
         <h2 className="text-lg font-bold text-slate-900">申し込みを受け付けました</h2>
         <p className="text-sm text-slate-500 leading-relaxed">
-          コーチより改めてご連絡いたします。<br />
+          3営業日以内にコーチよりご連絡いたします。<br />
           しばらくお待ちください。
         </p>
-        <p className="text-xs text-slate-400">{ADMIN_EMAIL}</p>
       </div>
     );
   }
@@ -241,7 +238,7 @@ function CounselingPageInner() {
           </button>
 
           <p className="text-center text-[10px] text-slate-400">
-            送信後、{ADMIN_EMAIL} よりご連絡いたします
+            送信後、3営業日以内にご連絡いたします
           </p>
         </form>
       )}

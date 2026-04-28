@@ -6,7 +6,7 @@ const VALID_PLAN_TYPES = ['free', 'athlete', 'coach'] as const;
 type PlanType = typeof VALID_PLAN_TYPES[number];
 
 const PLAN_LABELS: Record<PlanType, string> = {
-  free:    '無料カウンセリング（20分）',
+  free:    '無料カウンセリング（15分）',
   athlete: '選手プラン（30分 / ¥1,500）',
   coach:   'コーチプラン（60分 / ¥2,980〜）',
 };
