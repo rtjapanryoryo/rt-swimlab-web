@@ -46,8 +46,7 @@ const NAV = [
   {
     section: 'システム',
     items: [
-      { href: '/admin/settings', label: '設定・同期', icon: SettingsIcon },
-      { href: '/admin/legal',    label: '法的文書',   icon: LegalIcon    },
+      { href: '/admin/legal', label: '法的文書', icon: LegalIcon },
     ],
   },
 ];
