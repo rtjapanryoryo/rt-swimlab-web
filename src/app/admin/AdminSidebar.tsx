@@ -15,6 +15,7 @@ function CounselingIcon()  { return <svg className={ic} viewBox="0 0 24 24" fill
 function FeedbackIcon()  { return <svg className={ic} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>; }
 function SettingsIcon()  { return <svg className={ic} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v3m0 16v3M4.22 4.22l2.12 2.12m11.32 11.32 2.12 2.12M1 12h3m16 0h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>; }
 function LegalIcon()     { return <svg className={ic} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>; }
+function TimelineIcon()  { return <svg className={ic} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><circle cx="12" cy="6" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="18" r="2"/><line x1="12" y1="6" x2="19" y2="6"/><line x1="12" y1="12" x2="19" y2="12"/><line x1="12" y1="18" x2="19" y2="18"/></svg>; }
 function LogoutIcon()    { return <svg className={ic} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>; }
 
 // ── ナビ定義 ──────────────────────────────────────────────────────────────
@@ -34,6 +35,12 @@ const NAV = [
       { href: '/admin/analytics',   label: '利用分析',           icon: AnalyticsIcon   },
       { href: '/admin/counseling',  label: 'カウンセリング管理',  icon: CounselingIcon  },
       { href: '/admin/feedback',    label: 'フィードバック管理',  icon: FeedbackIcon    },
+    ],
+  },
+  {
+    section: 'プロジェクト',
+    items: [
+      { href: '/admin/timeline', label: 'タイムライン', icon: TimelineIcon },
     ],
   },
   {

@@ -92,6 +92,7 @@ const COUNSELING_PLANS = [
     tag: '初回無料',
     name: '無料カウンセリング',
     price: '¥0',
+    regularPrice: null,
     detail: '20分 / 1人1回限り',
     desc: '練習の方向性や目標の立て方を、コーチと一緒に確認します。',
     href: '/mypage/counseling',
@@ -102,6 +103,7 @@ const COUNSELING_PLANS = [
     tag: '個人向け',
     name: '選手プラン',
     price: '¥1,500',
+    regularPrice: '¥1,950',
     detail: '/ 回（30分）',
     desc: '目標シート作成・レビューとアクション設定。',
     href: '/mypage/counseling?plan=athlete',
@@ -112,6 +114,7 @@ const COUNSELING_PLANS = [
     tag: '指導者向け',
     name: 'コーチプラン',
     price: '¥2,980〜',
+    regularPrice: '¥3,880〜',
     detail: '/ 回（60分）',
     desc: 'チームへのヒアリングと解決策の提案。',
     href: '/mypage/counseling?plan=coach',
@@ -257,13 +260,36 @@ export default function SubscriptionPage() {
           </p>
         </div>
 
+        {/* キャンペーンバナー */}
+        <div className="rounded-2xl border-2 border-red-100 bg-gradient-to-r from-red-50 to-rose-50 px-5 py-3 flex items-center gap-3">
+          <span className="shrink-0 text-base">🎉</span>
+          <div>
+            <p className="text-xs font-black text-red-700">期間限定キャンペーン実施中</p>
+            <p className="text-[11px] text-red-600 mt-0.5">
+              現在、通常価格より割引した特別料金でご提供しています。キャンペーン終了後は定価に戻ります。
+            </p>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {COUNSELING_PLANS.map((plan) => (
             <div key={plan.id} className="rounded-2xl border border-slate-200 bg-white p-5 flex flex-col shadow-sm">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">{plan.tag}</span>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{plan.tag}</span>
+                {plan.regularPrice && (
+                  <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">キャンペーン価格</span>
+                )}
+              </div>
               <p className="text-base font-bold text-slate-900">{plan.name}</p>
-              <div className="flex items-baseline gap-1 mt-1 mb-1">
-                <span className="text-xl font-black text-slate-900">{plan.price}</span>
+              <div className="mt-1 mb-0.5">
+                {plan.regularPrice && (
+                  <p className="text-xs text-slate-400 line-through">定価 {plan.regularPrice}</p>
+                )}
+                <div className="flex items-baseline gap-1">
+                  <span className={`text-xl font-black ${plan.regularPrice ? 'text-red-600' : 'text-slate-900'}`}>
+                    {plan.price}
+                  </span>
+                </div>
               </div>
               <p className="text-xs text-slate-400 mb-3">{plan.detail}</p>
               <p className="text-xs text-slate-600 leading-relaxed flex-1 mb-4">{plan.desc}</p>

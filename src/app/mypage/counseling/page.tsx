@@ -94,6 +94,7 @@ const PLANS = [
     tagline: 'まずは気軽に話してみる',
     time: '20分',
     price: '¥0',
+    regularPrice: null,
     description: '練習の方向性や目標の立て方について、コーチと一緒に整理します。',
     points: ['アプリの使い方・目標シートの立て方', '現在の課題の整理', '練習の方向性の確認'],
     note: '1アカウント1回限りのご利用となります。',
@@ -108,6 +109,7 @@ const PLANS = [
     tagline: '目標を具体的に設計する',
     time: '30分',
     price: '¥1,500 / 回',
+    regularPrice: '¥1,950 / 回',
     description: '目標シートをコーチと一緒に作成・レビューし、次の練習までのアクションを設定します。',
     points: ['目標シート作成・レビュー', 'アプリ設定の最適化', '次回までのアクション設定'],
     note: '',
@@ -122,6 +124,7 @@ const PLANS = [
     tagline: 'チームへのRTメソッド導入',
     time: '60分',
     price: '¥2,980 / 回〜',
+    regularPrice: '¥3,880 / 回〜',
     description: 'チームや学校向けに、課題のヒアリングから解決策の提案まで行います。',
     points: ['チームへのヒアリング・課題整理', '解決策の提案', '次回までのアクション設定'],
     note: '4名以上の場合は +¥1,000/人となります。',
@@ -145,7 +148,6 @@ function CounselingPageInner() {
   const [error, setError] = useState('');
 
   const plan = PLANS.find(p => p.id === selectedPlan);
-  const dt1Str = dt1.date && dt1.time ? `${dt1.date} ${dt1.time}` : dt1.date;
   const canSubmit = !!selectedPlan && !!dt1.date && !!dt1.time;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -198,6 +200,17 @@ function CounselingPageInner() {
         <p className="text-sm text-slate-500 mt-0.5">コーチが伴走し、練習の方向性を一緒に設計します。</p>
       </div>
 
+      {/* キャンペーンバナー */}
+      <div className="rounded-2xl border-2 border-red-100 bg-gradient-to-r from-red-50 to-rose-50 px-5 py-3 flex items-center gap-3">
+        <span className="shrink-0 text-base">🎉</span>
+        <div>
+          <p className="text-xs font-black text-red-700">期間限定キャンペーン実施中</p>
+          <p className="text-[11px] text-red-600 mt-0.5">
+            現在、通常価格より割引した特別料金でご提供しています。キャンペーン終了後は定価に戻ります。
+          </p>
+        </div>
+      </div>
+
       {/* プラン選択 */}
       <div className="space-y-3">
         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">プランを選ぶ</p>
@@ -234,7 +247,17 @@ function CounselingPageInner() {
 
                 {/* 金額：選択時のみ小さく表示 */}
                 {isSelected && (
-                  <span className="text-xs text-slate-400 shrink-0 font-medium">{p.price}</span>
+                  <div className="shrink-0 text-right">
+                    {p.regularPrice && (
+                      <p className="text-[10px] text-slate-400 line-through">{p.regularPrice}</p>
+                    )}
+                    <span className={`text-xs font-semibold ${p.regularPrice ? 'text-red-600' : 'text-slate-400'}`}>
+                      {p.price}
+                    </span>
+                    {p.regularPrice && (
+                      <p className="text-[9px] text-red-500 font-bold">キャンペーン</p>
+                    )}
+                  </div>
                 )}
               </div>
 
