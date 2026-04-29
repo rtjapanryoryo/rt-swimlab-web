@@ -130,6 +130,18 @@ export function CoachIcon() {
   );
 }
 
+/** ドリル練習：再生マーク + レーンライン */
+export function DrillIcon() {
+  return (
+    <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="9" />
+      <line x1="2" y1="8" x2="22" y2="8" opacity="0.35" />
+      <line x1="2" y1="16" x2="22" y2="16" opacity="0.35" />
+    </svg>
+  );
+}
+
 /** フィードバック：吹き出し + ハート */
 export function FeedbackIcon() {
   return (

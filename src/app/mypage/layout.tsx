@@ -11,6 +11,7 @@ import {
   CommunityIcon,
   CounselingIcon,
   DashboardIcon,
+  DrillIcon,
   FeedbackIcon,
   GeneProfileIcon,
   GoalSheetIcon,
@@ -20,6 +21,14 @@ import {
 
 const LINE_URL = process.env.NEXT_PUBLIC_LINE_URL || '';
 const COMMUNITY_URL = process.env.NEXT_PUBLIC_COMMUNITY_URL || '';
+const DRILL_PRACTICE_ENABLED = process.env.NEXT_PUBLIC_DRILL_PRACTICE_ENABLED === 'true';
+
+const drillNavItem = {
+  href: '/mypage/drill-practice',
+  label: 'ドリル練習',
+  Icon: DrillIcon,
+  footerLabel: 'ドリル',
+} as const;
 
 const navItems = [
   { href: '/mypage', label: 'ダッシュボード', Icon: DashboardIcon },
@@ -28,6 +37,7 @@ const navItems = [
   { href: '/mypage/counseling', label: 'カウンセリング', Icon: CounselingIcon, footerLabel: 'カウンセリング' },
   { href: '/mypage/genetic', label: 'RT GENE PROFILE', Icon: GeneProfileIcon, hideInFooter: true },
   { href: COMMUNITY_URL || '#', label: 'RTコミュニティ', Icon: CommunityIcon, external: true, disabled: !COMMUNITY_URL, footerLabel: 'コミュニティ' },
+  ...(DRILL_PRACTICE_ENABLED ? [drillNavItem] : []),
   { href: '/mypage/feedback', label: 'フィードバック', Icon: FeedbackIcon, footerLabel: 'フィードバック' },
   { href: '/mypage/settings', label: 'アカウント情報', Icon: AccountIcon },
 ];
