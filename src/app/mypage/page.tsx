@@ -130,17 +130,6 @@ export default function MyPageDashboard() {
         </div>
       </div>
 
-      {/* ════════ デモ期間バナー ════════ */}
-      <div className="rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50 px-5 py-4 flex items-start gap-3">
-        <span className="text-xl shrink-0">🎁</span>
-        <div>
-          <p className="text-sm font-bold text-amber-800">現在、3ヶ月間のデモ期間中です</p>
-          <p className="text-xs text-amber-600 mt-0.5 leading-relaxed">
-            すべての機能を無料でご利用いただけます。料金の請求はございません。
-          </p>
-        </div>
-      </div>
-
       {/* ════════ カウンセリングCTA ════════ */}
       <div className="rounded-2xl border border-cyan-200 bg-gradient-to-r from-cyan-50 to-teal-50 px-5 py-4 flex items-center justify-between gap-4">
         <div>
