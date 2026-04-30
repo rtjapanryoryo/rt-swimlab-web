@@ -22,6 +22,7 @@ interface CounselingRequest {
   message: string | null;
   status: Status;
   admin_note: string | null;
+  user_email: string | null;
   created_at: string;
   profiles: { display_name: string | null } | null;
 }
@@ -35,7 +36,7 @@ const PLAN_META: Record<string, { label: string; badge: string }> = {
 const STATUS_META: Record<Status, { label: string; badge: string; dot: string; calBg: string }> = {
   pending:   { label: '未対応',     badge: 'bg-red-50 text-red-600 border border-red-200',           dot: 'bg-red-400',     calBg: 'bg-red-100 text-red-700' },
   confirmed: { label: '日程確定',   badge: 'bg-blue-50 text-blue-600 border border-blue-200',         dot: 'bg-blue-400',    calBg: 'bg-blue-100 text-blue-700' },
-  completed: { label: '完了',       badge: 'bg-emerald-50 text-emerald-700 border border-emerald-200', dot: 'bg-emerald-400', calBg: 'bg-emerald-100 text-emerald-700' },
+  completed: { label: '対応完了',   badge: 'bg-emerald-50 text-emerald-700 border border-emerald-200', dot: 'bg-emerald-400', calBg: 'bg-emerald-100 text-emerald-700' },
   cancelled: { label: 'キャンセル', badge: 'bg-slate-100 text-slate-500 border border-slate-200',     dot: 'bg-slate-400',   calBg: 'bg-slate-100 text-slate-500' },
 };
 
@@ -50,6 +51,73 @@ function getMonday(date: Date): Date {
   return d;
 }
 
+type ScriptSection = {
+  id: string;
+  time: string;
+  title: string;
+  colorClass: string;
+  titleColor: string;
+  content: string;
+};
+
+const DEFAULT_SECTIONS: ScriptSection[] = [
+  {
+    id: 'opening',
+    time: '0〜2分',
+    title: '① オープニング・概要説明',
+    colorClass: 'border-slate-300 bg-slate-50',
+    titleColor: 'text-slate-700',
+    content: `「本日はお時間いただきありがとうございます！15分という短い時間ですが、しっかりお伝えしたいことがあるので一緒に進めましょう。」
+→ 初心者の方向けに：「RT swim labは、泳法・練習期・体調などを入力するだけで、あなた専用の練習メニューが自動で出てくるアプリです。今日はその使い方と、練習の方向性を一緒に確認していければと思います。」`,
+  },
+  {
+    id: 'goalsheet',
+    time: '2〜12分',
+    title: '② 目標シートのヒアリング（メイン）',
+    colorClass: 'border-cyan-200 bg-cyan-50/40',
+    titleColor: 'text-cyan-800',
+    content: `→ 「目標シートは書いていただけましたか？今の目標・練習頻度・課題などを一緒に確認していきましょう。」
+→ 相手の疑問・質問に応答しながら、方向性を一緒に決めていく。
+→ 方向性を伝える：「今の状況だと、まずは○○を重点的に練習するといいと思います。」
+→ アプリが使えない場合は代わりに操作してあげる。「一緒に画面を見ながらやってみましょう。（画面共有）」`,
+  },
+  {
+    id: 'supplement',
+    time: '12〜14分',
+    title: '③ 補足紹介（各30秒・必要に応じて）',
+    colorClass: 'border-violet-200 bg-violet-50/40',
+    titleColor: 'text-violet-800',
+    content: `【遺伝子の紹介】自分の特性（持久系か瞬発系か等）が遺伝子レベルで分かる検査があります。一度やると練習の最適化に活かせます。
+【コミュニティ】同じ目標を持つ仲間がいるコミュニティも近日公開予定です。
+【ドリルの進め方】種目別のドリル動画もアプリ内にあるので、参考にしてみてください。
+【アプリの使い方】分からないことがあればいつでも聞いてください。`,
+  },
+  {
+    id: 'closing',
+    time: '14〜15分',
+    title: '④ クロージング・次のアクション',
+    colorClass: 'border-amber-200 bg-amber-50/40',
+    titleColor: 'text-amber-800',
+    content: `「最後に、今日話した中でまず一つだけやってみてほしいことを決めましょう。」
+→ 「目標シートを完成させる・メニュー生成を試す・遺伝子検査を申し込む、どれが一番やれそうですか？」
+→ 「では○○をやってみてください。何かあればいつでも連絡してくださいね。今日はありがとうございました！」`,
+  },
+];
+
+const DEFAULT_FAQ = `Q. 有料プランはいくらですか？
+→ 今キャンペーン中です。選手プランは1回1,500円です。
+
+Q. 遺伝子検査は怖くないですか？
+→ 口の中を綿棒で拭うだけです。痛みなし・郵送でできます。
+
+Q. アプリは難しくないですか？
+→ 条件を選んでボタンを押すだけです。5分あれば使えます。
+
+Q. コミュニティって何をするんですか？
+→ 練習記録の共有・情報交換がメインです。強制参加ではありません。`;
+
+const LS_KEY = 'rt_counseling_script';
+
 export default function AdminCounselingPage() {
   const [requests, setRequests]     = useState<CounselingRequest[]>([]);
   const [loading, setLoading]       = useState(true);
@@ -57,8 +125,45 @@ export default function AdminCounselingPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [adminNote, setAdminNote]   = useState('');
-  const [view, setView]             = useState<'list' | 'calendar' | 'script'>('list');
+  const [view, setView]             = useState<'list' | 'calendar' | 'script' | 'guide'>('list');
   const [weekStart, setWeekStart]   = useState(() => getMonday(new Date()));
+
+  // カンペ編集
+  const [scriptSections, setScriptSections] = useState<ScriptSection[]>(DEFAULT_SECTIONS);
+  const [scriptFaq, setScriptFaq]           = useState(DEFAULT_FAQ);
+  const [scriptEditMode, setScriptEditMode] = useState(false);
+  const [draftSections, setDraftSections]   = useState<ScriptSection[]>(DEFAULT_SECTIONS);
+  const [draftFaq, setDraftFaq]             = useState(DEFAULT_FAQ);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(LS_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.sections) { setScriptSections(parsed.sections); setDraftSections(parsed.sections); }
+        if (parsed.faq)      { setScriptFaq(parsed.faq);           setDraftFaq(parsed.faq); }
+      }
+    } catch {}
+  }, []);
+
+  const saveScript = () => {
+    setScriptSections(draftSections);
+    setScriptFaq(draftFaq);
+    localStorage.setItem(LS_KEY, JSON.stringify({ sections: draftSections, faq: draftFaq }));
+    setScriptEditMode(false);
+  };
+
+  const cancelScript = () => {
+    setDraftSections(scriptSections);
+    setDraftFaq(scriptFaq);
+    setScriptEditMode(false);
+  };
+
+  const resetScript = () => {
+    if (!confirm('カンペをデフォルトに戻しますか？')) return;
+    setDraftSections(DEFAULT_SECTIONS);
+    setDraftFaq(DEFAULT_FAQ);
+  };
 
   const fetchRequests = () => {
     setLoading(true);
@@ -200,18 +305,18 @@ export default function AdminCounselingPage() {
       </div>
 
       {/* タブ切り替え */}
-      <div className="flex gap-2 border-b border-slate-200 pb-0">
-        {(['list', 'calendar', 'script'] as const).map(v => (
+      <div className="flex gap-2 border-b border-slate-200 pb-0 overflow-x-auto">
+        {(['list', 'calendar', 'script', 'guide'] as const).map(v => (
           <button
             key={v}
             onClick={() => setView(v)}
-            className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all -mb-px ${
+            className={`whitespace-nowrap px-4 py-2 text-sm font-semibold border-b-2 transition-all -mb-px ${
               view === v
                 ? 'border-sky-500 text-sky-700'
                 : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >
-            {v === 'list' ? 'リスト' : v === 'calendar' ? 'カレンダー' : '話すカンペ'}
+            {v === 'list' ? 'リスト' : v === 'calendar' ? 'カレンダー' : v === 'script' ? '話すカンペ' : '操作ガイド'}
           </button>
         ))}
       </div>
@@ -288,12 +393,20 @@ export default function AdminCounselingPage() {
 
                     {isExpanded && (
                       <div className="border-t border-slate-100 px-5 py-4 space-y-4 bg-slate-50/60">
-                        {r.preferred_datetime_1 && (
-                          <div className="bg-sky-50 border border-sky-200 rounded-xl px-4 py-2.5">
-                            <p className="text-[10px] font-bold text-sky-500 uppercase tracking-wider mb-0.5">希望日時</p>
-                            <p className="text-sm font-semibold text-sky-800">{isoToSlotKey(r.preferred_datetime_1).replace('T', ' ')}</p>
-                          </div>
-                        )}
+                        <div className="flex flex-wrap gap-2">
+                          {r.preferred_datetime_1 && (
+                            <div className="bg-sky-50 border border-sky-200 rounded-xl px-4 py-2.5 flex-1 min-w-[180px]">
+                              <p className="text-[10px] font-bold text-sky-500 uppercase tracking-wider mb-0.5">希望日時</p>
+                              <p className="text-sm font-semibold text-sky-800">{isoToSlotKey(r.preferred_datetime_1)}</p>
+                            </div>
+                          )}
+                          {r.user_email && (
+                            <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 flex-1 min-w-[200px]">
+                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">メールアドレス</p>
+                              <p className="text-sm font-semibold text-slate-800 break-all">{r.user_email}</p>
+                            </div>
+                          )}
+                        </div>
                         <div className="bg-white border border-slate-200 rounded-xl p-3">
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">相談内容</p>
                           <p className="text-sm text-slate-700 leading-relaxed">{r.message ?? '（記入なし）'}</p>
@@ -309,6 +422,31 @@ export default function AdminCounselingPage() {
                             placeholder="日程確定情報・対応履歴など"
                             className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-400 resize-none"
                           />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">返信テンプレ</p>
+                          <div className="flex gap-2 flex-wrap">
+                            {([
+                              { label: '日程確定メール', key: 'confirmed' },
+                              { label: 'キャンセルメール', key: 'cancelled' },
+                            ] as const).map(({ label, key }) => (
+                              <button
+                                key={key}
+                                onClick={() => {
+                                  const name = r.profiles?.display_name ?? 'ご利用者';
+                                  const dt = r.preferred_datetime_1 ? isoToSlotKey(r.preferred_datetime_1) : '（日時未定）';
+                                  const plan = PLAN_META[r.plan_type].label;
+                                  const text = key === 'confirmed'
+                                    ? `${name}様\n\nこの度はRT swim labのカウンセリングにお申し込みいただきありがとうございます。\n\n下記の通り日程を確定いたしました。\n\n■ 日時：${dt}\n■ プラン：${plan}\n■ 形式：オンライン（Google Meet / Zoom）\n\n当日のミーティングリンクは、開始30分前までにメールにてお送りします。\n\n何かご不明点がありましたら、お気軽にご連絡ください。\nよろしくお願いいたします。\n\nRT swim lab`
+                                    : `${name}様\n\nこの度はRT swim labのカウンセリングにお申し込みいただきありがとうございます。\n\n大変恐縮ですが、諸事情によりご予約をキャンセルさせていただきたくご連絡いたしました。\n\nご迷惑をおかけして大変申し訳ございません。\n改めてご希望の日程をお知らせいただければ、再度調整いたします。\n\nどうぞよろしくお願いいたします。\n\nRT swim lab`;
+                                  navigator.clipboard.writeText(text).then(() => alert('クリップボードにコピーしました'));
+                                }}
+                                className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 transition-all"
+                              >
+                                {label}をコピー
+                              </button>
+                            ))}
+                          </div>
                         </div>
                         <div>
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">ステータス変更</p>
@@ -440,7 +578,7 @@ export default function AdminCounselingPage() {
                             </span>
                           ) : (
                             <span className="flex justify-center">
-                              <span className="w-3 h-3 rounded-full border border-slate-200" />
+                              <span className="w-4 h-4 rounded-full border-2 border-slate-400 bg-white" />
                             </span>
                           )}
                         </td>
@@ -452,8 +590,8 @@ export default function AdminCounselingPage() {
             </table>
           </div>
 
-          <p className="text-[10px] text-slate-400">
-            ○ = 空き枠　色付き = 申し込みあり（ホバーで詳細）　灰色 = 受付時間外
+          <p className="text-[10px] text-slate-500 font-medium">
+            ○ = 空き枠　✕色付き = 申し込みあり（ホバーで詳細）　無色 = 受付時間外
           </p>
         </div>
       )}
@@ -462,101 +600,181 @@ export default function AdminCounselingPage() {
       {view === 'script' && (
         <div className="space-y-4 max-w-2xl">
 
-          <p className="text-xs text-slate-500">無料カウンセリング（15分）の進行カンペです。通話前に確認してください。</p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-slate-500">無料カウンセリング（15分）の進行カンペです。通話前に確認してください。</p>
+            <div className="flex items-center gap-2">
+              {scriptEditMode ? (
+                <>
+                  <button onClick={resetScript} className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 text-slate-500 hover:bg-slate-50 transition-all">リセット</button>
+                  <button onClick={cancelScript} className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">キャンセル</button>
+                  <button onClick={saveScript} className="px-4 py-1.5 rounded-lg text-xs font-bold bg-sky-600 text-white hover:bg-sky-700 transition-all">保存</button>
+                </>
+              ) : (
+                <button onClick={() => { setDraftSections(scriptSections); setDraftFaq(scriptFaq); setScriptEditMode(true); }} className="px-4 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">編集</button>
+              )}
+            </div>
+          </div>
 
-          {[
-            {
-              time: '0〜2分',
-              title: '① オープニング・現状確認',
-              color: 'border-slate-300 bg-slate-50',
-              titleColor: 'text-slate-700',
-              lines: [
-                '「本日はお時間いただきありがとうございます！15分という短い時間ですが、しっかりお伝えしたいことがあるので一緒に進めていきましょう。まず少し聞いてもいいですか？今どんな練習をされていますか？」',
-                '→ 目標シートに繋げる：「アプリに目標シートという機能があるんですが、もう書いていただけましたか？（書いていれば）ぜひ今日の中で一緒に見ていきましょう。（書いていなければ）今日の後半で少し触れますね。」',
-              ],
-            },
-            {
-              time: '2〜6分',
-              title: '② アプリ使い方デモ（画面共有）',
-              color: 'border-cyan-200 bg-cyan-50/40',
-              titleColor: 'text-cyan-800',
-              lines: [
-                '「では実際に使い方を見てもらった方が早いと思うので、画面を共有しますね。」',
-                '→ メニュー生成を実演：「たとえば今日の状態をここに入れると…こんな感じで練習メニューが自動で出てきます。距離・強度・インターバルまで全部設計されているので、これを見て練習するだけでOKです。」',
-                '→ 目標シートへ：「目標シートはここにあって、ここに目標を書いておくと練習の方向性がブレなくなります。今日の後でもいいので、ぜひ書いてみてください。」',
-              ],
-            },
-            {
-              time: '6〜10分',
-              title: '③ 遺伝子検査の紹介',
-              color: 'border-violet-200 bg-violet-50/40',
-              titleColor: 'text-violet-800',
-              lines: [
-                '「ちょっと話が変わるんですが、RT swim labには遺伝子検査と連携した機能があるんです。知ってましたか？」',
-                '→ 知らない場合：「自分が持って生まれた特性——持久系か瞬発系か、疲労回復のしやすさとか——が遺伝子レベルでわかるんです。それに合わせて練習を組み立てると、同じ練習量でも効果が全然変わってくる。今やっている練習が、実は特性に合っていない可能性もあるんですよね。」',
-                '→ 購入誘導：「一度検査しておくとずっと使える情報なので、コスパはかなり高いと思っています。もし興味あれば今日の後でリンクをお送りしますね。」',
-              ],
-            },
-            {
-              time: '10〜13分',
-              title: '④ コミュニティ紹介',
-              color: 'border-emerald-200 bg-emerald-50/40',
-              titleColor: 'text-emerald-800',
-              lines: [
-                '「今、RT swim labのコミュニティも作っていて、同じように水泳を頑張っている仲間がいるんです。練習記録を共有したり、お互いに刺激し合ったりできる場所です。」',
-                '「一人でやっていると続かないことって多いと思うんですけど、仲間がいると全然違うんですよ。近日公開予定なので、ぜひ参加してみてください。」',
-              ],
-            },
-            {
-              time: '13〜15分',
-              title: '⑤ クロージング・次のアクション',
-              color: 'border-amber-200 bg-amber-50/40',
-              titleColor: 'text-amber-800',
-              lines: [
-                '「残り少しですが、何か聞いておきたいことはありますか？」',
-                '→ 必ず次のアクションを1つ決めて終わる：「今日話した中で、まず一つだけやってみてほしいことを決めましょう。目標シートを書く・遺伝子検査を申し込む・メニュー生成を試してみる、どれが一番やれそうですか？」',
-                '→ 決まったら：「では○○をやってみてください。何かあればいつでも連絡してくださいね。今日はありがとうございました！」',
-              ],
-            },
-          ].map(block => (
-            <div key={block.title} className={`rounded-2xl border ${block.color} p-4 space-y-2`}>
+          {(scriptEditMode ? draftSections : scriptSections).map((section, idx) => (
+            <div key={section.id} className={`rounded-2xl border ${section.colorClass} p-4 space-y-2`}>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold bg-white border border-slate-200 text-slate-500 px-2 py-0.5 rounded-full">{block.time}</span>
-                <h3 className={`text-sm font-bold ${block.titleColor}`}>{block.title}</h3>
+                <span className="text-[10px] font-bold bg-white border border-slate-200 text-slate-500 px-2 py-0.5 rounded-full">{section.time}</span>
+                <h3 className={`text-sm font-bold ${section.titleColor}`}>{section.title}</h3>
               </div>
-              <ul className="space-y-2">
-                {block.lines.map((line, i) => (
-                  <li key={i} className="text-sm text-slate-700 leading-relaxed">
-                    {line.startsWith('→') ? (
-                      <span className="flex gap-1.5">
-                        <span className="text-slate-400 shrink-0">→</span>
+              {scriptEditMode ? (
+                <textarea
+                  value={draftSections[idx].content}
+                  onChange={e => setDraftSections(prev => prev.map((s, i) => i === idx ? { ...s, content: e.target.value } : s))}
+                  rows={section.content.split('\n').length + 1}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-400 resize-y"
+                />
+              ) : (
+                <div className="space-y-1.5">
+                  {section.content.split('\n').filter(l => l.trim()).map((line, i) => {
+                    if (line.startsWith('→')) return (
+                      <div key={i} className="flex gap-1.5 text-sm text-slate-700 leading-relaxed">
+                        <span className="text-slate-400 shrink-0 mt-0.5">→</span>
                         <span>{line.slice(1).trim()}</span>
-                      </span>
-                    ) : (
-                      <span className="block bg-white/70 rounded-xl px-3 py-2 border border-white italic">
-                        {line}
-                      </span>
-                    )}
-                  </li>
-                ))}
-              </ul>
+                      </div>
+                    );
+                    if (line.startsWith('【')) return (
+                      <div key={i} className="text-sm font-bold text-slate-700 leading-relaxed">{line}</div>
+                    );
+                    return (
+                      <div key={i} className="bg-white/80 rounded-xl px-3 py-2 border border-white/60 text-sm text-slate-700 italic leading-relaxed">{line}</div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           ))}
 
           {/* よくある質問 */}
           <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
-            <h3 className="text-sm font-bold text-slate-700">よく聞かれる質問</h3>
+            <h3 className="text-sm font-bold text-slate-700">よくある質問</h3>
+            {scriptEditMode ? (
+              <textarea
+                value={draftFaq}
+                onChange={e => setDraftFaq(e.target.value)}
+                rows={10}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-400 resize-y"
+                placeholder={'Q. 質問\n→ 回答\n\nQ. 質問\n→ 回答'}
+              />
+            ) : (
+              <div className="space-y-3">
+                {scriptFaq.split('\n\n').filter(b => b.trim()).map((block, i) => {
+                  const lines = block.split('\n').filter(l => l.trim());
+                  return (
+                    <div key={i} className="border-l-2 border-slate-200 pl-3 space-y-0.5">
+                      {lines.map((line, j) => line.startsWith('→') ? (
+                        <p key={j} className="text-xs text-slate-500">→ {line.slice(1).trim()}</p>
+                      ) : (
+                        <p key={j} className="text-xs font-bold text-slate-600">{line}</p>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+        </div>
+      )}
+
+      {/* ══════ 操作ガイド ══════ */}
+      {view === 'guide' && (
+        <div className="space-y-5 max-w-2xl">
+
+          {/* 対応フロー */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4">
+            <h2 className="text-sm font-bold text-slate-800">カウンセリング対応フロー</h2>
+            <ol className="space-y-3">
+              {[
+                {
+                  step: '① 申し込み受信',
+                  badge: 'bg-red-50 text-red-600 border-red-200',
+                  desc: '管理者メール（06ra.ra06@gmail.com）に通知が届く。管理画面で内容を確認する。',
+                },
+                {
+                  step: '② メールで返信・日程確定',
+                  badge: 'bg-blue-50 text-blue-600 border-blue-200',
+                  desc: '申し込み者のメールに「日程確定メール」テンプレートを送信。管理画面でステータスを「日程確定」に変更する。',
+                },
+                {
+                  step: '③ ミーティングリンク送付',
+                  badge: 'bg-violet-50 text-violet-600 border-violet-200',
+                  desc: '当日30分前までに Google Meet または Zoom リンクをメールで送る。（リンクはカウンセリングごとに発行すること）',
+                },
+                {
+                  step: '④ カウンセリング実施',
+                  badge: 'bg-amber-50 text-amber-600 border-amber-200',
+                  desc: '「話すカンペ」タブを参考に進行。目標シートのヒアリングがメイン（10分）。',
+                },
+                {
+                  step: '⑤ 対応完了',
+                  badge: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                  desc: '終了後、管理画面でステータスを「対応完了」に変更。メモ欄に気付いた点を残しておく。',
+                },
+              ].map(({ step, badge, desc }) => (
+                <li key={step} className="flex gap-3">
+                  <span className={`shrink-0 mt-0.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${badge}`}>
+                    {step}
+                  </span>
+                  <p className="text-sm text-slate-600 leading-relaxed">{desc}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          {/* メール返信テンプレート */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4">
+            <h2 className="text-sm font-bold text-slate-800">メール返信テンプレート</h2>
+            <p className="text-xs text-slate-500">各リストの申し込みカードを開くと「返信テンプレ」ボタンから名前・日時を自動入力したテキストをコピーできます。</p>
+
             {[
-              { q: '有料プランはいくらですか？', a: '今キャンペーン中で通常より安くなっています。選手プランは1回1,500円です。' },
-              { q: '遺伝子検査は怖くないですか？', a: '口の中を綿棒で拭うだけなので痛みは全くないです。郵送でできます。' },
-              { q: 'アプリは難しくないですか？', a: '条件を選んでボタンを押すだけなので、5分あれば使えます。今日デモで見てもらった通りです。' },
-              { q: 'コミュニティって何をするんですか？', a: '練習記録の共有・情報交換・仲間との交流がメインです。強制参加ではないので、気軽に覗くだけでもOKです。' },
-            ].map(({ q, a }) => (
-              <div key={q} className="border-l-2 border-slate-200 pl-3">
-                <p className="text-xs font-bold text-slate-600">Q. {q}</p>
-                <p className="text-xs text-slate-500 mt-0.5">→ {a}</p>
+              {
+                title: '① 日程確定メール',
+                subject: '【RT swim lab】カウンセリング日程のご確認',
+                body: `[お名前]様\n\nこの度はRT swim labのカウンセリングにお申し込みいただきありがとうございます。\n\n下記の通り日程を確定いたしました。\n\n■ 日時：[YYYY-MM-DD HH:mm]\n■ プラン：[プラン名]\n■ 形式：オンライン（Google Meet / Zoom）\n\n当日のミーティングリンクは、開始30分前までにメールにてお送りします。\n\n何かご不明点がありましたら、お気軽にご連絡ください。\nよろしくお願いいたします。\n\nRT swim lab`,
+              },
+              {
+                title: '② ミーティングリンク送付メール',
+                subject: '【RT swim lab】本日のカウンセリング ミーティングリンク',
+                body: `[お名前]様\n\n本日はよろしくお願いいたします。\n\n下記のリンクからご参加ください。\n\n■ 日時：[YYYY-MM-DD HH:mm]\n■ リンク：[Google Meet / Zoom URL]\n\nご不明点があればご連絡ください。\nお会いできるのを楽しみにしております。\n\nRT swim lab`,
+              },
+              {
+                title: '③ フォローアップメール（任意）',
+                subject: '【RT swim lab】カウンセリングのフォローアップ',
+                body: `[お名前]様\n\n先日はカウンセリングにご参加いただきありがとうございました。\n\nお話しした通り、まずは [アクション] から始めてみてください。\n\nアプリに関してご不明点がありましたら、いつでもご連絡ください。\n引き続きサポートいたします！\n\nRT swim lab`,
+              },
+            ].map(({ title, subject, body }) => (
+              <div key={title} className="border border-slate-200 rounded-xl overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2.5 bg-slate-50 border-b border-slate-200">
+                  <span className="text-xs font-bold text-slate-700">{title}</span>
+                  <button
+                    onClick={() => navigator.clipboard.writeText(`件名：${subject}\n\n${body}`).then(() => alert('コピーしました'))}
+                    className="px-3 py-1 rounded-lg text-[10px] font-semibold border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-all"
+                  >
+                    コピー
+                  </button>
+                </div>
+                <div className="px-4 py-3">
+                  <p className="text-[10px] text-slate-400 mb-1">件名：{subject}</p>
+                  <pre className="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed font-sans">{body}</pre>
+                </div>
               </div>
             ))}
+          </div>
+
+          {/* 注意事項 */}
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4 space-y-2">
+            <h3 className="text-xs font-bold text-amber-800">運用上の注意</h3>
+            <ul className="text-xs text-amber-700 space-y-1 list-disc pl-4">
+              <li>カウンセリングは1枠ずつの対応です。同じ時間帯に複数の予約が入らないよう、日程確定後すぐにステータスを更新してください。</li>
+              <li>無料カウンセリングは1アカウント1回のみです（システムで制限済み）。</li>
+              <li>Google Meet のリンクは毎回新しく発行してください。前回のリンクを使い回すと第三者が入室できる場合があります。</li>
+              <li>申し込み者のメールアドレスは各カードを開くと確認できます（ユーザー登録時のメール）。</li>
+            </ul>
           </div>
 
         </div>

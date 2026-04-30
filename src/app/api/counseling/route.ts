@@ -121,6 +121,7 @@ export async function POST(req: Request) {
       preferred_datetime_3: preferred_datetime_3?.trim() || null,
       message: message?.trim() || null,
       status: 'pending',
+      user_email: userEmail,
     })
     .select()
     .single();
