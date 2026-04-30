@@ -12,12 +12,12 @@ export const DAY_LABELS = ['日', '月', '火', '水', '木', '金', '土'] as c
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
-/** 今日から totalDays 日後までの受付可能日を返す */
+/** 翌日以降 totalDays 日間の受付可能日を返す（当日予約不可） */
 export function getAvailableDates(totalDays = 21): Date[] {
   const result: Date[] = [];
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  for (let i = 1; i <= totalDays; i++) {
+  for (let i = 1; i <= totalDays; i++) { // i=1 = 翌日スタート（当日除外）
     const d = new Date(today);
     d.setDate(today.getDate() + i);
     if (d.getDay() in SLOT_RULES) result.push(d);
