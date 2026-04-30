@@ -7,6 +7,7 @@ import { TrainingStatsSection } from '@/components/TrainingStatsSection';
 import { calcUsageStatus, IS_DEMO_PERIOD } from '@/lib/plan-limits';
 
 const DRILL_PRACTICE_ENABLED = process.env.NEXT_PUBLIC_DRILL_PRACTICE_ENABLED === 'true';
+const COMMUNITY_URL = process.env.NEXT_PUBLIC_COMMUNITY_URL || '';
 
 export default function MyPageDashboard() {
   const { profile } = useProfile();
@@ -173,6 +174,35 @@ export default function MyPageDashboard() {
         >
           ドリルへ
         </Link>
+      </div>
+
+      {/* ════════ RTコミュニティCTA ════════ */}
+      <div className="rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 px-5 py-4 flex items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-bold text-slate-800">RTコミュニティ</p>
+            {!COMMUNITY_URL && (
+              <span className="text-[9px] font-bold bg-cyan-50 text-cyan-500 border border-cyan-200 px-1.5 py-0.5 rounded-full leading-none">
+                近日公開
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-slate-500 mt-0.5">仲間と練習記録を共有して、一緒に成長しよう。</p>
+        </div>
+        {COMMUNITY_URL ? (
+          <a
+            href={COMMUNITY_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold shadow-lg shadow-emerald-500/20 hover:from-emerald-400 hover:to-teal-400 transition-all whitespace-nowrap"
+          >
+            コミュニティへ
+          </a>
+        ) : (
+          <span className="shrink-0 px-4 py-2.5 rounded-xl bg-slate-100 text-slate-400 text-xs font-bold whitespace-nowrap cursor-default">
+            コミュニティへ
+          </span>
+        )}
       </div>
 
       {/* ════════ アクティビティ ════════ */}
