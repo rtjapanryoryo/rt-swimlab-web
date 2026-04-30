@@ -11,7 +11,7 @@ const PLAN_LABELS: Record<PlanType, string> = {
   coach:   'コーチプラン（60分 / ¥2,980〜）',
 };
 
-const ADMIN_EMAIL = '06ra.ra06@gmail.com';
+const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL ?? '06ra.ra06@gmail.com';
 
 async function sendNotificationEmail(params: {
   userName: string;
@@ -150,17 +150,13 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const isAdmin = searchParams.get('admin') === '1';
 
-  // ログイン済みユーザーなら誰でも予約済み枠一覧を取得できる（個人情報なし）
+  // 認証済みユーザー全員が予約済み枠を取得できる（RPC関数で他ユーザーの予約も参照、datetime のみ・PII なし）
   if (searchParams.get('booked') === '1') {
-    const { data, error } = await sb
-      .from('counseling_requests')
-      .select('preferred_datetime_1')
-      .not('status', 'eq', 'cancelled')
-      .not('preferred_datetime_1', 'is', null);
-
+    const { data, error } = await sb.rpc('get_booked_slots');
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    const slots = (data as { slot_datetime: string }[] | null) ?? [];
     return NextResponse.json({
-      booked: data.map(r => r.preferred_datetime_1).filter(Boolean),
+      booked: slots.map(r => r.slot_datetime).filter(Boolean),
     });
   }
 
