@@ -7,6 +7,7 @@ import { TrainingStatsSection } from '@/components/TrainingStatsSection';
 import { calcUsageStatus, IS_DEMO_PERIOD } from '@/lib/plan-limits';
 
 const DRILL_PRACTICE_ENABLED = process.env.NEXT_PUBLIC_DRILL_PRACTICE_ENABLED === 'true';
+const COUNSELING_ENABLED = process.env.NEXT_PUBLIC_COUNSELING_ENABLED === 'true';
 const COMMUNITY_URL = process.env.NEXT_PUBLIC_COMMUNITY_URL || '';
 
 export default function MyPageDashboard() {
@@ -133,15 +134,28 @@ export default function MyPageDashboard() {
       {/* ════════ カウンセリングCTA ════════ */}
       <div className="rounded-2xl border border-cyan-200 bg-gradient-to-r from-cyan-50 to-teal-50 px-5 py-4 flex items-center justify-between gap-4">
         <div>
-          <p className="text-sm font-bold text-slate-800">コーチに無料相談する</p>
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-bold text-slate-800">コーチに無料相談する</p>
+            {!COUNSELING_ENABLED && (
+              <span className="text-[9px] font-bold bg-cyan-50 text-cyan-500 border border-cyan-200 px-1.5 py-0.5 rounded-full leading-none">
+                近日公開
+              </span>
+            )}
+          </div>
           <p className="text-xs text-slate-500 mt-0.5">練習の方向性・目標の立て方を一緒に確認します（15分・1回限り）</p>
         </div>
-        <Link
-          href="/mypage/counseling"
-          className="shrink-0 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-xs font-bold shadow-lg shadow-cyan-500/20 hover:from-cyan-400 hover:to-teal-400 transition-all whitespace-nowrap"
-        >
-          無料相談
-        </Link>
+        {COUNSELING_ENABLED ? (
+          <Link
+            href="/mypage/counseling"
+            className="shrink-0 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-xs font-bold shadow-lg shadow-cyan-500/20 hover:from-cyan-400 hover:to-teal-400 transition-all whitespace-nowrap"
+          >
+            無料相談
+          </Link>
+        ) : (
+          <span className="shrink-0 px-4 py-2.5 rounded-xl bg-slate-100 text-slate-400 text-xs font-bold whitespace-nowrap cursor-default">
+            無料相談
+          </span>
+        )}
       </div>
 
       {/* ════════ ドリル練習CTA ════════ */}
@@ -157,12 +171,18 @@ export default function MyPageDashboard() {
           </div>
           <p className="text-xs text-slate-500 mt-0.5">YouTube動画付きのドリルで泳法を磨こう。種目ごとに分類されています。</p>
         </div>
-        <Link
-          href="/mypage/drill-practice"
-          className="shrink-0 px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-indigo-500 text-white text-xs font-bold shadow-lg shadow-violet-500/20 hover:from-violet-400 hover:to-indigo-400 transition-all whitespace-nowrap"
-        >
-          ドリルへ
-        </Link>
+        {DRILL_PRACTICE_ENABLED ? (
+          <Link
+            href="/mypage/drill-practice"
+            className="shrink-0 px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-indigo-500 text-white text-xs font-bold shadow-lg shadow-violet-500/20 hover:from-violet-400 hover:to-indigo-400 transition-all whitespace-nowrap"
+          >
+            ドリルへ
+          </Link>
+        ) : (
+          <span className="shrink-0 px-4 py-2.5 rounded-xl bg-slate-100 text-slate-400 text-xs font-bold whitespace-nowrap cursor-default">
+            ドリルへ
+          </span>
+        )}
       </div>
 
       {/* ════════ RTコミュニティCTA ════════ */}

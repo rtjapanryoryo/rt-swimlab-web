@@ -22,15 +22,16 @@ import {
 const LINE_URL = process.env.NEXT_PUBLIC_LINE_URL || '';
 const COMMUNITY_URL = process.env.NEXT_PUBLIC_COMMUNITY_URL || '';
 const DRILL_PRACTICE_ENABLED = process.env.NEXT_PUBLIC_DRILL_PRACTICE_ENABLED === 'true';
+const COUNSELING_ENABLED = process.env.NEXT_PUBLIC_COUNSELING_ENABLED === 'true';
 
 const navItems = [
   { href: '/mypage', label: 'ダッシュボード', Icon: DashboardIcon },
   { href: '/mypage/menu', label: 'RT swim lab', Icon: SwimLabIcon, footerLabel: 'swim lab' },
   { href: '/mypage/goal-sheet', label: '目標シート', Icon: GoalSheetIcon, footerLabel: '目標' },
-  { href: '/mypage/counseling', label: 'カウンセリング', Icon: CounselingIcon, footerLabel: 'カウンセリング' },
+  { href: '/mypage/counseling', label: 'カウンセリング', Icon: CounselingIcon, footerLabel: 'カウンセリング', disabled: !COUNSELING_ENABLED, comingSoon: !COUNSELING_ENABLED },
   { href: '/mypage/genetic', label: 'RT GENE PROFILE', Icon: GeneProfileIcon, hideInFooter: true },
   { href: COMMUNITY_URL || '#', label: 'RTコミュニティ', Icon: CommunityIcon, external: true, disabled: !COMMUNITY_URL, comingSoon: !COMMUNITY_URL, footerLabel: 'コミュニティ' },
-  { href: '/mypage/drill-practice', label: 'ドリル練習', Icon: DrillIcon, footerLabel: 'ドリル', comingSoon: !DRILL_PRACTICE_ENABLED },
+  { href: '/mypage/drill-practice', label: 'ドリル練習', Icon: DrillIcon, footerLabel: 'ドリル', disabled: !DRILL_PRACTICE_ENABLED, comingSoon: !DRILL_PRACTICE_ENABLED },
   { href: '/mypage/feedback', label: 'フィードバック', Icon: FeedbackIcon, footerLabel: 'フィードバック' },
   { href: '/mypage/settings', label: 'アカウント情報', Icon: AccountIcon },
 ];
@@ -108,11 +109,16 @@ function MyPageLayoutInner({
                     </li>
                   );
                 }
+                const isDisabled = 'disabled' in item && item.disabled;
                 return (
                   <li key={item.href}>
-                    <Link href={item.href} className={`${baseClass} ${activeClass}`}>
-                      {content}
-                    </Link>
+                    {isDisabled ? (
+                      <span className={`${baseClass} text-slate-400 cursor-default`}>{content}</span>
+                    ) : (
+                      <Link href={item.href} className={`${baseClass} ${activeClass}`}>
+                        {content}
+                      </Link>
+                    )}
                   </li>
                 );
               })}
@@ -213,7 +219,10 @@ function MyPageLayoutInner({
                   </span>
                 );
               }
-              return (
+              const isDisabledInternal = 'disabled' in item && item.disabled;
+              return isDisabledInternal ? (
+                <span key={item.href} className={`${baseClass} text-slate-400 cursor-default`}>{content}</span>
+              ) : (
                 <Link key={item.href} href={item.href} className={`${baseClass} ${activeClass}`}>
                   {content}
                 </Link>
