@@ -1,6 +1,21 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import {
   DRILL_STROKES,
   DRILL_STROKE_LABEL,
@@ -28,6 +43,87 @@ const emptyForm = (): FormState => ({
   is_published: false,
 });
 
+function fmtDate(iso: string) {
+  const d = new Date(iso);
+  return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// 行コンポーネント（D&D対応）
+function SortableRow({
+  drill,
+  editingId,
+  onEdit,
+  onDelete,
+  onTogglePublish,
+}: {
+  drill: DrillItem;
+  editingId: string | null;
+  onEdit: (d: DrillItem) => void;
+  onDelete: (id: string) => void;
+  onTogglePublish: (d: DrillItem) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: drill.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <tr
+      ref={setNodeRef}
+      style={style}
+      className={`border-b border-slate-100 last:border-0 ${isDragging ? 'bg-cyan-50' : 'hover:bg-slate-50/80'}`}
+    >
+      <td className="px-3 py-3">
+        <button
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600 select-none"
+          title="ドラッグして並べ替え"
+        >
+          ⠿
+        </button>
+      </td>
+      <td className="px-4 py-3 text-slate-700 whitespace-nowrap">{DRILL_STROKE_LABEL[drill.stroke]}</td>
+      <td className="px-4 py-3 text-slate-900 font-medium">{drill.title}</td>
+      <td className="px-4 py-3 text-slate-500 text-xs">{drill.sort_order}</td>
+      <td className="px-4 py-3">
+        <button
+          type="button"
+          onClick={() => onTogglePublish(drill)}
+          className={`text-xs font-bold px-2 py-1 rounded-lg border ${
+            drill.is_published
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+              : 'bg-slate-100 text-slate-600 border-slate-200'
+          }`}
+        >
+          {drill.is_published ? '公開中' : '下書き'}
+        </button>
+      </td>
+      <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{fmtDate(drill.updated_at)}</td>
+      <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
+        <button
+          type="button"
+          onClick={() => onEdit(drill)}
+          className={`text-sky-600 font-semibold hover:underline ${editingId === drill.id ? 'underline' : ''}`}
+        >
+          編集
+        </button>
+        <button
+          type="button"
+          onClick={() => onDelete(drill.id)}
+          className="text-red-600 font-semibold hover:underline"
+        >
+          削除
+        </button>
+      </td>
+    </tr>
+  );
+}
+
 export default function AdminDrillsPage() {
   const [drills, setDrills] = useState<DrillItem[]>([]);
   const [filterStroke, setFilterStroke] = useState<DrillStroke | 'all'>('all');
@@ -36,6 +132,10 @@ export default function AdminDrillsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm());
   const [saving, setSaving] = useState(false);
+  const [reordering, setReordering] = useState(false);
+  const pendingReorder = useRef<DrillItem[]>([]);
+
+  const sensors = useSensors(useSensor(PointerSensor));
 
   const fetchList = useCallback(async () => {
     setLoading(true);
@@ -138,12 +238,46 @@ export default function AdminDrillsPage() {
     }
   };
 
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = drills.findIndex((d) => d.id === active.id);
+    const newIndex = drills.findIndex((d) => d.id === over.id);
+    const reordered = arrayMove(drills, oldIndex, newIndex).map((d, i) => ({
+      ...d,
+      sort_order: i,
+    }));
+    setDrills(reordered);
+    pendingReorder.current = reordered;
+
+    setReordering(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/admin/drills/reorder', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          orders: reordered.map((d) => ({ id: d.id, sort_order: d.sort_order })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '並べ替えに失敗しました');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '並べ替えに失敗しました');
+      await fetchList();
+    } finally {
+      setReordering(false);
+    }
+  };
+
   return (
     <div className="p-6 lg:p-10 max-w-6xl space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">ドリル練習 管理</h1>
         <p className="text-sm text-slate-500 mt-1">
-          YouTube の URL を登録し、公開フラグで会員向け表示を制御します。会員画面は{' '}
+          YouTube の URL を登録し、公開フラグで会員向け表示を制御します。行をドラッグして並べ替え可能。会員画面は{' '}
           <code className="text-xs bg-slate-100 px-1 rounded">NEXT_PUBLIC_DRILL_PRACTICE_ENABLED=true</code>{' '}
           のときのみナビに表示されます。
         </p>
@@ -182,61 +316,47 @@ export default function AdminDrillsPage() {
                 {DRILL_STROKE_LABEL[s]}
               </button>
             ))}
+            {reordering && (
+              <span className="text-xs text-slate-500 ml-2 flex items-center gap-1">
+                <span className="w-3 h-3 border border-slate-400 border-t-transparent rounded-full animate-spin" />
+                保存中…
+              </span>
+            )}
           </div>
 
           {loading ? (
             <p className="text-sm text-slate-500 py-12 text-center">読み込み中…</p>
           ) : (
             <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-slate-50 border-b border-slate-200">
-                  <tr>
-                    <th className="text-left px-4 py-3 font-semibold text-slate-600">種目</th>
-                    <th className="text-left px-4 py-3 font-semibold text-slate-600">タイトル</th>
-                    <th className="text-left px-4 py-3 font-semibold text-slate-600">公開</th>
-                    <th className="text-right px-4 py-3 font-semibold text-slate-600">操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {drills.map((d) => (
-                    <tr key={d.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/80">
-                      <td className="px-4 py-3 text-slate-700 whitespace-nowrap">
-                        {DRILL_STROKE_LABEL[d.stroke]}
-                      </td>
-                      <td className="px-4 py-3 text-slate-900 font-medium">{d.title}</td>
-                      <td className="px-4 py-3">
-                        <button
-                          type="button"
-                          onClick={() => togglePublish(d)}
-                          className={`text-xs font-bold px-2 py-1 rounded-lg border ${
-                            d.is_published
-                              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                              : 'bg-slate-100 text-slate-600 border-slate-200'
-                          }`}
-                        >
-                          {d.is_published ? '公開中' : '下書き'}
-                        </button>
-                      </td>
-                      <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
-                        <button
-                          type="button"
-                          onClick={() => startEdit(d)}
-                          className="text-sky-600 font-semibold hover:underline"
-                        >
-                          編集
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => remove(d.id)}
-                          className="text-red-600 font-semibold hover:underline"
-                        >
-                          削除
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={drills.map((d) => d.id)} strategy={verticalListSortingStrategy}>
+                  <table className="w-full text-sm">
+                    <thead className="bg-slate-50 border-b border-slate-200">
+                      <tr>
+                        <th className="w-8 px-3 py-3" />
+                        <th className="text-left px-4 py-3 font-semibold text-slate-600">種目</th>
+                        <th className="text-left px-4 py-3 font-semibold text-slate-600">タイトル</th>
+                        <th className="text-left px-4 py-3 font-semibold text-slate-600 w-16">順序</th>
+                        <th className="text-left px-4 py-3 font-semibold text-slate-600">公開</th>
+                        <th className="text-left px-4 py-3 font-semibold text-slate-600">更新日</th>
+                        <th className="text-right px-4 py-3 font-semibold text-slate-600">操作</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {drills.map((d) => (
+                        <SortableRow
+                          key={d.id}
+                          drill={d}
+                          editingId={editingId}
+                          onEdit={startEdit}
+                          onDelete={remove}
+                          onTogglePublish={togglePublish}
+                        />
+                      ))}
+                    </tbody>
+                  </table>
+                </SortableContext>
+              </DndContext>
               {drills.length === 0 && (
                 <p className="text-center text-slate-500 py-10 text-sm">ドリルがありません。右のフォームから追加してください。</p>
               )}
@@ -303,7 +423,7 @@ export default function AdminDrillsPage() {
             </label>
 
             <label className="block space-y-1">
-              <span className="text-xs font-semibold text-slate-500">概要</span>
+              <span className="text-xs font-semibold text-slate-500">概要（Markdown可）</span>
               <textarea
                 value={form.overview}
                 onChange={(e) => setForm((f) => ({ ...f, overview: e.target.value }))}
@@ -313,7 +433,7 @@ export default function AdminDrillsPage() {
             </label>
 
             <label className="block space-y-1">
-              <span className="text-xs font-semibold text-slate-500">ポイント</span>
+              <span className="text-xs font-semibold text-slate-500">ポイント（Markdown可）</span>
               <textarea
                 value={form.key_points}
                 onChange={(e) => setForm((f) => ({ ...f, key_points: e.target.value }))}

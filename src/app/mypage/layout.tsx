@@ -23,13 +23,6 @@ const LINE_URL = process.env.NEXT_PUBLIC_LINE_URL || '';
 const COMMUNITY_URL = process.env.NEXT_PUBLIC_COMMUNITY_URL || '';
 const DRILL_PRACTICE_ENABLED = process.env.NEXT_PUBLIC_DRILL_PRACTICE_ENABLED === 'true';
 
-const drillNavItem = {
-  href: '/mypage/drill-practice',
-  label: 'ドリル練習',
-  Icon: DrillIcon,
-  footerLabel: 'ドリル',
-} as const;
-
 const navItems = [
   { href: '/mypage', label: 'ダッシュボード', Icon: DashboardIcon },
   { href: '/mypage/menu', label: 'RT swim lab', Icon: SwimLabIcon, footerLabel: 'swim lab' },
@@ -37,7 +30,7 @@ const navItems = [
   { href: '/mypage/counseling', label: 'カウンセリング', Icon: CounselingIcon, footerLabel: 'カウンセリング' },
   { href: '/mypage/genetic', label: 'RT GENE PROFILE', Icon: GeneProfileIcon, hideInFooter: true },
   { href: COMMUNITY_URL || '#', label: 'RTコミュニティ', Icon: CommunityIcon, external: true, disabled: !COMMUNITY_URL, footerLabel: 'コミュニティ' },
-  ...(DRILL_PRACTICE_ENABLED ? [drillNavItem] : []),
+  { href: '/mypage/drill-practice', label: 'ドリル練習', Icon: DrillIcon, footerLabel: 'ドリル', comingSoon: !DRILL_PRACTICE_ENABLED },
   { href: '/mypage/feedback', label: 'フィードバック', Icon: FeedbackIcon, footerLabel: 'フィードバック' },
   { href: '/mypage/settings', label: 'アカウント情報', Icon: AccountIcon },
 ];
@@ -82,10 +75,16 @@ function MyPageLayoutInner({
                   ? 'bg-gradient-to-r from-cyan-100 to-teal-50 text-cyan-800 border-l-4 border-cyan-500 font-semibold'
                   : 'text-slate-600 hover:bg-cyan-50/80 hover:text-slate-900';
                 const IconComponent = item.Icon;
+                const isComingSoon = 'comingSoon' in item && item.comingSoon;
                 const content = (
                   <>
                     <IconComponent />
                     {item.label}
+                    {isComingSoon && (
+                      <span className="ml-auto text-[9px] font-bold bg-cyan-50 text-cyan-500 border border-cyan-200 px-1.5 py-0.5 rounded-full leading-none">
+                        近日公開
+                      </span>
+                    )}
                   </>
                 );
                 if ('external' in item && item.external) {
@@ -175,18 +174,22 @@ function MyPageLayoutInner({
                     ? pathname === '/mypage' || pathname === '/mypage/'
                     : item.href === pathname || pathname.startsWith(item.href + '/');
               const baseClass =
-                'flex flex-col items-center justify-center gap-0.5 shrink-0 min-w-[64px] py-2 px-2 rounded-2xl text-[10px] font-semibold transition-all';
+                'relative flex flex-col items-center justify-center gap-0.5 shrink-0 min-w-[64px] py-2 px-2 rounded-2xl text-[10px] font-semibold transition-all';
               const activeClass = isActive
                 ? 'text-cyan-600 bg-cyan-50'
                 : 'text-slate-600 hover:text-slate-800 hover:bg-cyan-50/50';
               const IconComponent = item.Icon;
               const footerLabel = 'footerLabel' in item ? item.footerLabel : item.label;
+              const isComingSoon = 'comingSoon' in item && item.comingSoon;
               const content = (
                 <>
                   <span className="flex justify-center [&>svg]:w-5 [&>svg]:h-5">
                     <IconComponent />
                   </span>
                   <span className="leading-tight text-center">{footerLabel}</span>
+                  {isComingSoon && (
+                    <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                  )}
                 </>
               );
               if ('external' in item && item.external) {

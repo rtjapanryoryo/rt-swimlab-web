@@ -3,7 +3,7 @@ import { createClient, getEffectiveUser } from '@/lib/supabase/server';
 import type { DrillStroke } from '@/types/drill';
 import { DRILL_STROKES } from '@/types/drill';
 
-// GET /api/drills?stroke=freestyle — 公開ドリルのみ（ログイン必須）
+// GET /api/drills?stroke=freestyle[&preview=1] — 公開ドリル（ログイン必須）。preview=1 は管理者のみ未公開も返す
 export async function GET(req: Request) {
   const user = await getEffectiveUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -17,16 +17,26 @@ export async function GET(req: Request) {
   const sb = await createClient();
   if (!sb) return NextResponse.json({ error: 'DB error' }, { status: 500 });
 
-  const { data, error } = await sb
+  const wantsPreview = searchParams.get('preview') === '1';
+  let isAdmin = false;
+  if (wantsPreview) {
+    const { data: profile } = await sb.from('profiles').select('role').eq('id', user.id).single();
+    isAdmin = profile?.role === 'admin';
+    if (!isAdmin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  let query = sb
     .from('drill_items')
-    .select(
-      'id, stroke, title, youtube_video_id, overview, key_points, sort_order, created_at, updated_at'
-    )
+    .select('id, stroke, title, youtube_video_id, overview, key_points, sort_order, is_published, created_at, updated_at')
     .eq('stroke', stroke)
-    .eq('is_published', true)
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: true });
 
+  if (!isAdmin) {
+    query = query.eq('is_published', true);
+  }
+
+  const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ drills: data ?? [] });
+  return NextResponse.json({ drills: data ?? [], preview: isAdmin });
 }

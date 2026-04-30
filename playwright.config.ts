@@ -1,0 +1,31 @@
+import { defineConfig, devices } from '@playwright/test';
+import * as dotenv from 'dotenv';
+
+dotenv.config({ path: '.env.local' });
+
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000';
+
+export default defineConfig({
+  testDir: './e2e',
+  timeout: 30_000,
+  retries: process.env.CI ? 2 : 0,
+  reporter: process.env.CI ? 'github' : 'list',
+  use: {
+    baseURL,
+    trace: 'on-first-retry',
+  },
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
+  ],
+  webServer: process.env.CI
+    ? {
+        command: 'npm run start',
+        url: baseURL,
+        timeout: 60_000,
+        reuseExistingServer: false,
+      }
+    : undefined,
+});

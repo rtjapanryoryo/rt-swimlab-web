@@ -28,7 +28,7 @@ export interface DrillItem {
   updated_at: string;
 }
 
-/** 会員向け API 応答（公開データのみ） */
+/** 会員向け API 応答。preview=1 時は is_published も含む */
 export type DrillItemPublic = Pick<
   DrillItem,
   | 'id'
@@ -40,4 +40,4 @@ export type DrillItemPublic = Pick<
   | 'sort_order'
   | 'created_at'
   | 'updated_at'
->;
+> & { is_published?: boolean };

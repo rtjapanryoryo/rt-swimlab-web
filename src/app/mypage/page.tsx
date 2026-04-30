@@ -6,6 +6,8 @@ import { MenuLogSection } from '@/components/MenuLogSection';
 import { TrainingStatsSection } from '@/components/TrainingStatsSection';
 import { calcUsageStatus, IS_DEMO_PERIOD } from '@/lib/plan-limits';
 
+const DRILL_PRACTICE_ENABLED = process.env.NEXT_PUBLIC_DRILL_PRACTICE_ENABLED === 'true';
+
 export default function MyPageDashboard() {
   const { profile } = useProfile();
 
@@ -149,6 +151,27 @@ export default function MyPageDashboard() {
           className="shrink-0 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-xs font-bold shadow-lg shadow-cyan-500/20 hover:from-cyan-400 hover:to-teal-400 transition-all whitespace-nowrap"
         >
           無料相談
+        </Link>
+      </div>
+
+      {/* ════════ ドリル練習CTA ════════ */}
+      <div className="rounded-2xl border border-violet-200 bg-gradient-to-r from-violet-50 to-indigo-50 px-5 py-4 flex items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-bold text-slate-800">ドリル練習</p>
+            {!DRILL_PRACTICE_ENABLED && (
+              <span className="text-[9px] font-bold bg-cyan-50 text-cyan-500 border border-cyan-200 px-1.5 py-0.5 rounded-full leading-none">
+                近日公開
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-slate-500 mt-0.5">YouTube動画付きのドリルで泳法を磨こう。種目ごとに分類されています。</p>
+        </div>
+        <Link
+          href="/mypage/drill-practice"
+          className="shrink-0 px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-indigo-500 text-white text-xs font-bold shadow-lg shadow-violet-500/20 hover:from-violet-400 hover:to-indigo-400 transition-all whitespace-nowrap"
+        >
+          ドリルへ
         </Link>
       </div>
 
