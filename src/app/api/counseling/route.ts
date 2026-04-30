@@ -149,6 +149,20 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const isAdmin = searchParams.get('admin') === '1';
 
+  // ログイン済みユーザーなら誰でも予約済み枠一覧を取得できる（個人情報なし）
+  if (searchParams.get('booked') === '1') {
+    const { data, error } = await sb
+      .from('counseling_requests')
+      .select('preferred_datetime_1')
+      .not('status', 'eq', 'cancelled')
+      .not('preferred_datetime_1', 'is', null);
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({
+      booked: data.map(r => r.preferred_datetime_1).filter(Boolean),
+    });
+  }
+
   if (isAdmin) {
     const { data: profile } = await sb
       .from('profiles')

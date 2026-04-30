@@ -436,7 +436,7 @@ export default function AdminCounselingPage() {
                               title={`${booking.profiles?.display_name ?? '申込'} (${STATUS_META[booking.status].label})`}
                               className={`block px-2 py-1 rounded-lg text-[10px] font-bold truncate ${STATUS_META[booking.status].calBg}`}
                             >
-                              {booking.profiles?.display_name ?? '申込'}
+                              ✕ {booking.profiles?.display_name ?? '申込'}
                             </span>
                           ) : (
                             <span className="flex justify-center">
