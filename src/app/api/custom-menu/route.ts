@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import path from 'path';
 import { config as loadEnv } from 'dotenv';
 import { getEffectiveUser, createClient } from '@/lib/supabase/server';
+import { IS_DEMO_PERIOD, calcUsageStatus } from '@/lib/plan-limits';
 import OpenAI from 'openai';
 import { buildSessionContext, buildContextPrompt } from '@/lib/training/context-builder';
 import { getCommonContent, getProtocolContent, getPromptContent, getRTMenuProtocolContent, getRTJapanPracticeContent } from '@/lib/rt/content';
@@ -190,6 +191,30 @@ export async function POST(request: NextRequest) {
         { error: 'login_required', message: 'ログインが必要です' },
         { status: 401, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
       );
+    }
+
+    // サーバー側で生成回数制限チェック（デモ期間終了後に有効）
+    if (!IS_DEMO_PERIOD && !user.isBypass) {
+      const sb = await createClient();
+      if (sb) {
+        const monthStart = new Date();
+        monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
+        const [totalRes, monthRes] = await Promise.all([
+          sb.from('generation_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+          sb.from('generation_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id).gte('created_at', monthStart.toISOString()),
+        ]);
+        const usage = calcUsageStatus({
+          planId: 'free',
+          customCountTotal: totalRes.count ?? 0,
+          customCountThisMonth: monthRes.count ?? 0,
+        });
+        if (usage.isLimitReached) {
+          return NextResponse.json(
+            { error: 'limit_reached', message: 'カスタム生成の上限に達しました。プランをアップグレードしてください。' },
+            { status: 429 }
+          );
+        }
+      }
     }
 
     try {

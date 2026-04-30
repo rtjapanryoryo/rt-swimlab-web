@@ -6,7 +6,7 @@
 
 export type PlanId = 'free' | 'basic' | 'standard' | 'pro';
 
-export const IS_DEMO_PERIOD = true;
+export const IS_DEMO_PERIOD = process.env.NEXT_PUBLIC_DEMO_PERIOD !== 'false';
 
 export type PlanLimit = {
   customGenType: 'total' | 'monthly';
