@@ -1,8 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
+import {
+  getAvailableDates,
+  getSlotsForDate,
+  slotToISO,
+  slotKey,
+  fmtDateShort,
+  fmtSlotTime,
+  fmtDateFull,
+} from '@/lib/counseling-slots';
 
 type PlanId = 'free' | 'athlete' | 'coach';
 
@@ -62,13 +71,24 @@ function CounselingPageInner() {
   const initialPlan = (searchParams.get('plan') as PlanId | null) ?? null;
 
   const [selectedPlan, setSelectedPlan] = useState<PlanId | null>(initialPlan);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<Date | null>(null);
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
 
+  const availableDates = useMemo(() => getAvailableDates(21), []);
+  const timeSlots = useMemo(() => selectedDate ? getSlotsForDate(selectedDate) : [], [selectedDate]);
+
   const plan = PLANS.find(p => p.id === selectedPlan);
-  const canSubmit = !!selectedPlan;
+  const canSubmit = !!selectedPlan && !!selectedSlot;
+
+  const handlePlanSelect = (planId: PlanId) => {
+    setSelectedPlan(planId);
+    setSelectedDate(null);
+    setSelectedSlot(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,7 +102,7 @@ function CounselingPageInner() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           plan_type: selectedPlan,
-          preferred_datetime_1: null,
+          preferred_datetime_1: selectedSlot ? slotToISO(selectedSlot) : null,
           preferred_datetime_2: null,
           preferred_datetime_3: null,
           message: message.trim() || null,
@@ -104,7 +124,15 @@ function CounselingPageInner() {
         <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center text-2xl">✓</div>
         <h2 className="text-lg font-bold text-slate-900">申し込みを受け付けました</h2>
         <p className="text-sm text-slate-500 leading-relaxed">
-          3営業日以内にコーチよりご連絡いたします。<br />
+          {selectedSlot && (
+            <>
+              <span className="font-semibold text-slate-700">
+                {fmtDateFull(selectedSlot)} {fmtSlotTime(selectedSlot)}
+              </span>
+              <br />
+            </>
+          )}
+          コーチより確認のご連絡をいたします。<br />
           しばらくお待ちください。
         </p>
       </div>
@@ -140,13 +168,12 @@ function CounselingPageInner() {
             <button
               key={p.id}
               type="button"
-              onClick={() => setSelectedPlan(p.id)}
+              onClick={() => handlePlanSelect(p.id)}
               className={`w-full text-left rounded-2xl border-2 p-4 transition-all bg-white ${
                 isSelected ? `${p.activeBorder} shadow-sm` : `${p.border} hover:border-slate-300`
               }`}
             >
               <div className="flex items-start gap-3">
-                {/* 選択インジケーター */}
                 <div className={`mt-0.5 w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center transition-all ${
                   isSelected ? 'border-cyan-500 bg-cyan-500' : 'border-slate-300'
                 }`}>
@@ -167,7 +194,6 @@ function CounselingPageInner() {
                   <p className="text-xs text-slate-500 mt-1 leading-relaxed">{p.tagline}</p>
                 </div>
 
-                {/* 金額：常時表示 */}
                 <div className="shrink-0 text-right">
                   {isSelected && p.regularPrice && (
                     <p className="text-[10px] text-slate-400 line-through">{p.regularPrice}</p>
@@ -181,7 +207,6 @@ function CounselingPageInner() {
                 </div>
               </div>
 
-              {/* 展開エリア */}
               {isSelected && (
                 <div className="mt-3 ml-7 space-y-2">
                   <p className="text-xs text-slate-600 leading-relaxed">{p.description}</p>
@@ -200,12 +225,83 @@ function CounselingPageInner() {
         })}
       </div>
 
+      {/* 日時選択 */}
+      {selectedPlan && (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
+          <div>
+            <p className="text-sm font-bold text-slate-700">希望日時を選ぶ</p>
+            <p className="text-xs text-slate-400 mt-0.5">
+              月・水・木・金 21:00〜 ／ 土 19:00〜 ／ 日 20:00〜（22:00まで・15分枠）
+            </p>
+          </div>
+
+          {/* 日付 */}
+          <div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">日付を選ぶ</p>
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              {availableDates.map(d => {
+                const isSelected = selectedDate?.toDateString() === d.toDateString();
+                return (
+                  <button
+                    key={d.toISOString()}
+                    type="button"
+                    onClick={() => { setSelectedDate(d); setSelectedSlot(null); }}
+                    className={`shrink-0 px-3 py-2 rounded-xl text-xs font-semibold border transition-all ${
+                      isSelected
+                        ? 'bg-cyan-600 text-white border-cyan-600'
+                        : 'bg-white text-slate-700 border-slate-200 hover:border-cyan-300'
+                    }`}
+                  >
+                    {fmtDateShort(d)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 時間枠 */}
+          {selectedDate && (
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">時間を選ぶ</p>
+              <div className="flex flex-wrap gap-2">
+                {timeSlots.map(slot => {
+                  const isSelected = selectedSlot ? slotKey(selectedSlot) === slotKey(slot) : false;
+                  return (
+                    <button
+                      key={slotKey(slot)}
+                      type="button"
+                      onClick={() => setSelectedSlot(slot)}
+                      className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${
+                        isSelected
+                          ? 'bg-cyan-600 text-white border-cyan-600'
+                          : 'bg-white text-slate-700 border-slate-200 hover:border-cyan-300'
+                      }`}
+                    >
+                      {fmtSlotTime(slot)}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {selectedSlot && (
+            <div className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5">
+              <span className="text-emerald-500 font-bold">✓</span>
+              <span className="font-semibold">
+                {fmtDateFull(selectedSlot)}　{fmtSlotTime(selectedSlot)}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* 申し込みフォーム */}
       {selectedPlan && (
         <form onSubmit={handleSubmit} className="space-y-5 bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
           <div>
             <p className="text-sm font-bold text-slate-700">{plan?.name}を申し込む</p>
-            <p className="text-xs text-slate-400 mt-0.5">送信後、コーチより日程のご連絡をいたします。</p>
+            <p className="text-xs text-slate-400 mt-0.5">送信後、コーチより確認のご連絡をいたします。</p>
           </div>
 
           {/* 相談内容 */}
@@ -223,6 +319,12 @@ function CounselingPageInner() {
             />
           </div>
 
+          {!selectedSlot && (
+            <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
+              上の「希望日時を選ぶ」から日時を選択してください
+            </p>
+          )}
+
           {error && (
             <p className="text-sm text-red-500 bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">
               {error}
@@ -238,7 +340,7 @@ function CounselingPageInner() {
           </button>
 
           <p className="text-center text-[10px] text-slate-400">
-            送信後、3営業日以内にご連絡いたします
+            送信後、コーチより確認のご連絡をいたします
           </p>
         </form>
       )}
