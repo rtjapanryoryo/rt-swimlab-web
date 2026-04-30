@@ -57,7 +57,7 @@ export default function AdminCounselingPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [adminNote, setAdminNote]   = useState('');
-  const [view, setView]             = useState<'list' | 'calendar'>('list');
+  const [view, setView]             = useState<'list' | 'calendar' | 'script'>('list');
   const [weekStart, setWeekStart]   = useState(() => getMonday(new Date()));
 
   const fetchRequests = () => {
@@ -201,7 +201,7 @@ export default function AdminCounselingPage() {
 
       {/* タブ切り替え */}
       <div className="flex gap-2 border-b border-slate-200 pb-0">
-        {(['list', 'calendar'] as const).map(v => (
+        {(['list', 'calendar', 'script'] as const).map(v => (
           <button
             key={v}
             onClick={() => setView(v)}
@@ -211,7 +211,7 @@ export default function AdminCounselingPage() {
                 : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >
-            {v === 'list' ? 'リスト' : 'カレンダー'}
+            {v === 'list' ? 'リスト' : v === 'calendar' ? 'カレンダー' : '話すカンペ'}
           </button>
         ))}
       </div>
@@ -455,6 +455,110 @@ export default function AdminCounselingPage() {
           <p className="text-[10px] text-slate-400">
             ○ = 空き枠　色付き = 申し込みあり（ホバーで詳細）　灰色 = 受付時間外
           </p>
+        </div>
+      )}
+
+      {/* ══════ 話すカンペ ══════ */}
+      {view === 'script' && (
+        <div className="space-y-4 max-w-2xl">
+
+          <p className="text-xs text-slate-500">無料カウンセリング（15分）の進行カンペです。通話前に確認してください。</p>
+
+          {[
+            {
+              time: '0〜2分',
+              title: '① オープニング・現状確認',
+              color: 'border-slate-300 bg-slate-50',
+              titleColor: 'text-slate-700',
+              lines: [
+                '「本日はお時間いただきありがとうございます！15分という短い時間ですが、しっかりお伝えしたいことがあるので一緒に進めていきましょう。まず少し聞いてもいいですか？今どんな練習をされていますか？」',
+                '→ 目標シートに繋げる：「アプリに目標シートという機能があるんですが、もう書いていただけましたか？（書いていれば）ぜひ今日の中で一緒に見ていきましょう。（書いていなければ）今日の後半で少し触れますね。」',
+              ],
+            },
+            {
+              time: '2〜6分',
+              title: '② アプリ使い方デモ（画面共有）',
+              color: 'border-cyan-200 bg-cyan-50/40',
+              titleColor: 'text-cyan-800',
+              lines: [
+                '「では実際に使い方を見てもらった方が早いと思うので、画面を共有しますね。」',
+                '→ メニュー生成を実演：「たとえば今日の状態をここに入れると…こんな感じで練習メニューが自動で出てきます。距離・強度・インターバルまで全部設計されているので、これを見て練習するだけでOKです。」',
+                '→ 目標シートへ：「目標シートはここにあって、ここに目標を書いておくと練習の方向性がブレなくなります。今日の後でもいいので、ぜひ書いてみてください。」',
+              ],
+            },
+            {
+              time: '6〜10分',
+              title: '③ 遺伝子検査の紹介',
+              color: 'border-violet-200 bg-violet-50/40',
+              titleColor: 'text-violet-800',
+              lines: [
+                '「ちょっと話が変わるんですが、RT swim labには遺伝子検査と連携した機能があるんです。知ってましたか？」',
+                '→ 知らない場合：「自分が持って生まれた特性——持久系か瞬発系か、疲労回復のしやすさとか——が遺伝子レベルでわかるんです。それに合わせて練習を組み立てると、同じ練習量でも効果が全然変わってくる。今やっている練習が、実は特性に合っていない可能性もあるんですよね。」',
+                '→ 購入誘導：「一度検査しておくとずっと使える情報なので、コスパはかなり高いと思っています。もし興味あれば今日の後でリンクをお送りしますね。」',
+              ],
+            },
+            {
+              time: '10〜13分',
+              title: '④ コミュニティ紹介',
+              color: 'border-emerald-200 bg-emerald-50/40',
+              titleColor: 'text-emerald-800',
+              lines: [
+                '「今、RT swim labのコミュニティも作っていて、同じように水泳を頑張っている仲間がいるんです。練習記録を共有したり、お互いに刺激し合ったりできる場所です。」',
+                '「一人でやっていると続かないことって多いと思うんですけど、仲間がいると全然違うんですよ。近日公開予定なので、ぜひ参加してみてください。」',
+              ],
+            },
+            {
+              time: '13〜15分',
+              title: '⑤ クロージング・次のアクション',
+              color: 'border-amber-200 bg-amber-50/40',
+              titleColor: 'text-amber-800',
+              lines: [
+                '「残り少しですが、何か聞いておきたいことはありますか？」',
+                '→ 必ず次のアクションを1つ決めて終わる：「今日話した中で、まず一つだけやってみてほしいことを決めましょう。目標シートを書く・遺伝子検査を申し込む・メニュー生成を試してみる、どれが一番やれそうですか？」',
+                '→ 決まったら：「では○○をやってみてください。何かあればいつでも連絡してくださいね。今日はありがとうございました！」',
+              ],
+            },
+          ].map(block => (
+            <div key={block.title} className={`rounded-2xl border ${block.color} p-4 space-y-2`}>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold bg-white border border-slate-200 text-slate-500 px-2 py-0.5 rounded-full">{block.time}</span>
+                <h3 className={`text-sm font-bold ${block.titleColor}`}>{block.title}</h3>
+              </div>
+              <ul className="space-y-2">
+                {block.lines.map((line, i) => (
+                  <li key={i} className="text-sm text-slate-700 leading-relaxed">
+                    {line.startsWith('→') ? (
+                      <span className="flex gap-1.5">
+                        <span className="text-slate-400 shrink-0">→</span>
+                        <span>{line.slice(1).trim()}</span>
+                      </span>
+                    ) : (
+                      <span className="block bg-white/70 rounded-xl px-3 py-2 border border-white italic">
+                        {line}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+
+          {/* よくある質問 */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
+            <h3 className="text-sm font-bold text-slate-700">よく聞かれる質問</h3>
+            {[
+              { q: '有料プランはいくらですか？', a: '今キャンペーン中で通常より安くなっています。選手プランは1回1,500円です。' },
+              { q: '遺伝子検査は怖くないですか？', a: '口の中を綿棒で拭うだけなので痛みは全くないです。郵送でできます。' },
+              { q: 'アプリは難しくないですか？', a: '条件を選んでボタンを押すだけなので、5分あれば使えます。今日デモで見てもらった通りです。' },
+              { q: 'コミュニティって何をするんですか？', a: '練習記録の共有・情報交換・仲間との交流がメインです。強制参加ではないので、気軽に覗くだけでもOKです。' },
+            ].map(({ q, a }) => (
+              <div key={q} className="border-l-2 border-slate-200 pl-3">
+                <p className="text-xs font-bold text-slate-600">Q. {q}</p>
+                <p className="text-xs text-slate-500 mt-0.5">→ {a}</p>
+              </div>
+            ))}
+          </div>
+
         </div>
       )}
     </div>
