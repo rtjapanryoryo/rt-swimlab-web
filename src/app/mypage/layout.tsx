@@ -18,6 +18,7 @@ import {
   LogoutIcon,
   SwimLabIcon,
 } from '@/components/icons/MypageNavIcons';
+import { MAINTENANCE_MODE } from '@/lib/plan-limits';
 
 const LINE_URL = process.env.NEXT_PUBLIC_LINE_URL || '';
 const COMMUNITY_URL = process.env.NEXT_PUBLIC_COMMUNITY_URL || '';
@@ -26,7 +27,7 @@ const COUNSELING_ENABLED = process.env.NEXT_PUBLIC_COUNSELING_ENABLED === 'true'
 
 const navItems = [
   { href: '/mypage', label: 'ダッシュボード', Icon: DashboardIcon },
-  { href: '/mypage/menu', label: 'RT swim lab', Icon: SwimLabIcon, footerLabel: 'swim lab' },
+  ...(!MAINTENANCE_MODE ? [{ href: '/mypage/menu', label: 'RT swim lab', Icon: SwimLabIcon, footerLabel: 'swim lab' }] : []),
   { href: '/mypage/goal-sheet', label: '目標シート', Icon: GoalSheetIcon, footerLabel: '目標' },
   { href: '/mypage/counseling', label: 'カウンセリング', Icon: CounselingIcon, footerLabel: 'カウンセリング', disabled: !COUNSELING_ENABLED, comingSoon: !COUNSELING_ENABLED },
   { href: '/mypage/genetic', label: 'RT GENE PROFILE', Icon: GeneProfileIcon, hideInFooter: true },
@@ -161,6 +162,15 @@ function MyPageLayoutInner({
 
         {/* メインコンテンツ（PC: サイドバー＋余白＋パディング。モバイル: フッター分の余白） */}
         <main className="flex-1 min-w-0 order-1 lg:order-2 py-6 sm:py-8 px-4 sm:px-6 lg:pl-72 lg:pr-8 xl:pr-12 lg:py-8 pb-24 lg:pb-8">
+          {MAINTENANCE_MODE && (
+            <div className="mb-6 rounded-2xl bg-amber-50 border border-amber-200 px-5 py-4 flex items-start gap-3">
+              <span className="text-amber-500 text-xl leading-none mt-0.5">🔧</span>
+              <div>
+                <p className="text-sm font-bold text-amber-800">デモ期間が終了しました</p>
+                <p className="text-xs text-amber-700 mt-0.5">現在、サービスを編集・準備中です。近日中に正式公開予定ですので、もうしばらくお待ちください。</p>
+              </div>
+            </div>
+          )}
           {children}
         </main>
       </div>

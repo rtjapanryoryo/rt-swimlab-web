@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useProfile } from '@/contexts/ProfileContext';
 import { MenuLogSection } from '@/components/MenuLogSection';
 import { TrainingStatsSection } from '@/components/TrainingStatsSection';
-import { calcUsageStatus, IS_DEMO_PERIOD } from '@/lib/plan-limits';
+import { calcUsageStatus, IS_DEMO_PERIOD, MAINTENANCE_MODE } from '@/lib/plan-limits';
 
 const DRILL_PRACTICE_ENABLED = process.env.NEXT_PUBLIC_DRILL_PRACTICE_ENABLED === 'true';
 const COUNSELING_ENABLED = process.env.NEXT_PUBLIC_COUNSELING_ENABLED === 'true';
@@ -114,13 +114,15 @@ export default function MyPageDashboard() {
 
           {/* CTA */}
           <div className="mt-5 flex flex-wrap gap-3">
-            <Link
-              href="/mypage/menu"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-bold rounded-2xl hover:from-cyan-400 hover:to-teal-400 transition-all shadow-xl shadow-cyan-500/30 hover:shadow-cyan-500/50 hover:-translate-y-0.5 text-sm"
-            >
-              <span>🏊</span>
-              メニューを生成する
-            </Link>
+            {!MAINTENANCE_MODE && (
+              <Link
+                href="/mypage/menu"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-bold rounded-2xl hover:from-cyan-400 hover:to-teal-400 transition-all shadow-xl shadow-cyan-500/30 hover:shadow-cyan-500/50 hover:-translate-y-0.5 text-sm"
+              >
+                <span>🏊</span>
+                メニューを生成する
+              </Link>
+            )}
             <Link
               href="/mypage/settings"
               className="inline-flex items-center gap-2 px-5 py-3 text-slate-400 font-medium rounded-2xl border border-white/10 hover:border-white/20 hover:text-white hover:bg-white/5 transition-all text-sm"

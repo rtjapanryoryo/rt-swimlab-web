@@ -8,6 +8,9 @@ export type PlanId = 'free' | 'basic' | 'standard' | 'pro';
 
 export const IS_DEMO_PERIOD = process.env.NEXT_PUBLIC_DEMO_PERIOD !== 'false';
 
+/** デモ期間終了後のメンテナンス・編集中モード。完成したら false に戻す。 */
+export const MAINTENANCE_MODE = true;
+
 export type PlanLimit = {
   customGenType: 'total' | 'monthly';
   customGenLimit: number | null; // null = 未定（検討中）
