@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import path from 'path';
 import { config as loadEnv } from 'dotenv';
 import { getEffectiveUser, createClient } from '@/lib/supabase/server';
-import { IS_DEMO_PERIOD, calcUsageStatus } from '@/lib/plan-limits';
+import { IS_DEMO_PERIOD, calcUsageStatus, MAINTENANCE_MODE } from '@/lib/plan-limits';
 import OpenAI from 'openai';
 import { buildSessionContext, buildContextPrompt } from '@/lib/training/context-builder';
 import { getCommonContent, getProtocolContent, getPromptContent, getRTMenuProtocolContent, getRTJapanPracticeContent } from '@/lib/rt/content';
@@ -175,6 +175,13 @@ const PERIOD_LABELS: Record<string, string> = {
 const INTERNAL_ERROR_JSON = { error: 'internal_error', message: '現在生成できません。時間をおいて再試行してください' } as const;
 
 export async function POST(request: NextRequest) {
+  if (MAINTENANCE_MODE) {
+    return NextResponse.json(
+      { error: 'メンテナンス中です。近日中に正式公開予定です。' },
+      { status: 503 }
+    );
+  }
+
   const ensureJson500 = () =>
     NextResponse.json(INTERNAL_ERROR_JSON, { status: 500, headers: { 'Content-Type': 'application/json; charset=utf-8' } });
 

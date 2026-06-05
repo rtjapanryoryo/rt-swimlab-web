@@ -1,31 +1,6 @@
-'use client';
-
-import { useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
-import MenuGeneratorPanel from '@/components/MenuGeneratorPanel';
-import type { TrainingInput } from '@/lib/rt/generator';
-
-function MenuPageInner() {
-  const searchParams = useSearchParams();
-  const planId    = searchParams.get('plan_id') ?? undefined;
-  const period    = searchParams.get('period') ?? undefined;
-  const distance  = searchParams.get('distance') ?? undefined;
-  const condition = searchParams.get('condition') ?? undefined;
-  const stroke    = searchParams.get('stroke') ?? undefined;
-  const distanceType = searchParams.get('distanceType') ?? undefined;
-
-  const initialValues: Partial<TrainingInput> | undefined =
-    period || distance || stroke
-      ? { period, distance, condition, stroke, distanceType }
-      : undefined;
-
-  return <MenuGeneratorPanel embedded planId={planId} initialValues={initialValues} />;
-}
-
 export default function RTSwimLabMenuPage() {
   return (
     <div className="space-y-5">
-      {/* ページヘッダー */}
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center text-xl shadow-lg shadow-cyan-500/25 shrink-0">
           🏊
@@ -38,14 +13,11 @@ export default function RTSwimLabMenuPage() {
         </div>
       </div>
 
-      {/* メニュー生成パネル */}
-      <Suspense fallback={
-        <div className="flex justify-center py-16">
-          <div className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
-        </div>
-      }>
-        <MenuPageInner />
-      </Suspense>
+      <div className="rounded-2xl bg-amber-50 border border-amber-200 px-6 py-10 text-center space-y-3">
+        <p className="text-3xl">🔧</p>
+        <p className="text-base font-bold text-amber-800">現在、編集・準備中です</p>
+        <p className="text-sm text-amber-700">デモ期間が終了したため、メニュー生成は一時的に停止しています。<br />近日中に正式公開予定ですので、もうしばらくお待ちください。</p>
+      </div>
     </div>
   );
 }
