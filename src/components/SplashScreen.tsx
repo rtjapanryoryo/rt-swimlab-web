@@ -109,13 +109,7 @@ export function SplashScreenProvider({
   return (
     <>
       <SplashScreen visible={show} durationMs={durationMs} />
-      <div
-        className={`transition-opacity duration-700 ease-out ${
-          show ? 'opacity-0 pointer-events-none' : 'opacity-100'
-        }`}
-      >
-        {children}
-      </div>
+      {children}
     </>
   );
 }
