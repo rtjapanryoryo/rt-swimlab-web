@@ -4,6 +4,7 @@
  */
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
+import { getSupabaseServiceRole } from '@/lib/supabase/admin';
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -63,4 +64,25 @@ export async function getEffectiveUser(): Promise<EffectiveUser | null> {
     return { id: bypassId, isBypass: true };
   }
   return null;
+}
+
+export async function getAdminUser() {
+  const user = await getEffectiveUser();
+  if (!user) return null;
+
+  const supabase = user.isBypass ? getSupabaseServiceRole() : await createClient();
+  if (!supabase) return null;
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, display_name')
+    .eq('id', user.id)
+    .single();
+
+  if (profile?.role !== 'admin') return null;
+  return { ...user, display_name: profile.display_name };
+}
+
+export function getServiceRole() {
+  return getSupabaseServiceRole();
 }
