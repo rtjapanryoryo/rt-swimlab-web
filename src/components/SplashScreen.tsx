@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 const FADE_IN_MS = 600;
 const FADE_OUT_MS = 800;
+const AUTH_PATHS = ['/login', '/signup', '/forgot-password', '/update-password'];
 
 function SplashContent({ durationMs }: { durationMs: number }) {
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -70,24 +72,24 @@ export function SplashScreenProvider({
   storageKey?: string;
   durationMs?: number;
 }) {
-  const [show, setShow] = useState(true);
+  const pathname = usePathname();
+  const skipSplash = AUTH_PATHS.includes(pathname);
+  const [show, setShow] = useState(false);
 
   useEffect(() => {
+    if (skipSplash) return;
+
     let cancelled = false;
     try {
       const alreadyShown = window.sessionStorage.getItem(storageKey) === '1';
       if (alreadyShown) {
-        const t = window.setTimeout(() => {
-          if (!cancelled) setShow(false);
-        }, 0);
-        return () => {
-          cancelled = true;
-          window.clearTimeout(t);
-        };
+        return;
       }
     } catch {
       /* ignore */
     }
+
+    setShow(true);
 
     try {
       window.sessionStorage.setItem(storageKey, '1');
@@ -102,7 +104,7 @@ export function SplashScreenProvider({
       cancelled = true;
       window.clearTimeout(t);
     };
-  }, [storageKey, durationMs]);
+  }, [storageKey, durationMs, skipSplash]);
 
   return (
     <>
