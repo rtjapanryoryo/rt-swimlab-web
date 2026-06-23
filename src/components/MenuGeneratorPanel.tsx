@@ -14,7 +14,7 @@ import { MenuSheet } from '@/components/MenuSheet';
 import { PracticeVolumeField } from '@/components/PracticeVolumeField';
 import { PurposeField } from '@/components/PurposeField';
 import { isDistanceValidForType, isQuickDistanceValid } from '@/lib/rt/distance-time-validation';
-import { calcUsageStatus, IS_DEMO_PERIOD } from '@/lib/plan-limits';
+import { calcUsageStatus, IS_DEMO_PERIOD, MAINTENANCE_MODE } from '@/lib/plan-limits';
 import Link from 'next/link';
 
 /** クイック用テンプレ（API不要・常にメニュー生成可能） */
@@ -140,6 +140,15 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
     'optimizing...',
     'finalizing...',
   ];
+  const isCustomGenerationDisabled =
+    MAINTENANCE_MODE ||
+    openaiConfigured === false ||
+    (!IS_DEMO_PERIOD && usageStatus.isLimitReached);
+  const customGenerationDisabledTitle = MAINTENANCE_MODE
+    ? 'カスタム生成は本リリース準備中です'
+    : openaiConfigured === false
+      ? 'カスタム生成はOPENAI_API_KEY設定後に利用できます'
+      : undefined;
 
   useEffect(() => {
     if (!customIsGenerating) return;
@@ -857,7 +866,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                     <button onClick={() => setCustomStep(1)} className="px-6 py-3 border border-slate-200 bg-white text-slate-700 font-semibold rounded-xl shadow-sm hover:bg-slate-50">
                       戻る
                     </button>
-                    <button onClick={generateMenuWithAI} disabled={!isCustomFormValid() || customIsGenerating || openaiConfigured === false || (!IS_DEMO_PERIOD && usageStatus.isLimitReached)} className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-bold rounded-2xl shadow-lg shadow-cyan-500/25 hover:from-cyan-600 hover:to-teal-600 disabled:from-slate-400 disabled:to-slate-400 disabled:cursor-not-allowed transition-all" title={openaiConfigured === false ? 'カスタム作成はOPENAI_API_KEY設定後に利用できます' : undefined}>
+                    <button onClick={generateMenuWithAI} disabled={!isCustomFormValid() || customIsGenerating || isCustomGenerationDisabled} className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-bold rounded-2xl shadow-lg shadow-cyan-500/25 hover:from-cyan-600 hover:to-teal-600 disabled:from-slate-400 disabled:to-slate-400 disabled:cursor-not-allowed transition-all" title={customGenerationDisabledTitle}>
                       {customIsGenerating ? '生成中...' : 'AIでメニューを生成'}
                     </button>
                     {/* 残り回数表示 */}
@@ -874,14 +883,18 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                       </span>
                     ) : null}
                   </div>
+                  {MAINTENANCE_MODE && (
+                    <p className="mt-3 text-sm text-amber-700">
+                      カスタム生成は本リリース準備中です。クイック生成の画面確認はこのまま行えます。
+                    </p>
+                  )}
                 </>
               )}
 
-              {openaiConfigured === false && (
+              {!MAINTENANCE_MODE && openaiConfigured === false && (
                 <p className="mt-4 text-sm text-amber-700">
-                  OpenAI API: 未設定（
-                  {(openaiReason === 'placeholder' && 'OPENAI_API_KEY を本物のキーに差し替えてください') || (openaiReason === 'missing' && '.env.ai に OPENAI_API_KEY=あなたのキー を追加してください') || 'OPENAI_API_KEY を設定してください'}
-                  ）。設定後は開発サーバーを再起動してください。
+                  OpenAI APIが未設定のため、カスタム生成は現在利用できません。
+                  {(openaiReason === 'placeholder' && ' OPENAI_API_KEYを本番用のキーに差し替えてください。') || (openaiReason === 'missing' && ' OPENAI_API_KEYを設定してください。') || ' OPENAI_API_KEYを確認してください。'}
                 </p>
               )}
             </>
