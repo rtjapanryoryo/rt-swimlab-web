@@ -32,7 +32,9 @@ npm run dev:unix
 
 どちらもGit管理対象外です。secret値をcommitしないでください。
 
-`npm run dev` では `.env.local` を先に読み、同じキーが `.env.ai` にある場合は `.env.ai` を優先します。
+`npm run dev` では `.env.local` を先に読みます。同じキーが `.env.ai` にもあり、かつ `.env.ai` 側に値が入っている場合は `.env.ai` を優先します。
+
+`.env.ai` 側が空値の場合は、`.env.local` の値を上書きしません。
 
 認証ページの確認に最低限必要なSupabase公開変数は以下です。
 
