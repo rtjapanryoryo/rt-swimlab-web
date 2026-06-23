@@ -172,6 +172,43 @@ const PERIOD_LABELS: Record<string, string> = {
   '4': '④ 強化期 (スピード持久力)', '5': '⑤ 強化期 (耐乳酸)', '6': '⑥ 調整期', '7': '⑦ テーパー期',
 };
 
+const RACE_EVENT_LABELS: Record<string, string> = {
+  Fr_50m: '自由形 50m',
+  Fr_100m: '自由形 100m',
+  Fr_200m: '自由形 200m',
+  Ba_50m: '背泳ぎ 50m',
+  Ba_100m: '背泳ぎ 100m',
+  Br_50m: '平泳ぎ 50m',
+  Br_100m: '平泳ぎ 100m',
+  Fly_50m: 'バタフライ 50m',
+  Fly_100m: 'バタフライ 100m',
+  IM_100m: '個人メドレー 100m',
+  IM_200m: '個人メドレー 200m',
+  IM_400m: '個人メドレー 400m',
+};
+
+function normalizeGenerationMode(value: unknown): 'standard' | 'sprint_50m' {
+  return value === 'sprint_50m' ? 'sprint_50m' : 'standard';
+}
+
+function normalizePoolLength(value: unknown): 'short_course' | 'long_course' {
+  return value === 'long_course' ? 'long_course' : 'short_course';
+}
+
+function normalizeExplanationLevel(value: unknown): 'beginner_friendly' | 'technical' {
+  return value === 'technical' ? 'technical' : 'beginner_friendly';
+}
+
+function normalizeRaceEvent(value: unknown): string {
+  const event = typeof value === 'string' ? value.trim() : '';
+  return RACE_EVENT_LABELS[event] ? event : '';
+}
+
+function strokeFromRaceEvent(raceEvent: string): string | null {
+  const stroke = raceEvent.split('_')[0];
+  return ['Fr', 'Ba', 'Br', 'Fly', 'IM'].includes(stroke) ? stroke : null;
+}
+
 const INTERNAL_ERROR_JSON = { error: 'internal_error', message: '現在生成できません。時間をおいて再試行してください' } as const;
 
 export async function POST(request: NextRequest) {
@@ -248,8 +285,20 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const { period, stroke, distance, age, distanceType, level, condition, practiceTime, plan_id } =
+      const { period, stroke: rawStroke, distance, age, distanceType, level, condition, practiceTime, plan_id } =
         body as Record<string, string>;
+      const generationMode = normalizeGenerationMode(body.generationMode);
+      const poolLength = normalizePoolLength(body.poolLength);
+      const explanationLevel = normalizeExplanationLevel(body.explanationLevel);
+      const raceEvent = normalizeRaceEvent(body.raceEvent);
+      const bestTime = typeof body.bestTime === 'string' ? body.bestTime.trim() : '';
+      const stroke = strokeFromRaceEvent(raceEvent) ?? rawStroke;
+      const raceEventLabel = raceEvent
+        ? RACE_EVENT_LABELS[raceEvent]
+        : `未指定（種目: ${stroke || 'Fr'}）`;
+      const generationModeLabel = generationMode === 'sprint_50m' ? '50m特化' : '通常メニュー';
+      const poolLengthLabel = poolLength === 'long_course' ? '長水路' : '短水路';
+      const explanationLevelLabel = explanationLevel === 'technical' ? '専門用語中心' : 'わかりやすく説明';
 
       if (distance && distanceType && !isDistanceValidForType(distance, distanceType)) {
         return NextResponse.json(
@@ -439,6 +488,18 @@ export async function POST(request: NextRequest) {
         ? `適用済み補正: ${skeleton.adjustmentNotes.join(', ')}`
         : '';
 
+      const sprint50mDirective = generationMode === 'sprint_50m'
+        ? `【50m特化モード指示】
+- マスターズ向け50m特化メニューとして設計する。
+- 短距離・スプリント品質を最優先し、量よりも1本ごとの質を重視する。
+- スタート、浮き上がり、15m、25m、後半失速対策、最大速度、テンポ維持を意識した内容にする。
+- 十分なレストを前提に、フォーム崩れを防ぎながら高品質なスピード刺激を入れる。
+- ジュニア向けではなく、マスターズが安全に取り組める表現にする。`
+        : '';
+      const explanationDirective = explanationLevel === 'technical'
+        ? `【説明レベル指示】競泳経験者向けに、専門用語中心で簡潔に書く。`
+        : `【説明レベル指示】専門用語を使いすぎず、意図や目的をわかりやすく説明する。`;
+
       const buildUserPrompt = (retryHint = '') =>
         `${retryHint}【タスク】以下のテンプレートの {PLACEHOLDER} スロットをオリジナルのコンテンツラベルで埋めてください。
 **数値・本数・@rest・強度番号（①〜⑦）は絶対変更禁止。{PLACEHOLDER} 部分のみ書き換える。**
@@ -458,10 +519,16 @@ export async function POST(request: NextRequest) {
 【入力条件】
 - 期: ${PERIOD_LABELS[period] ?? period}
 - 種目: ${stroke}
+- 生成モード: ${generationModeLabel}
+- 対象レース: ${raceEventLabel}
+- プール種別: ${poolLengthLabel}
+- ベストタイム: ${bestTime || '未入力'}
+- 説明レベル: ${explanationLevelLabel}
 - 総距離: ${distance}m（骨格で確定済み・変更禁止）
 - 年齢: ${age}　距離タイプ: ${distanceType}
 - レベル: ${level}
 - 状況: ${condition}　練習時間: ${practiceTime}分
+${sprint50mDirective ? `${sprint50mDirective}\n` : ''}${explanationDirective}
 ${adjustNotes ? `- ${adjustNotes}` : ''}
 ${condition.includes('絶好調') ? `【絶好調コンディション指示】
 - intention: ピーク状態を活かした「攻めの練習」の狙いを前向きに書く。今日の感覚の鋭さを最大限に使う視点で。

@@ -87,16 +87,32 @@ export function PracticeVolumeField({
     <div className="rounded-2xl border-2 border-cyan-200/80 bg-gradient-to-br from-cyan-50/60 to-white p-5 sm:p-6 shadow-sm">
       <div className="flex items-center gap-2 mb-1">
         <h3 className="text-sm font-bold text-cyan-800 tracking-wide">練習のボリューム</h3>
-        <span className="text-xs text-slate-500">（距離タイプ・距離・時間はセットで決まります）</span>
+        <span className="text-xs text-slate-500">（練習時間・距離タイプ・距離はセットで決まります）</span>
       </div>
       <p className="text-xs text-slate-500 mb-4">
-        距離タイプで練習スタイルを決め、距離と時間の組み合わせで密度を調整します
+        練習時間と距離タイプを先に決め、選べる距離の中から練習ボリュームを調整します
       </p>
 
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1.5">
-            {n1} 距離タイプ
+            {n1} 練習時間
+          </label>
+          <select
+            value={practiceTime}
+            onChange={(e) => onPracticeTimeChange(e.target.value)}
+            className={fieldClass}
+          >
+            <option value="">選択してください</option>
+            <option value="60">60分</option>
+            <option value="90">90分</option>
+            <option value="120">120分</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1.5">
+            {n2} 距離タイプ
             {distanceType && (
               <span className="ml-2 text-xs font-normal text-cyan-600">
                 → {rangeLabel}
@@ -121,44 +137,29 @@ export function PracticeVolumeField({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">
-              {n2} 距離{isQuick && '（目安）'}
-            </label>
-            <select
-              value={distance}
-              onChange={(e) => onDistanceChange(e.target.value)}
-              className={fieldClass}
-              disabled={distanceSelectDisabled}
-            >
-              <option value="">
-                {distanceSelectDisabled
-                  ? isQuick
-                    ? '距離タイプと練習時間を先に選択'
-                    : '先に距離タイプを選択'
-                  : '選択してください'}
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1.5">
+            {n3} 距離{isQuick && '（目安）'}
+          </label>
+          <select
+            value={distance}
+            onChange={(e) => onDistanceChange(e.target.value)}
+            className={fieldClass}
+            disabled={distanceSelectDisabled}
+          >
+            <option value="">
+              {distanceSelectDisabled
+                ? isQuick
+                  ? '距離タイプと練習時間を先に選択'
+                  : '先に距離タイプを選択'
+                : '選択してください'}
+            </option>
+            {distanceOptions.map((d) => (
+              <option key={d} value={d}>
+                {Number(d).toLocaleString()}m
               </option>
-              {distanceOptions.map((d) => (
-                <option key={d} value={d}>
-                  {Number(d).toLocaleString()}m
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">{n3} 練習時間</label>
-            <select
-              value={practiceTime}
-              onChange={(e) => onPracticeTimeChange(e.target.value)}
-              className={fieldClass}
-            >
-              <option value="">選択してください</option>
-              <option value="60">60分</option>
-              <option value="90">90分</option>
-              <option value="120">120分</option>
-            </select>
-          </div>
+            ))}
+          </select>
         </div>
       </div>
 
