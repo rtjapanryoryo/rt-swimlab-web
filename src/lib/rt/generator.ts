@@ -16,6 +16,11 @@ export interface TrainingInput {
   level: string; // 全国大会入賞〜代表クラス, 上級, 中級, 初級, マスターズ各
   condition: string; // 良好、軽疲労、筋疲労、疲労残り、月経期
   practiceTime: string; // 60, 90, 120
+  generationMode?: 'standard' | 'sprint_50m';
+  poolLength?: 'short_course' | 'long_course';
+  raceEvent?: string;
+  bestTime?: string;
+  explanationLevel?: 'beginner_friendly' | 'technical';
 }
 
 export interface TrainingResult {

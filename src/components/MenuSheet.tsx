@@ -366,6 +366,32 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
     M: 'M（ミドル）',
     D: 'D（ディスタンス）',
   };
+  const generationModeNames: Record<string, string> = {
+    standard: '通常メニュー',
+    sprint_50m: '50m特化',
+  };
+  const poolLengthNames: Record<string, string> = {
+    short_course: '短水路',
+    long_course: '長水路',
+  };
+  const raceEventNames: Record<string, string> = {
+    Fr_50m: '自由形 50m',
+    Fr_100m: '自由形 100m',
+    Fr_200m: '自由形 200m',
+    Ba_50m: '背泳ぎ 50m',
+    Ba_100m: '背泳ぎ 100m',
+    Br_50m: '平泳ぎ 50m',
+    Br_100m: '平泳ぎ 100m',
+    Fly_50m: 'バタフライ 50m',
+    Fly_100m: 'バタフライ 100m',
+    IM_100m: '個人メドレー 100m',
+    IM_200m: '個人メドレー 200m',
+    IM_400m: '個人メドレー 400m',
+  };
+  const explanationLevelNames: Record<string, string> = {
+    beginner_friendly: 'わかりやすく説明',
+    technical: '専門用語中心',
+  };
   // 期（目的）の表示名
   const periodLabels: Record<string, string> = {
     '1': '① リカバリー期',
@@ -413,6 +439,14 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
               <span className="text-gray-900">{strokeNames[input.stroke] || strokeNames['Fr'] || input.stroke || 'Fr（自由形）'}</span>
             </div>
             <div className="flex">
+              <span className="font-semibold text-gray-700 w-24">生成モード:</span>
+              <span className="text-gray-900">{generationModeNames[input.generationMode ?? 'standard'] ?? '通常メニュー'}</span>
+            </div>
+            <div className="flex">
+              <span className="font-semibold text-gray-700 w-24">対象レース:</span>
+              <span className="text-gray-900">{raceEventNames[input.raceEvent ?? ''] ?? '-'}</span>
+            </div>
+            <div className="flex">
               <span className="font-semibold text-gray-700 w-24">距離:</span>
               <span className="text-gray-900">{input.distance ? `${input.distance}m` : '-'}</span>
             </div>
@@ -441,6 +475,18 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
             <div className="flex">
               <span className="font-semibold text-gray-700 w-24">練習時間:</span>
               <span className="text-gray-900">{input.practiceTime}分</span>
+            </div>
+            <div className="flex">
+              <span className="font-semibold text-gray-700 w-24">プール:</span>
+              <span className="text-gray-900">{poolLengthNames[input.poolLength ?? 'short_course'] ?? '短水路'}</span>
+            </div>
+            <div className="flex">
+              <span className="font-semibold text-gray-700 w-24">ベスト:</span>
+              <span className="text-gray-900">{input.bestTime || '-'}</span>
+            </div>
+            <div className="flex">
+              <span className="font-semibold text-gray-700 w-24">説明:</span>
+              <span className="text-gray-900">{explanationLevelNames[input.explanationLevel ?? 'beginner_friendly'] ?? 'わかりやすく説明'}</span>
             </div>
             <div className="flex">
               <span className="font-semibold text-gray-700 w-24">器具:</span>

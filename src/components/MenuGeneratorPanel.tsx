@@ -26,6 +26,24 @@ const QUICK_TEMPLATES = {
 
 const SAVED_INPUT_KEY_PREFIX = 'rt-swimlab-saved-input';
 
+const RACE_EVENT_OPTIONS = [
+  { value: 'Fr_50m', label: '自由形 50m', stroke: 'Fr' },
+  { value: 'Fr_100m', label: '自由形 100m', stroke: 'Fr' },
+  { value: 'Fr_200m', label: '自由形 200m', stroke: 'Fr' },
+  { value: 'Ba_50m', label: '背泳ぎ 50m', stroke: 'Ba' },
+  { value: 'Ba_100m', label: '背泳ぎ 100m', stroke: 'Ba' },
+  { value: 'Br_50m', label: '平泳ぎ 50m', stroke: 'Br' },
+  { value: 'Br_100m', label: '平泳ぎ 100m', stroke: 'Br' },
+  { value: 'Fly_50m', label: 'バタフライ 50m', stroke: 'Fly' },
+  { value: 'Fly_100m', label: 'バタフライ 100m', stroke: 'Fly' },
+  { value: 'IM_100m', label: '個人メドレー 100m', stroke: 'IM' },
+  { value: 'IM_200m', label: '個人メドレー 200m', stroke: 'IM' },
+  { value: 'IM_400m', label: '個人メドレー 400m', stroke: 'IM' },
+] as const;
+
+function strokeFromRaceEvent(raceEvent: string): string | null {
+  return RACE_EVENT_OPTIONS.find((option) => option.value === raceEvent)?.stroke ?? null;
+}
 
 function savedInputKey(userId: string): string {
   return `${SAVED_INPUT_KEY_PREFIX}-${userId}`;
@@ -40,6 +58,11 @@ const EMPTY_INPUT: TrainingInput = {
   level: '',
   condition: '',
   practiceTime: '',
+  generationMode: 'standard',
+  poolLength: 'short_course',
+  raceEvent: 'Fr_50m',
+  bestTime: '',
+  explanationLevel: 'beginner_friendly',
 };
 
 function isTrainingInput(obj: unknown): obj is TrainingInput {
@@ -48,7 +71,14 @@ function isTrainingInput(obj: unknown): obj is TrainingInput {
     'period', 'stroke', 'distance', 'age', 'distanceType',
     'level', 'condition', 'practiceTime',
   ];
-  return keys.every((k) => typeof (obj as Record<string, unknown>)[k] === 'string');
+  const optionalKeys: (keyof TrainingInput)[] = [
+    'generationMode', 'poolLength', 'raceEvent', 'bestTime', 'explanationLevel',
+  ];
+  const record = obj as Record<string, unknown>;
+  return (
+    keys.every((k) => typeof record[k] === 'string') &&
+    optionalKeys.every((k) => record[k] === undefined || typeof record[k] === 'string')
+  );
 }
 
 function loadSavedInput(key: string): TrainingInput {
@@ -63,11 +93,23 @@ function loadSavedInput(key: string): TrainingInput {
       parsed.distance = '4000';
       delete parsed.gender;
     }
-    if (isTrainingInput(parsed)) return parsed as TrainingInput;
+    if (isTrainingInput(parsed)) {
+      const next = { ...EMPTY_INPUT, ...parsed } as TrainingInput;
+      const derivedStroke = strokeFromRaceEvent(next.raceEvent ?? '');
+      if (derivedStroke) next.stroke = derivedStroke;
+      return next;
+    }
   } catch {
     /* ignore */
   }
   return EMPTY_INPUT;
+}
+
+function normalizeTrainingInput(input: Partial<TrainingInput>): TrainingInput {
+  const next = { ...EMPTY_INPUT, ...input } as TrainingInput;
+  const derivedStroke = strokeFromRaceEvent(next.raceEvent ?? '');
+  if (derivedStroke) next.stroke = derivedStroke;
+  return next;
 }
 
 export type MenuGeneratorPanelProps = {
@@ -91,7 +133,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
 
   const [mode, setMode] = useState<'quick' | 'custom'>(initialValues ? 'custom' : 'quick');
   const [customStep, setCustomStep] = useState<1 | 2>(1);
-  const [input, setInput] = useState<TrainingInput>(initialValues ? { ...EMPTY_INPUT, ...initialValues } : EMPTY_INPUT);
+  const [input, setInput] = useState<TrainingInput>(initialValues ? normalizeTrainingInput(initialValues) : EMPTY_INPUT);
   const [hydrated, setHydrated] = useState(false);
 
   // 共通表示（最後に押した方で上書き）
@@ -306,6 +348,10 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
   const handleInputChange = (field: keyof TrainingInput, value: string) => {
     setInput((prev) => {
       const next = { ...prev, [field]: value };
+      if (field === 'raceEvent') {
+        const derivedStroke = strokeFromRaceEvent(value);
+        if (derivedStroke) next.stroke = derivedStroke;
+      }
       const nextType = field === 'distanceType' ? value : prev.distanceType;
       const nextTime = field === 'practiceTime' ? value : prev.practiceTime;
       if (prev.distance) {
@@ -352,6 +398,8 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
     level: '中級（育成クラス〜県大会）',
     condition: '良好',
     practiceTime: input.practiceTime,
+    poolLength: input.poolLength ?? 'short_course',
+    explanationLevel: input.explanationLevel ?? 'beginner_friendly',
   });
 
   const fallbackToQuickMenu = () => {
@@ -785,17 +833,37 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
 
               {customStep === 1 && (
                 <>
-                  <h2 className="text-lg font-semibold text-slate-900 mb-4">ステップ1: あなたについて（4項目）</h2>
+                  <h2 className="text-lg font-semibold text-slate-900 mb-4">ステップ1: 基本条件</h2>
+                  <div className="mb-5 space-y-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">生成モード</label>
+                      <div className="grid grid-cols-2 gap-2 rounded-2xl bg-white p-1.5 border border-slate-200">
+                        <button
+                          type="button"
+                          onClick={() => handleInputChange('generationMode', 'standard')}
+                          className={`py-2.5 px-3 rounded-xl text-sm font-semibold transition-all ${input.generationMode !== 'sprint_50m' ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/20' : 'text-slate-600 hover:bg-slate-50'}`}
+                        >
+                          通常メニュー
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleInputChange('generationMode', 'sprint_50m')}
+                          className={`py-2.5 px-3 rounded-xl text-sm font-semibold transition-all ${input.generationMode === 'sprint_50m' ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/20' : 'text-slate-600 hover:bg-slate-50'}`}
+                        >
+                          50m特化
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">1. 種目</label>
-                      <select value={input.stroke || 'Fr'} onChange={(e) => handleInputChange('stroke', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
-                        <option value="Fr">Fr（自由形）</option>
-                        <option value="Ba">Ba（背泳ぎ）</option>
-                        <option value="Br">Br（平泳ぎ）</option>
-                        <option value="Fly">Fly（バタフライ）</option>
-                        <option value="IM">個人メドレー</option>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">1. 対象レース</label>
+                      <select value={input.raceEvent || 'Fr_50m'} onChange={(e) => handleInputChange('raceEvent', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
+                        {RACE_EVENT_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
                       </select>
+                      <p className="text-[11px] text-slate-400 mt-1">既存の種目設定は対象レースから自動で補完されます。</p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">2. 年齢</label>
@@ -833,6 +901,23 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                         <option value="月経期">月経期</option>
                       </select>
                     </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">5. プール種別</label>
+                      <select value={input.poolLength || 'short_course'} onChange={(e) => handleInputChange('poolLength', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
+                        <option value="short_course">短水路</option>
+                        <option value="long_course">長水路</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">6. ベストタイム（任意）</label>
+                      <input
+                        type="text"
+                        value={input.bestTime ?? ''}
+                        onChange={(e) => handleInputChange('bestTime', e.target.value)}
+                        placeholder="例: 28.50 / 1:05.30"
+                        className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400"
+                      />
+                    </div>
                   </div>
                   <div className="mt-6">
                     <button onClick={() => setCustomStep(2)} disabled={!isCustomStep1Valid()} className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-semibold rounded-2xl shadow-lg shadow-cyan-500/25 hover:from-cyan-600 hover:to-teal-600 disabled:from-slate-400 disabled:to-slate-400 disabled:cursor-not-allowed transition-all">
@@ -861,6 +946,25 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                       onPracticeTimeChange={(v) => handleInputChange('practiceTime', v)}
                       itemNumberPrefix="6"
                     />
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">説明レベル</label>
+                      <div className="grid grid-cols-2 gap-2 rounded-2xl bg-slate-100/80 p-1.5 border border-slate-200">
+                        <button
+                          type="button"
+                          onClick={() => handleInputChange('explanationLevel', 'beginner_friendly')}
+                          className={`py-2.5 px-3 rounded-xl text-sm font-semibold transition-all ${input.explanationLevel !== 'technical' ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/20' : 'text-slate-600 hover:bg-white'}`}
+                        >
+                          わかりやすく説明
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleInputChange('explanationLevel', 'technical')}
+                          className={`py-2.5 px-3 rounded-xl text-sm font-semibold transition-all ${input.explanationLevel === 'technical' ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/20' : 'text-slate-600 hover:bg-white'}`}
+                        >
+                          専門用語中心
+                        </button>
+                      </div>
+                    </div>
                   </div>
                   <div className="mt-6 flex flex-wrap gap-3 items-center">
                     <button onClick={() => setCustomStep(1)} className="px-6 py-3 border border-slate-200 bg-white text-slate-700 font-semibold rounded-xl shadow-sm hover:bg-slate-50">
