@@ -15,6 +15,21 @@ function setBypassCookie(userId: string) {
   document.cookie = `${BYPASS_COOKIE}=${encodeURIComponent(userId)}; path=/; max-age=${BYPASS_COOKIE_MAX_AGE}; SameSite=Lax`;
 }
 
+function sanitizeRedirectPath(value: string | null) {
+  if (!value) return '/mypage';
+  if (!value.startsWith('/') || value.startsWith('//') || value.includes('\\')) {
+    return '/mypage';
+  }
+  try {
+    const parsed = new URL(value, 'http://localhost');
+
+    // ログイン後に外部URLへ飛ばないよう、redirectはアプリ内パスだけ許可します。
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return '/mypage';
+  }
+}
+
 function LoginFormInner({
   authConfigured,
   devBypassEnabled,
@@ -24,13 +39,13 @@ function LoginFormInner({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get('redirect') ?? '/mypage';
+  const redirect = sanitizeRedirectPath(searchParams.get('redirect'));
 
   function handleDevBypass() {
     const userId = process.env.NEXT_PUBLIC_DEV_BYPASS_USER_ID;
     if (!userId) return;
     setBypassCookie(userId);
-    window.location.href = redirect || '/mypage';
+    window.location.href = redirect;
   }
 
   const [email, setEmail] = useState('');
@@ -78,7 +93,7 @@ function LoginFormInner({
         return;
       }
       // 即リダイレクトして体感ラグを軽減。admin判定は並行で行い、必要ならreplace
-      const baseTarget = redirect || '/mypage';
+      const baseTarget = redirect;
       router.push(baseTarget);
       setLoading(false); // 遷移開始したらローディング解除
       try {
