@@ -3,9 +3,10 @@
  * ローカル開発用の起動スクリプト。
  *
  * .env.local と .env.ai を読み込んでから Next.js dev server を起動します。
- * 既存運用に合わせて、同じキーがある場合は .env.ai を優先します。
+ * 同じキーがある場合は、値が入っている .env.ai を優先します。
+ * .env.ai 側が空値の場合は、.env.local の値を上書きしません。
  */
-import { config } from 'dotenv';
+import { config, parse } from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -23,10 +24,22 @@ if (fs.existsSync(envLocalPath)) {
   });
 }
 
-const result = config({
-  path: envAiPath,
-  override: true,
-});
+let envAiError = null;
+
+if (fs.existsSync(envAiPath)) {
+  try {
+    const parsedEnvAi = parse(fs.readFileSync(envAiPath));
+
+    for (const [key, value] of Object.entries(parsedEnvAi)) {
+      // .env.ai の空値で .env.local の実値を消さないため、値があるキーだけ上書きします。
+      if (value.trim() !== '') {
+        process.env[key] = value;
+      }
+    }
+  } catch (error) {
+    envAiError = error;
+  }
+}
 
 const required = [
   'NEXT_PUBLIC_SUPABASE_URL',
@@ -34,8 +47,8 @@ const required = [
 ];
 const missing = required.filter((key) => !(process.env[key] || '').trim());
 
-if (result.error && result.error.code !== 'ENOENT') {
-  console.error('[load-env] .env.ai の読み込みに失敗しました:', result.error.message);
+if (envAiError) {
+  console.error('[load-env] .env.ai の読み込みに失敗しました:', envAiError.message);
 }
 
 if (missing.length > 0) {
