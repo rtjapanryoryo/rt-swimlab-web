@@ -1,5 +1,12 @@
 # RT Swim Lab
 
+## ローカル開発メモ
+
+Windows PowerShellでは `npm run dev` または `npm run dev:3001` を使ってください。
+旧来のポート解放付き起動は、macOS/Linux向けの `npm run dev:unix` として分離しています。
+
+ローカルでログイン後ページや `/mypage/menu` を確認する手順は `docs/LOCAL_DEV.md` を参照してください。
+
 ## 1. サービス概要
 
 RT Swim Labは、水泳トレーニングメニューの生成・管理を行うWebアプリです。

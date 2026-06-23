@@ -3,7 +3,6 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "predev": "lsof -ti :3000 2>/dev/null | xargs kill -9 2>/dev/null; true",
     "setup:env": "test -f .env.ai || cp .env.ai.example .env.ai; echo '→ .env.ai を用意しました。未設定なら編集して Supabase の値を入れてください。'",
     "setup:env:interactive": "node scripts/setup-env-interactive.mjs",
     "set:env": "node scripts/set-env.mjs",
@@ -20,6 +19,7 @@
     "dev": "node scripts/load-env-and-dev.mjs",
     "dev:next": "next dev",
     "dev:3001": "next dev -p 3001",
+    "dev:unix": "lsof -ti :3000 2>/dev/null | xargs kill -9 2>/dev/null; true; npm run dev",
     "dev:daemon": "pm2 start ecosystem.config.cjs",
     "dev:daemon:stop": "pm2 stop rt-swimlab-web",
     "dev:daemon:logs": "pm2 logs rt-swimlab-web",

@@ -1,5 +1,12 @@
 # RT Swim Lab Handoff
 
+## ローカル開発メモ
+
+- Windows PowerShellでは `npm run dev` または `npm run dev:3001` を使ってください。
+- macOS/Linuxでポート解放付き起動が必要な場合のみ `npm run dev:unix` を使ってください。
+- `/mypage/menu` などログイン後ページのローカル確認手順は `docs/LOCAL_DEV.md` に整理しています。
+- `.env.ai`、`.env.local`、secret値はcommitしないでください。
+
 ## 現在の状態
 
 - branch: `chore/remove-standalone-admin`
