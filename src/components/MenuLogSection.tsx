@@ -3,18 +3,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useProfile } from '@/contexts/ProfileContext';
+import { MenuSheet } from '@/components/MenuSheet';
+import type { TrainingInput, TrainingResult } from '@/lib/rt/generator';
 
 type MenuLog = {
   id: string;
-  source: string;
+  source: 'quick' | 'custom';
   created_at: string;
-  input?: {
-    period?: string;
-    stroke?: string;
-    distance?: string;
-    distanceType?: string;
-    level?: string;
-  };
+  input?: TrainingInput;
+  result?: TrainingResult;
 };
 
 const PERIOD_SHORT: Record<string, string> = {
@@ -36,6 +33,7 @@ export function MenuLogSection() {
   const [menus, setMenus] = useState<MenuLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedMenu, setSelectedMenu] = useState<MenuLog | null>(null);
 
   const fetchMenus = useCallback(() => {
     const params = new URLSearchParams();
@@ -71,6 +69,16 @@ export function MenuLogSection() {
       window.removeEventListener('menu-saved', onMenuSaved);
     };
   }, [fetchMenus]);
+
+  useEffect(() => {
+    if (!selectedMenu) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSelectedMenu(null);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [selectedMenu]);
 
   const formatDate = (s: string) => {
     const d = new Date(s);
@@ -137,9 +145,13 @@ export function MenuLogSection() {
               const periodLabel = PERIOD_SHORT[period] ?? '';
               const periodCls = PERIOD_COLOR[period] ?? 'bg-slate-100 text-slate-600';
               return (
-                <div
+                <button
+                  type="button"
                   key={m.id}
-                  className="flex items-start gap-3 py-3 px-4 rounded-xl border border-slate-100 bg-white hover:border-cyan-200 hover:bg-cyan-50/30 transition-colors"
+                  onClick={() => setSelectedMenu(m)}
+                  disabled={!m.input || !m.result}
+                  className="w-full flex items-start gap-3 py-3 px-4 rounded-xl border border-slate-100 bg-white text-left hover:border-cyan-300 hover:bg-cyan-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 transition-colors"
+                  aria-label={`${periodLabel || '保存済み'} ${distance ? `${parseInt(distance, 10).toLocaleString()}m` : ''}のメニューを表示`}
                 >
                   {/* 期バッジ */}
                   {periodLabel ? (
@@ -161,12 +173,49 @@ export function MenuLogSection() {
                     </div>
                     <div className="text-xs text-slate-400 mt-0.5 tabular-nums">{formatDate(m.created_at)}</div>
                   </div>
-                </div>
+                  <span className="flex-shrink-0 self-center text-lg text-slate-300" aria-hidden="true">›</span>
+                </button>
               );
             })}
           </div>
         )}
       </div>
+
+      {selectedMenu?.input && selectedMenu.result && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 sm:p-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="saved-menu-title"
+          onClick={() => setSelectedMenu(null)}
+        >
+          <div
+            className="relative max-h-[92vh] w-full max-w-6xl overflow-y-auto rounded-lg bg-white p-4 shadow-2xl sm:p-6"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between gap-4 border-b border-slate-200 pb-3">
+              <div>
+                <h3 id="saved-menu-title" className="text-base font-bold text-slate-900">保存済みメニュー</h3>
+                <p className="mt-0.5 text-xs text-slate-500">生成日: {formatDate(selectedMenu.created_at)}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedMenu(null)}
+                className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-md text-2xl leading-none text-slate-500 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
+                aria-label="保存済みメニューを閉じる"
+                title="閉じる"
+              >
+                ×
+              </button>
+            </div>
+            <MenuSheet
+              input={selectedMenu.input}
+              result={selectedMenu.result}
+              source={selectedMenu.source}
+            />
+          </div>
+        </div>
+      )}
     </section>
   );
 }
