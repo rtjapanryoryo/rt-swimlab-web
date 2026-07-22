@@ -62,7 +62,7 @@ const EMPTY_INPUT: TrainingInput = {
   poolLength: 'short_course',
   raceEvent: 'Fr_50m',
   bestTime: '',
-  explanationLevel: 'beginner_friendly',
+  explanationLevel: 'technical',
 };
 
 function isTrainingInput(obj: unknown): obj is TrainingInput {
@@ -95,6 +95,8 @@ function loadSavedInput(key: string): TrainingInput {
     }
     if (isTrainingInput(parsed)) {
       const next = { ...EMPTY_INPUT, ...parsed } as TrainingInput;
+      // 説明レベル切替は廃止し、用語は専用ページで確認する運用に統一します。
+      next.explanationLevel = 'technical';
       const derivedStroke = strokeFromRaceEvent(next.raceEvent ?? '');
       if (derivedStroke) next.stroke = derivedStroke;
       return next;
@@ -107,6 +109,8 @@ function loadSavedInput(key: string): TrainingInput {
 
 function normalizeTrainingInput(input: Partial<TrainingInput>): TrainingInput {
   const next = { ...EMPTY_INPUT, ...input } as TrainingInput;
+  // 旧データの値は受け取りますが、新しい生成では専門用語中心に統一します。
+  next.explanationLevel = 'technical';
   const derivedStroke = strokeFromRaceEvent(next.raceEvent ?? '');
   if (derivedStroke) next.stroke = derivedStroke;
   return next;
@@ -399,7 +403,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
     condition: '良好',
     practiceTime: input.practiceTime,
     poolLength: input.poolLength ?? 'short_course',
-    explanationLevel: input.explanationLevel ?? 'beginner_friendly',
+    explanationLevel: 'technical',
   });
 
   const fallbackToQuickMenu = () => {
@@ -770,12 +774,17 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
               onClick={() => { setMode('custom'); setCustomStep(1); setApiError(null); }}
               className={`flex-1 py-3 px-4 rounded-xl text-sm font-semibold transition-all ${mode === 'custom' ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/25' : 'text-slate-600 hover:bg-white hover:text-slate-900'}`}
             >
-              カスタム（12項目）
+              カスタム（11項目）
             </button>
           </div>
           <p className="text-sm text-slate-500 mb-5">
-            {mode === 'quick' ? '4項目でテンプレートから適正なメニューを1件抽出。すぐに表示されます。' : '12項目でAIが種目・年齢・状況に合わせてあなた専用のメニューを生成します。'}
+            {mode === 'quick' ? '4項目でテンプレートから適正なメニューを1件抽出。すぐに表示されます。' : '11項目でAIが種目・年齢・状況に合わせてあなた専用のメニューを生成します。'}
           </p>
+          <div className="mb-5 flex justify-end">
+            <Link href="/guide/menu-terms" className="text-sm font-semibold text-cyan-700 underline decoration-cyan-300 underline-offset-4 hover:text-cyan-900">
+              水泳メニュー用語を確認
+            </Link>
+          </div>
 
           {/* レース日サジェスト */}
           {suggestedPeriodFromRace && (
@@ -929,7 +938,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
 
               {customStep === 2 && (
                 <>
-                  <h2 className="text-lg font-semibold text-slate-900 mb-4">ステップ2: 練習計画（5項目）</h2>
+                  <h2 className="text-lg font-semibold text-slate-900 mb-4">ステップ2: 練習計画（4項目）</h2>
                   <p className="text-sm text-slate-600 mb-4">今日の狙いと練習条件を入力してください。距離と時間のバランスで、適切なメニューが設計されます。</p>
                   <div className="space-y-5">
                     <PurposeField
@@ -946,25 +955,6 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                       onPracticeTimeChange={(v) => handleInputChange('practiceTime', v)}
                       itemNumberPrefix="9"
                     />
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">12. 説明レベル</label>
-                      <div className="grid grid-cols-2 gap-2 rounded-2xl bg-slate-100/80 p-1.5 border border-slate-200">
-                        <button
-                          type="button"
-                          onClick={() => handleInputChange('explanationLevel', 'beginner_friendly')}
-                          className={`py-2.5 px-3 rounded-xl text-sm font-semibold transition-all ${input.explanationLevel !== 'technical' ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/20' : 'text-slate-600 hover:bg-white'}`}
-                        >
-                          わかりやすく説明
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleInputChange('explanationLevel', 'technical')}
-                          className={`py-2.5 px-3 rounded-xl text-sm font-semibold transition-all ${input.explanationLevel === 'technical' ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/20' : 'text-slate-600 hover:bg-white'}`}
-                        >
-                          専門用語中心
-                        </button>
-                      </div>
-                    </div>
                   </div>
                   <div className="mt-6 flex flex-wrap gap-3 items-center">
                     <button onClick={() => setCustomStep(1)} className="px-6 py-3 border border-slate-200 bg-white text-slate-700 font-semibold rounded-xl shadow-sm hover:bg-slate-50">
