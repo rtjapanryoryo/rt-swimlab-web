@@ -14,12 +14,64 @@ type MenuSheetRow = {
   style: string;
   content: string;
   total: string;
-  cycle: string;
+  timing: string;
 };
 
 function normalizeDash(v?: string | null) {
   const s = (v ?? '').trim();
   return s.length ? s : '-';
+}
+
+/** 表の専用列に移した構造情報を本文から除き、練習内容だけを残す。 */
+function extractDisplayContent(text: string): string {
+  let content = text.trim();
+  content = content.replace(
+    /^(?:W-?up|Warm-?up|Drill|Kick|Pull|Pre-?Main|Main|Dive|Rest|Down|W-?down)\b\s*/i,
+    ''
+  );
+  content = content.replace(/^(?:S1|Fr|Ba|Br|Fly|IM|Cho)\b\s*/i, '');
+
+  // 後半の「25m Hard」などは練習内容なので、行頭の構造情報だけを除きます。
+  content = content.replace(
+    /^((?:[（(][^）)]{1,40}[）)]\s*)?)(?:\d+\s*[×x]\s*\d+\s*m|\d+\s*m)\b\s*/i,
+    '$1'
+  );
+
+  content = content
+    .replace(/@\s*(?:\d+:\d{2}|\d+sec|\d+秒)/gi, '')
+    .replace(/[（(](?:[①②③④⑤⑥⑦]|A1|A2|EN[1-4]|AN[1-3]?|AN|MAX)[）)]/gi, '')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/^[\s:：・+＋→\-–—]+|[\s:：・+＋→\-–—]+$/g, '')
+    .trim();
+
+  return normalizeDash(content);
+}
+
+/** 既存の文章を変更せず、明確な区切りがある箇所だけを表示用の項目に分ける。 */
+function splitGuidanceItems(value?: string | null): string[] {
+  const source = (value ?? '').replace(/\r/g, '').trim();
+  if (!source) return [];
+
+  const middleDotCount = (source.match(/・/g) ?? []).length;
+  const normalized = (middleDotCount >= 2 ? source.replace(/\s*・\s*/g, '\n') : source)
+    .replace(/\s+(?=[①②③④⑤⑥⑦⑧⑨⑩])/g, '\n')
+    .replace(/\s+(?=\d+[.)]\s*)/g, '\n');
+
+  return normalized
+    .split(/\n+|(?<=[。！？])\s*/u)
+    .map((item) => item.replace(/^(?:[-•●▪]\s*|[①②③④⑤⑥⑦⑧⑨⑩]\s*|\d+[.)]\s*)/, '').trim())
+    .filter(Boolean);
+}
+
+function GuidanceItems({ value }: { value?: string | null }) {
+  const items = splitGuidanceItems(value);
+  if (items.length === 0) return <span className="text-gray-500">-</span>;
+
+  return (
+    <ul className="flex-1 list-disc space-y-1 pl-5 text-gray-900">
+      {items.map((item, index) => <li key={`${index}-${item}`}>{item}</li>)}
+    </ul>
+  );
 }
 
 /** 行の total 文字列から数値を抽出（例: "400m", "1,200m" → 400, 1200） */
@@ -146,7 +198,7 @@ function parsePartToRow(
   let distance = '-';
   let count = '-';
   const sets = '1';
-  let cycle = '-';
+  let timing = '-';
   let intensity = '-';
 
   // ①②③④⑤⑥⑦ の丸数字を直接パース（骨格ジェネレータ出力に対応）
@@ -184,10 +236,11 @@ function parsePartToRow(
   // @30sec / @1:00 / @1:30 / @45秒 を全パターン対応
   const restMatch = text.match(/@(\d+:\d{2}|\d+sec|\d+秒)/i);
   if (restMatch?.[1]) {
-    cycle = restMatch[1];
+    // 現在の @ 値は骨格ジェネレータが算出した本数間の restHint。
+    timing = `Rest ${restMatch[1].replace(/sec$/i, '秒')}`;
   } else {
     const timeMatch = text.match(/\b(\d+:\d{2})\b/);
-    if (timeMatch?.[1]) cycle = timeMatch[1];
+    if (timeMatch?.[1]) timing = `サークル ${timeMatch[1]}`;
   }
 
   let total = '-';
@@ -201,9 +254,8 @@ function parsePartToRow(
 
   const finalStyle =
     section === 'Rest' ? '-' : (section === 'W-up' || section === 'Down' || section === 'W-down' ? 'Cho' : (style && style !== '-' ? style : 'S1'));
-  let content = text.trim();
+  let content = extractDisplayContent(text);
   if (content.length > 300) content = content.substring(0, 300) + '...';
-  if (!content) content = '-';
   const displayContent = section === 'Pre-Main' || section === 'Dive' ? (content.trim() || '') : normalizeDash(content);
 
   return {
@@ -215,7 +267,7 @@ function parsePartToRow(
     style: finalStyle,
     content: displayContent,
     total: normalizeDash(total),
-    cycle: normalizeDash(cycle),
+    timing: normalizeDash(timing),
   };
 }
 
@@ -266,7 +318,7 @@ export function parseToSheetRow(section: string, raw: string, stroke?: string, t
       style: fallbackStyle(section, stroke, templateOnly),
       content: noDash ? '' : '-',
       total: '-',
-      cycle: '-',
+      timing: '-',
     }];
   }
 
@@ -540,6 +592,12 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
                         <IntensityBadge value={row.intensity} />
                       </span>
                     )}
+                    {row.timing !== '-' && (
+                      <span className="text-slate-600">
+                        <span className="text-slate-400 font-medium">サークル / Rest</span>
+                        <span className="ml-1 font-semibold text-slate-800">{row.timing}</span>
+                      </span>
+                    )}
                   </div>
                   {row.content !== '-' && (
                     <p className="mt-2 text-slate-700 text-sm leading-relaxed break-words">
@@ -556,12 +614,13 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
           <table className="min-w-full border-collapse text-xs print:text-sm pdf-capture-table">
             <colgroup>
               <col style={{ width: '10%' }} />
-              <col style={{ width: '10%' }} />
+              <col style={{ width: '9%' }} />
               <col style={{ width: '6%' }} />
               <col style={{ width: '7%' }} />
-              <col style={{ width: '43%' }} />
+              <col style={{ width: '32%' }} />
               <col style={{ width: '9%' }} />
               <col style={{ width: '15%' }} />
+              <col style={{ width: '12%' }} />
             </colgroup>
             <thead>
               <tr className="bg-gray-50 border-b-2 border-gray-300">
@@ -571,6 +630,7 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
                 <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300 text-center">種目</th>
                 <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300 text-left">内容</th>
                 <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300 text-center">強度</th>
+                <th className="py-2 px-2 font-semibold text-gray-900 border-r border-gray-300 text-center whitespace-nowrap">サークル / Rest</th>
                 <th className="py-2 px-2 font-semibold text-gray-900 text-center">Total</th>
               </tr>
             </thead>
@@ -587,6 +647,7 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
                   <td className="py-2 px-2 text-center border-r border-gray-200">
                     <IntensityBadge value={row.intensity} />
                   </td>
+                  <td className="py-2 px-2 text-gray-700 text-center tabular-nums border-r border-gray-200 whitespace-nowrap">{row.timing}</td>
                   <td className="py-2 px-2 text-gray-700 text-center font-semibold dist-td">
                     <DistDisplay value={row.total} />
                   </td>
@@ -654,12 +715,12 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
           </span>
         </div>
         <div className="flex items-start">
-          <span className="font-semibold text-gray-700 w-24">指導ポイント:</span>
-          <span className="text-gray-900 flex-1">{result.coachingPoint}</span>
+          <span className="font-semibold text-gray-700 w-24 flex-shrink-0">指導ポイント:</span>
+          <GuidanceItems value={result.coachingPoint} />
         </div>
         <div className="flex items-start">
-          <span className="font-semibold text-gray-700 w-24">注意点:</span>
-          <span className="text-gray-900 flex-1">{result.caution}</span>
+          <span className="font-semibold text-gray-700 w-24 flex-shrink-0">注意点:</span>
+          <GuidanceItems value={result.caution} />
         </div>
         {result.expectedEffect && (
           <div className="flex items-start">
