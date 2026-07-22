@@ -8,8 +8,9 @@ export type PlanId = 'free' | 'basic' | 'standard' | 'pro';
 
 export const IS_DEMO_PERIOD = process.env.NEXT_PUBLIC_DEMO_PERIOD !== 'false';
 
-/** デモ期間終了後のメンテナンス・編集中モード。完成したら false に戻す。 */
-export const MAINTENANCE_MODE = true;
+// 未設定時は停止を維持し、明示的に false を設定した環境だけ生成機能を公開します。
+export const MAINTENANCE_MODE =
+  process.env.NEXT_PUBLIC_MAINTENANCE_MODE?.trim().toLowerCase() !== 'false';
 
 export type PlanLimit = {
   customGenType: 'total' | 'monthly';
