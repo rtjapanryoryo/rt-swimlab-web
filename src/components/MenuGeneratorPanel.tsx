@@ -770,11 +770,11 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
               onClick={() => { setMode('custom'); setCustomStep(1); setApiError(null); }}
               className={`flex-1 py-3 px-4 rounded-xl text-sm font-semibold transition-all ${mode === 'custom' ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/25' : 'text-slate-600 hover:bg-white hover:text-slate-900'}`}
             >
-              カスタム（8項目）
+              カスタム（12項目）
             </button>
           </div>
           <p className="text-sm text-slate-500 mb-5">
-            {mode === 'quick' ? '4項目でテンプレートから適正なメニューを1件抽出。すぐに表示されます。' : '8項目でAIが種目・年齢・状況に合わせてあなた専用のメニューを生成します。'}
+            {mode === 'quick' ? '4項目でテンプレートから適正なメニューを1件抽出。すぐに表示されます。' : '12項目でAIが種目・年齢・状況に合わせてあなた専用のメニューを生成します。'}
           </p>
 
           {/* レース日サジェスト */}
@@ -833,10 +833,10 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
 
               {customStep === 1 && (
                 <>
-                  <h2 className="text-lg font-semibold text-slate-900 mb-4">ステップ1: 基本条件</h2>
+                  <h2 className="text-lg font-semibold text-slate-900 mb-4">ステップ1: 基本条件（7項目）</h2>
                   <div className="mb-5 space-y-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">生成モード</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">1. 生成モード</label>
                       <div className="grid grid-cols-2 gap-2 rounded-2xl bg-white p-1.5 border border-slate-200">
                         <button
                           type="button"
@@ -857,7 +857,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">1. 対象レース</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">2. 対象レース</label>
                       <select value={input.raceEvent || 'Fr_50m'} onChange={(e) => handleInputChange('raceEvent', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
                         {RACE_EVENT_OPTIONS.map((option) => (
                           <option key={option.value} value={option.value}>{option.label}</option>
@@ -866,7 +866,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                       <p className="text-[11px] text-slate-400 mt-1">既存の種目設定は対象レースから自動で補完されます。</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">2. 年齢</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">3. 年齢</label>
                       <select value={input.age} onChange={(e) => handleInputChange('age', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
                         <option value="">選択してください</option>
                         <option value="小学生（〜12歳）">小学生（〜12歳）</option>
@@ -878,7 +878,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">3. レベル</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">4. レベル</label>
                       <select value={input.level} onChange={(e) => handleInputChange('level', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
                         <option value="">選択してください</option>
                         <option value="トップ選手（代表・全国入賞）">トップ選手（代表・全国入賞）</option>
@@ -890,7 +890,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">4. 状況</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">5. 状況</label>
                       <select value={input.condition} onChange={(e) => handleInputChange('condition', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
                         <option value="">選択してください</option>
                         <option value="絶好調（ピーク・調子最高）">絶好調（ピーク・調子最高）</option>
@@ -902,14 +902,14 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">5. プール種別</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">6. プール種別</label>
                       <select value={input.poolLength || 'short_course'} onChange={(e) => handleInputChange('poolLength', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
                         <option value="short_course">短水路</option>
                         <option value="long_course">長水路</option>
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">6. ベストタイム（任意）</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">7. ベストタイム（任意）</label>
                       <input
                         type="text"
                         value={input.bestTime ?? ''}
@@ -929,13 +929,13 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
 
               {customStep === 2 && (
                 <>
-                  <h2 className="text-lg font-semibold text-slate-900 mb-4">ステップ2: 練習計画（4項目）</h2>
+                  <h2 className="text-lg font-semibold text-slate-900 mb-4">ステップ2: 練習計画（5項目）</h2>
                   <p className="text-sm text-slate-600 mb-4">今日の狙いと練習条件を入力してください。距離と時間のバランスで、適切なメニューが設計されます。</p>
                   <div className="space-y-5">
                     <PurposeField
                       value={input.period}
                       onChange={(v) => handleInputChange('period', v)}
-                      itemNumber="5"
+                      itemNumber="8"
                     />
                     <PracticeVolumeField
                       distanceType={input.distanceType}
@@ -944,10 +944,10 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                       onDistanceTypeChange={(v) => handleInputChange('distanceType', v)}
                       onDistanceChange={(v) => handleInputChange('distance', v)}
                       onPracticeTimeChange={(v) => handleInputChange('practiceTime', v)}
-                      itemNumberPrefix="6"
+                      itemNumberPrefix="9"
                     />
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">説明レベル</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">12. 説明レベル</label>
                       <div className="grid grid-cols-2 gap-2 rounded-2xl bg-slate-100/80 p-1.5 border border-slate-200">
                         <button
                           type="button"
