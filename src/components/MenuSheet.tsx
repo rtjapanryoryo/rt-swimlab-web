@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import Link from 'next/link';
 import type { TrainingInput, TrainingResult } from '@/lib/rt/generator';
 import { sumMenuDistance } from '@/lib/rt/menu-distance';
 
@@ -388,10 +389,6 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
     IM_200m: '個人メドレー 200m',
     IM_400m: '個人メドレー 400m',
   };
-  const explanationLevelNames: Record<string, string> = {
-    beginner_friendly: 'わかりやすく説明',
-    technical: '専門用語中心',
-  };
   // 期（目的）の表示名
   const periodLabels: Record<string, string> = {
     '1': '① リカバリー期',
@@ -485,15 +482,17 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
               <span className="text-gray-900">{input.bestTime || '-'}</span>
             </div>
             <div className="flex">
-              <span className="font-semibold text-gray-700 w-24">説明:</span>
-              <span className="text-gray-900">{explanationLevelNames[input.explanationLevel ?? 'beginner_friendly'] ?? 'わかりやすく説明'}</span>
-            </div>
-            <div className="flex">
               <span className="font-semibold text-gray-700 w-24">器具:</span>
               <span className="text-gray-900">フィン/パドルカスタム自由</span>
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="mb-4 flex justify-end no-print">
+        <Link href="/guide/menu-terms" className="text-sm font-semibold text-cyan-700 underline decoration-cyan-300 underline-offset-4 hover:text-cyan-900">
+          メニュー用語の意味を確認
+        </Link>
       </div>
 
       {/* 本文（メニュー） */}
