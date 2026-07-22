@@ -29,6 +29,19 @@ function getOpenAIStatus(): { configured: boolean; reason?: 'missing' | 'placeho
   return { configured: true };
 }
 
+const SET_EXPRESSION_RE = /\d+\s*[×xX]\s*\d+\s*m?/g;
+
+function getSetExpressionSignatures(text: string): string[] {
+  return Array.from(text.matchAll(SET_EXPRESSION_RE), ([expression]) =>
+    expression.replace(/\s+/g, '').replace(/[xX]/g, '×').toLowerCase()
+  );
+}
+
+function hasMatchingSetExpressions(actual: string, template: string): boolean {
+  return JSON.stringify(getSetExpressionSignatures(actual))
+    === JSON.stringify(getSetExpressionSignatures(template));
+}
+
 /** GET: OpenAI API の利用可能状態を返す */
 export async function GET(request: NextRequest) {
   try {
@@ -500,6 +513,9 @@ export async function POST(request: NextRequest) {
         ? `【説明レベル指示】競泳経験者向けに、専門用語中心で簡潔に書く。`
         : `【説明レベル指示】専門用語を使いすぎず、意図や目的をわかりやすく説明する。`;
 
+      // 骨格生成と同じ基準に揃え、「一般スイマー」は中級として扱います。
+      const isBeginnerLevel = level.includes('フィットネス') || level.includes('初心者');
+
       const buildUserPrompt = (retryHint = '') =>
         `${retryHint}【タスク】以下のテンプレートの {PLACEHOLDER} スロットをオリジナルのコンテンツラベルで埋めてください。
 **数値・本数・@rest・強度番号（①〜⑦）は絶対変更禁止。{PLACEHOLDER} 部分のみ書き換える。**
@@ -542,7 +558,7 @@ ${condition.includes('絶好調') ? `【絶好調コンディション指示】
 - intention: 疲労を考慮した「丁寧な技術練習」の狙いを書く。量より質・感覚優先の視点で。
 - coachingPoint: 疲労があっても維持できるフォームのポイント・省エネな泳ぎの意識を具体的に書く
 - caution: 疲労サインへの敏感な対応・早めの強度調整・本数削減の基準を書く` : ''}
-${(level.includes('フィットネス') || level.includes('初心者') || level.includes('一般スイマー')) ? `【初級レベル対応指示】
+${isBeginnerLevel ? `【初級レベル対応指示】
 - Drill: 基本動作に特化した易しいドリル名をオリジナル生成（キャッチ感覚・体位・呼吸タイミング系）
 - coachingPoint: フォームの基礎・感覚づくり・怪我予防を前面に出す
 - intention: スピードより「動きを覚える」「水に慣れる」視点で書く
@@ -648,6 +664,17 @@ down    : "${tmpl.downStr}"（変更禁止）
           const REQUIRED_NON_EMPTY = ['kick', 'pull', 'preMain'] as const;
           if (REQUIRED_NON_EMPTY.some((k) => String(parsed[k] ?? '').trim() === '')) return null;
 
+          // 距離構造は骨格で確定しているため、AIが別の「本数×距離」を追加した出力は再生成します。
+          const setExpressionTemplates = {
+            warmUp: tmpl.warmUpTemplate,
+            kick: tmpl.kickTemplate,
+            pull: tmpl.pullTemplate,
+            preMain: tmpl.preMainTemplate,
+          } as const;
+          if (Object.entries(setExpressionTemplates).some(([field, template]) =>
+            !hasMatchingSetExpressions(String(parsed[field] ?? ''), template)
+          )) return null;
+
           const result: Record<string, unknown> = Object.fromEntries(
             TEXT_KEYS.map((k) => [k, String(parsed[k] ?? '')])
           );
@@ -706,7 +733,7 @@ down    : "${tmpl.downStr}"（変更禁止）
 
       // JSONパース失敗・kick/pull/preMain空文字のリトライ
       if (!result) {
-        const retryHint = '【再試行】以下を必ず守って再生成してください:\n- JSONの全キーを含めること\n- kick・pull・preMainは絶対に空文字 "" にしない（warmUpに同種要素があっても独立したセットを出力）\n- 強度表記（A1/EN1等）はテンプレートのままコピーし変更しない\n\n';
+        const retryHint = '【再試行】以下を必ず守って再生成してください:\n- JSONの全キーを含めること\n- kick・pull・preMainは絶対に空文字 "" にしない（warmUpに同種要素があっても独立したセットを出力）\n- 強度表記（A1/EN1等）はテンプレートのままコピーし変更しない\n- プレースホルダー内に別の「本数×距離」を追加しない\n\n';
         rawContent = await doGenerate(retryHint, 0.3);
         if (rawContent) result = parseAndAssemble(rawContent);
       }
