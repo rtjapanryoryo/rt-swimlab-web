@@ -37,6 +37,9 @@ const EMPTY_INPUT_VALUE: InputValue = {
   recordedOn: '',
 };
 
+const UNSAVED_CHANGES_MESSAGE =
+  '入力内容が保存されていません。このページから移動しますか？';
+
 function valuesFromRecords(records: BestTimeRecord[]): Record<string, InputValue> {
   return Object.fromEntries(
     records.map((record) => {
@@ -116,6 +119,59 @@ export default function BestTimesPage() {
     const timer = window.setTimeout(() => setMessage(null), 3000);
     return () => window.clearTimeout(timer);
   }, [message]);
+
+  useEffect(() => {
+    if (!isDirty) return;
+
+    // 入力途中の記録を失わないよう、ページ内リンク・ログアウト・ブラウザ終了を確認します。
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    const handleDocumentClick = (event: MouseEvent) => {
+      if (
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      ) {
+        return;
+      }
+
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const anchor = target.closest<HTMLAnchorElement>('a[href]');
+      if (!anchor || anchor.target === '_blank' || anchor.hasAttribute('download')) return;
+
+      const href = anchor.getAttribute('href');
+      if (!href || href.startsWith('#')) return;
+
+      const destination = new URL(anchor.href, window.location.href);
+      if (destination.href === window.location.href) return;
+
+      if (!window.confirm(UNSAVED_CHANGES_MESSAGE)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+    const handleDocumentSubmit = (event: SubmitEvent) => {
+      if (!window.confirm(UNSAVED_CHANGES_MESSAGE)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('click', handleDocumentClick, true);
+    document.addEventListener('submit', handleDocumentSubmit, true);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('click', handleDocumentClick, true);
+      document.removeEventListener('submit', handleDocumentSubmit, true);
+    };
+  }, [isDirty]);
 
   function updateValue(key: string, field: keyof InputValue, value: string) {
     setValues((current) => ({
@@ -435,7 +491,7 @@ export default function BestTimesPage() {
                   : 'text-slate-500'
           }`}
         >
-          {message ?? (isDirty ? '未保存の変更があります' : '保存済みです')}
+          {message ?? (isDirty ? '未保存の変更があります' : '変更はありません')}
         </p>
         <button
           type="button"
