@@ -97,6 +97,8 @@ export default function BestTimesPage() {
     ),
     [poolLength, stroke]
   );
+  const selectedPoolLabel = POOL_LENGTHS.find((pool) => pool.value === poolLength)?.label;
+  const selectedStrokeLabel = STROKES.find((item) => item.value === stroke)?.label;
 
   useEffect(() => {
     if (!pendingFocus) return;
@@ -261,8 +263,9 @@ export default function BestTimesPage() {
         </p>
       </section>
 
+      <div className="mx-auto max-w-3xl space-y-6">
       <section className="space-y-5">
-        <div>
+        <div className="mx-auto max-w-md">
           <p className="mb-2 text-sm font-semibold text-slate-700">プール種別</p>
           <div className="inline-flex w-full max-w-md rounded-lg border border-slate-200 bg-slate-100 p-1">
             {POOL_LENGTHS.map((pool) => (
@@ -282,9 +285,9 @@ export default function BestTimesPage() {
           </div>
         </div>
 
-        <div>
+        <div className="mx-auto max-w-2xl">
           <p className="mb-2 text-sm font-semibold text-slate-700">種目</p>
-          <div className="grid grid-cols-3 gap-2 sm:flex" role="tablist" aria-label="種目">
+          <div className="grid grid-cols-3 gap-2 sm:flex sm:justify-center" role="tablist" aria-label="種目">
             {STROKES.map((item) => (
               <button
                 key={item.value}
@@ -305,12 +308,18 @@ export default function BestTimesPage() {
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <div className="hidden grid-cols-[90px_minmax(0,1fr)] gap-4 border-b border-slate-200 bg-slate-50 px-5 py-3 text-xs font-semibold text-slate-500 sm:grid">
-          <span>距離</span>
-          <span>ベストタイム</span>
+      <section className="relative">
+        <div className="sticky top-0 z-20 -mb-px flex items-center justify-center border border-slate-200 bg-white/95 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm backdrop-blur sm:hidden">
+          <span>{selectedPoolLabel}</span>
+          <span className="mx-2 text-slate-300" aria-hidden>・</span>
+          <span className="text-cyan-700">{selectedStrokeLabel}</span>
         </div>
-        <div className="divide-y divide-slate-100">
+        <div className="overflow-hidden rounded-b-xl border border-slate-200 bg-white sm:rounded-xl">
+          <div className="hidden grid-cols-[90px_minmax(0,1fr)] gap-4 border-b border-slate-200 bg-slate-50 px-5 py-3 text-xs font-semibold text-slate-500 sm:grid">
+            <span>距離</span>
+            <span className="text-center">ベストタイム</span>
+          </div>
+          <div className="divide-y divide-slate-100">
           {visibleEvents.map((event) => {
             const key = personalBestKey(event.stroke, event.distanceM, poolLength);
             const value = values[key] ?? EMPTY_INPUT_VALUE;
@@ -327,7 +336,7 @@ export default function BestTimesPage() {
                   <p className="text-base font-semibold tabular-nums text-slate-900">{event.distanceM}m</p>
                 </div>
                 <div>
-                  <div className="mx-auto grid w-fit grid-cols-[68px_auto_68px_auto_76px] items-end gap-1 sm:mx-0 sm:grid-cols-[84px_auto_84px_auto_96px] sm:gap-1.5">
+                  <div className="mx-auto grid w-fit grid-cols-[68px_auto_68px_auto_76px] items-end gap-1 sm:grid-cols-[84px_auto_84px_auto_96px] sm:gap-1.5">
                     {([
                       ['minutes', '分'],
                       ['seconds', '秒'],
@@ -370,7 +379,7 @@ export default function BestTimesPage() {
                       return separator ? [separator, input] : [input];
                     })}
                   </div>
-                  <div className="mx-auto mt-2 flex min-h-8 max-w-[246px] items-start justify-between gap-2 sm:mx-0 sm:max-w-[378px]">
+                  <div className="mx-auto mt-2 flex min-h-8 max-w-[246px] items-start justify-between gap-2 sm:max-w-[378px]">
                     {errors[key] ? (
                       <span className="text-xs text-red-600">{errors[key]}</span>
                     ) : (
@@ -388,7 +397,7 @@ export default function BestTimesPage() {
                     )}
                   </div>
                   {hasValidTime && (
-                    <label className="mx-auto mt-2 block max-w-[246px] sm:mx-0 sm:max-w-[220px]">
+                    <label className="mx-auto mt-2 block max-w-[246px] sm:max-w-[220px]">
                       <span className="mb-1 block text-xs font-medium text-slate-500">記録日（任意）</span>
                       <input
                         type="date"
@@ -403,6 +412,7 @@ export default function BestTimesPage() {
               </div>
             );
           })}
+          </div>
         </div>
       </section>
 
@@ -435,6 +445,7 @@ export default function BestTimesPage() {
         >
           {saving ? '保存中...' : 'すべての入力を保存'}
         </button>
+      </div>
       </div>
     </div>
   );
