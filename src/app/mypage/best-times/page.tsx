@@ -263,7 +263,7 @@ export default function BestTimesPage() {
         </p>
       </section>
 
-      <div className="mx-auto max-w-xl space-y-6">
+      <div className="mx-auto max-w-md space-y-6">
       <section className="space-y-5">
         <div className="mx-auto max-w-md">
           <p className="mb-2 text-sm font-semibold text-slate-700">プール種別</p>
@@ -336,7 +336,7 @@ export default function BestTimesPage() {
                   <p className="text-base font-semibold tabular-nums text-slate-900">{event.distanceM}m</p>
                 </div>
                 <div>
-                  <div className="mx-auto grid w-fit grid-cols-[68px_auto_68px_auto_76px] items-end gap-1 sm:grid-cols-[84px_auto_84px_auto_96px] sm:gap-1.5">
+                  <div className="mx-auto grid w-fit grid-cols-[68px_auto_68px_auto_76px] items-end gap-1 sm:grid-cols-[72px_auto_72px_auto_84px] sm:gap-1.5">
                     {([
                       ['minutes', '分'],
                       ['seconds', '秒'],
@@ -379,7 +379,7 @@ export default function BestTimesPage() {
                       return separator ? [separator, input] : [input];
                     })}
                   </div>
-                  <div className="mx-auto mt-2 flex min-h-8 max-w-[246px] items-start justify-between gap-2 sm:max-w-[378px]">
+                  <div className="mx-auto mt-2 flex min-h-8 max-w-[246px] items-start justify-between gap-2 sm:max-w-[260px]">
                     {errors[key] ? (
                       <span className="text-xs text-red-600">{errors[key]}</span>
                     ) : (
