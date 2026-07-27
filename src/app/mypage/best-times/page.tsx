@@ -263,7 +263,7 @@ export default function BestTimesPage() {
         </p>
       </section>
 
-      <div className="mx-auto max-w-3xl space-y-6">
+      <div className="mx-auto max-w-xl space-y-6">
       <section className="space-y-5">
         <div className="mx-auto max-w-md">
           <p className="mb-2 text-sm font-semibold text-slate-700">プール種別</p>
@@ -285,7 +285,7 @@ export default function BestTimesPage() {
           </div>
         </div>
 
-        <div className="mx-auto max-w-2xl">
+        <div className="mx-auto max-w-md">
           <p className="mb-2 text-sm font-semibold text-slate-700">種目</p>
           <div className="grid grid-cols-3 gap-2 sm:flex sm:justify-center" role="tablist" aria-label="種目">
             {STROKES.map((item) => (
