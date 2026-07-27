@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient, getEffectiveUser, getServiceRole } from '@/lib/supabase/server';
 import {
   isPersonalBestEvent,
+  MAX_SWIM_TIME_CENTISECONDS,
   type PoolLength,
   type StrokeCode,
 } from '@/lib/personal-best-times';
@@ -34,7 +35,11 @@ function parseBestTimeInput(value: unknown): BestTimeInput | null {
   const timeCentiseconds = Number(row.time_centiseconds);
 
   if (!isPersonalBestEvent(row.stroke, distanceM, row.pool_length)) return null;
-  if (!Number.isInteger(timeCentiseconds) || timeCentiseconds <= 0 || timeCentiseconds >= 360000) {
+  if (
+    !Number.isInteger(timeCentiseconds) ||
+    timeCentiseconds <= 0 ||
+    timeCentiseconds >= MAX_SWIM_TIME_CENTISECONDS
+  ) {
     return null;
   }
   if (!isDateOrNull(row.recorded_on)) return null;

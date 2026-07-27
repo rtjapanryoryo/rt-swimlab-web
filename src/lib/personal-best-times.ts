@@ -15,6 +15,14 @@ export const STROKES = [
 
 export type StrokeCode = (typeof STROKES)[number]['value'];
 
+export const MAX_SWIM_TIME_CENTISECONDS = 600000;
+
+export type SwimTimeParts = {
+  minutes: string;
+  seconds: string;
+  centiseconds: string;
+};
+
 type EventDefinition = {
   stroke: StrokeCode;
   distanceM: number;
@@ -70,31 +78,38 @@ export function isPersonalBestEvent(
   );
 }
 
-/** 入力されたタイムを比較・計算しやすい1/100秒単位へ変換します。 */
-export function parseSwimTime(value: string): number | null {
-  const normalized = value.trim().replace('：', ':').replace('．', '.');
-  if (!normalized) return null;
-
-  const match = normalized.match(/^(?:(\d{1,2}):)?(\d{1,4})(?:\.(\d{1,2}))?$/);
-  if (!match) return null;
-
-  const minutes = Number(match[1] ?? 0);
-  const seconds = Number(match[2]);
-  const centiseconds = Number((match[3] ?? '0').padEnd(2, '0'));
-  if (match[1] && seconds >= 60) return null;
-
-  const total = (minutes * 60 + seconds) * 100 + centiseconds;
-  return total > 0 && total < 360000 ? total : null;
+export function hasSwimTimeValue(parts: SwimTimeParts): boolean {
+  return [parts.minutes, parts.seconds, parts.centiseconds].some(
+    (value) => value !== '' && Number(value) > 0
+  );
 }
 
-export function formatSwimTime(timeCentiseconds: number): string {
+/** 3つの入力欄を、比較・計算しやすい1/100秒単位へ変換します。 */
+export function parseSwimTimeParts(parts: SwimTimeParts): number | null {
+  const { minutes, seconds, centiseconds } = parts;
+  if (![minutes, seconds, centiseconds].every((value) => value === '' || /^\d{1,2}$/.test(value))) {
+    return null;
+  }
+  if (centiseconds !== '' && centiseconds.length !== 2) return null;
+
+  const minuteValue = Number(minutes || 0);
+  const secondValue = Number(seconds || 0);
+  const centisecondValue = Number(centiseconds || 0);
+  if (minuteValue > 99 || secondValue > 59 || centisecondValue > 99) return null;
+
+  const total = (minuteValue * 60 + secondValue) * 100 + centisecondValue;
+  return total > 0 && total < MAX_SWIM_TIME_CENTISECONDS ? total : null;
+}
+
+export function splitSwimTime(timeCentiseconds: number): SwimTimeParts {
   const totalSeconds = Math.floor(timeCentiseconds / 100);
   const centiseconds = timeCentiseconds % 100;
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
 
-  if (minutes === 0) {
-    return `${seconds}.${String(centiseconds).padStart(2, '0')}`;
-  }
-  return `${minutes}:${String(seconds).padStart(2, '0')}.${String(centiseconds).padStart(2, '0')}`;
+  return {
+    minutes: minutes > 0 ? String(minutes) : '',
+    seconds: String(seconds).padStart(2, '0'),
+    centiseconds: String(centiseconds).padStart(2, '0'),
+  };
 }

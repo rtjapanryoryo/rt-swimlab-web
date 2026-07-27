@@ -2,13 +2,15 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import {
-  formatSwimTime,
-  parseSwimTime,
+  hasSwimTimeValue,
+  parseSwimTimeParts,
   personalBestKey,
   PERSONAL_BEST_EVENTS,
   POOL_LENGTHS,
+  splitSwimTime,
   STROKES,
   type PoolLength,
+  type SwimTimeParts,
   type StrokeCode,
 } from '@/lib/personal-best-times';
 
@@ -22,21 +24,38 @@ type BestTimeRecord = {
   updated_at: string;
 };
 
-type InputValue = {
-  time: string;
+type InputValue = SwimTimeParts & {
   recordedOn: string;
+};
+
+const EMPTY_INPUT_VALUE: InputValue = {
+  minutes: '',
+  seconds: '',
+  centiseconds: '',
+  recordedOn: '',
 };
 
 function valuesFromRecords(records: BestTimeRecord[]): Record<string, InputValue> {
   return Object.fromEntries(
-    records.map((record) => [
-      personalBestKey(record.stroke, record.distance_m, record.pool_length),
-      {
-        time: formatSwimTime(record.time_centiseconds),
+    records.map((record) => {
+      const time = splitSwimTime(record.time_centiseconds);
+      return [
+        personalBestKey(record.stroke, record.distance_m, record.pool_length),
+        {
+          ...time,
         recordedOn: record.recorded_on ?? '',
-      },
-    ])
+        },
+      ];
+    })
   );
+}
+
+// 日本語IMEで全角数字が入っても、入力欄には半角数字だけを保持します。
+function normalizeDigits(value: string): string {
+  return value
+    .replace(/[０-９]/g, (digit) => String.fromCharCode(digit.charCodeAt(0) - 0xfee0))
+    .replace(/\D/g, '')
+    .slice(0, 2);
 }
 
 export default function BestTimesPage() {
@@ -75,8 +94,7 @@ export default function BestTimesPage() {
     setValues((current) => ({
       ...current,
       [key]: {
-        time: current[key]?.time ?? '',
-        recordedOn: current[key]?.recordedOn ?? '',
+        ...(current[key] ?? EMPTY_INPUT_VALUE),
         [field]: value,
       },
     }));
@@ -102,10 +120,10 @@ export default function BestTimesPage() {
       for (const eventPool of event.poolLengths) {
         const key = personalBestKey(event.stroke, event.distanceM, eventPool);
         const input = values[key];
-        if (!input?.time.trim()) continue;
-        const timeCentiseconds = parseSwimTime(input.time);
+        if (!input || !hasSwimTimeValue(input)) continue;
+        const timeCentiseconds = parseSwimTimeParts(input);
         if (timeCentiseconds === null) {
-          nextErrors[key] = '「28.45」または「1:05.23」の形式で入力してください';
+          nextErrors[key] = '分は0〜99、秒は0〜59、小数点以下は2桁で入力してください';
           continue;
         }
         payload.push({
@@ -127,7 +145,7 @@ export default function BestTimesPage() {
     const deleteIds = records
       .filter((record) => {
         const key = personalBestKey(record.stroke, record.distance_m, record.pool_length);
-        return !values[key]?.time.trim();
+        return !values[key] || !hasSwimTimeValue(values[key]);
       })
       .map((record) => record.id);
 
@@ -225,7 +243,7 @@ export default function BestTimesPage() {
       </section>
 
       <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <div className="hidden grid-cols-[100px_minmax(160px,1fr)_minmax(150px,220px)] gap-4 border-b border-slate-200 bg-slate-50 px-5 py-3 text-xs font-semibold text-slate-500 sm:grid">
+        <div className="hidden grid-cols-[90px_minmax(260px,1fr)_minmax(150px,200px)] gap-4 border-b border-slate-200 bg-slate-50 px-5 py-3 text-xs font-semibold text-slate-500 sm:grid">
           <span>距離</span>
           <span>ベストタイム</span>
           <span>記録日（任意）</span>
@@ -233,33 +251,50 @@ export default function BestTimesPage() {
         <div className="divide-y divide-slate-100">
           {visibleEvents.map((event) => {
             const key = personalBestKey(event.stroke, event.distanceM, poolLength);
-            const value = values[key] ?? { time: '', recordedOn: '' };
+            const value = values[key] ?? EMPTY_INPUT_VALUE;
             return (
               <div
                 key={key}
-                className="grid gap-3 px-5 py-4 sm:grid-cols-[100px_minmax(160px,1fr)_minmax(150px,220px)] sm:items-start sm:gap-4"
+                className="grid gap-3 px-5 py-4 sm:grid-cols-[90px_minmax(260px,1fr)_minmax(150px,200px)] sm:items-start sm:gap-4"
               >
                 <div>
                   <span className="text-xs font-medium text-slate-400 sm:hidden">距離</span>
                   <p className="text-base font-semibold tabular-nums text-slate-900">{event.distanceM}m</p>
                 </div>
-                <label className="block">
+                <div>
                   <span className="mb-1 block text-xs font-medium text-slate-500 sm:sr-only">ベストタイム</span>
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    value={value.time}
-                    onChange={(event) => updateValue(key, 'time', event.target.value)}
-                    placeholder="例：28.45 / 1:05.23"
-                    aria-label={`${event.distanceM}mのベストタイム`}
-                    className={`w-full rounded-lg border px-3 py-2.5 text-sm tabular-nums outline-none transition-colors ${
-                      errors[key]
-                        ? 'border-red-400 focus:ring-2 focus:ring-red-100'
-                        : 'border-slate-200 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100'
-                    }`}
-                  />
+                  <div className="grid grid-cols-3 gap-2">
+                    {([
+                      ['minutes', '分', '0'],
+                      ['seconds', '秒', '00'],
+                      ['centiseconds', '1/100秒', '00'],
+                    ] as const).map(([field, label, placeholder]) => (
+                      <label key={field} className="min-w-0">
+                        <span className="mb-1 block text-center text-[11px] font-medium text-slate-500">
+                          {label}
+                        </span>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          maxLength={2}
+                          value={value[field]}
+                          onChange={(inputEvent) =>
+                            updateValue(key, field, normalizeDigits(inputEvent.target.value))
+                          }
+                          placeholder={placeholder}
+                          aria-label={`${event.distanceM}mの${label}`}
+                          className={`w-full rounded-lg border px-2 py-2.5 text-center text-sm tabular-nums outline-none transition-colors ${
+                            errors[key]
+                              ? 'border-red-400 focus:ring-2 focus:ring-red-100'
+                              : 'border-slate-200 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100'
+                          }`}
+                        />
+                      </label>
+                    ))}
+                  </div>
                   {errors[key] && <span className="mt-1 block text-xs text-red-600">{errors[key]}</span>}
-                </label>
+                </div>
                 <label className="block">
                   <span className="mb-1 block text-xs font-medium text-slate-500 sm:sr-only">記録日（任意）</span>
                   <input
