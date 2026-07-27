@@ -29,7 +29,7 @@ const COUNSELING_ENABLED = process.env.NEXT_PUBLIC_COUNSELING_ENABLED === 'true'
 const navItems = [
   { href: '/mypage', label: 'ダッシュボード', Icon: DashboardIcon },
   ...(!MAINTENANCE_MODE ? [{ href: '/mypage/menu', label: 'RT swim lab', Icon: SwimLabIcon, footerLabel: 'swim lab' }] : []),
-  { href: '/mypage/best-times', label: 'ベストタイム', Icon: BestTimeIcon, footerLabel: 'ベスト' },
+  { href: '/mypage/best-times', label: 'ベストタイム', Icon: BestTimeIcon, footerLabel: 'タイム' },
   { href: '/mypage/goal-sheet', label: '目標シート', Icon: GoalSheetIcon, footerLabel: '目標' },
   { href: '/mypage/counseling', label: 'カウンセリング', Icon: CounselingIcon, footerLabel: 'カウンセリング', disabled: !COUNSELING_ENABLED, comingSoon: !COUNSELING_ENABLED },
   { href: '/mypage/genetic', label: 'RT GENE PROFILE', Icon: GeneProfileIcon, hideInFooter: true },

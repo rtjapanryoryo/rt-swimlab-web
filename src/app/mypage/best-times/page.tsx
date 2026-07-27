@@ -43,7 +43,7 @@ function valuesFromRecords(records: BestTimeRecord[]): Record<string, InputValue
         personalBestKey(record.stroke, record.distance_m, record.pool_length),
         {
           ...time,
-        recordedOn: record.recorded_on ?? '',
+          recordedOn: record.recorded_on ?? '',
         },
       ];
     })
@@ -65,8 +65,10 @@ export default function BestTimesPage() {
   const [values, setValues] = useState<Record<string, InputValue>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [pendingFocusKey, setPendingFocusKey] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/best-times', { credentials: 'include', cache: 'no-store' })
@@ -76,6 +78,7 @@ export default function BestTimesPage() {
         const nextRecords = (data.records ?? []) as BestTimeRecord[];
         setRecords(nextRecords);
         setValues(valuesFromRecords(nextRecords));
+        setIsDirty(false);
       })
       .catch((error) => {
         setMessage(error instanceof Error ? error.message : 'ベストタイムを読み込めませんでした');
@@ -90,6 +93,17 @@ export default function BestTimesPage() {
     [poolLength, stroke]
   );
 
+  useEffect(() => {
+    if (!pendingFocusKey) return;
+
+    // 非表示タブのエラーでも迷わないよう、タブ切替後に最初の入力欄へフォーカスします。
+    const timer = window.setTimeout(() => {
+      document.getElementById(`best-time-${pendingFocusKey}-minutes`)?.focus();
+      setPendingFocusKey(null);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [pendingFocusKey, poolLength, stroke]);
+
   function updateValue(key: string, field: keyof InputValue, value: string) {
     setValues((current) => ({
       ...current,
@@ -98,6 +112,7 @@ export default function BestTimesPage() {
         [field]: value,
       },
     }));
+    setIsDirty(true);
     setErrors((current) => {
       const next = { ...current };
       delete next[key];
@@ -106,8 +121,25 @@ export default function BestTimesPage() {
     setMessage(null);
   }
 
+  function clearValue(key: string) {
+    setValues((current) => ({
+      ...current,
+      [key]: { ...EMPTY_INPUT_VALUE },
+    }));
+    setErrors((current) => {
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
+    setIsDirty(true);
+    setMessage(null);
+  }
+
   async function handleSave() {
     const nextErrors: Record<string, string> = {};
+    let firstInvalid:
+      | { key: string; stroke: StrokeCode; poolLength: PoolLength }
+      | null = null;
     const payload: Array<{
       stroke: StrokeCode;
       distance_m: number;
@@ -123,7 +155,12 @@ export default function BestTimesPage() {
         if (!input || !hasSwimTimeValue(input)) continue;
         const timeCentiseconds = parseSwimTimeParts(input);
         if (timeCentiseconds === null) {
-          nextErrors[key] = '分は0〜99、秒は0〜59、小数点以下は2桁で入力してください';
+          nextErrors[key] = '分は0〜99、秒は0〜59、小数は2桁で入力してください';
+          firstInvalid ??= {
+            key,
+            stroke: event.stroke,
+            poolLength: eventPool,
+          };
           continue;
         }
         payload.push({
@@ -138,7 +175,12 @@ export default function BestTimesPage() {
 
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
-      setMessage('入力形式を確認してください');
+      setMessage('入力内容を確認してください。最初のエラー箇所を表示しています。');
+      if (firstInvalid) {
+        setPoolLength(firstInvalid.poolLength);
+        setStroke(firstInvalid.stroke);
+        setPendingFocusKey(firstInvalid.key);
+      }
       return;
     }
 
@@ -163,6 +205,7 @@ export default function BestTimesPage() {
       const nextRecords = (data.records ?? []) as BestTimeRecord[];
       setRecords(nextRecords);
       setValues(valuesFromRecords(nextRecords));
+      setIsDirty(false);
       setMessage('ベストタイムを保存しました');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : '保存できませんでした');
@@ -196,6 +239,9 @@ export default function BestTimesPage() {
         <p className="mt-1 text-sm leading-relaxed text-cyan-800">
           タイムがわからない種目は空欄のままで大丈夫です。正確な記録がわからない場合は、なんとなく近いタイムを入力してください。あとからいつでも変更できます。
         </p>
+        <p className="mt-2 text-xs font-medium text-cyan-700">
+          入力例：1分05秒23　秒は0〜59、小数は2桁で入力してください。
+        </p>
       </section>
 
       <section className="space-y-5">
@@ -221,7 +267,7 @@ export default function BestTimesPage() {
 
         <div>
           <p className="mb-2 text-sm font-semibold text-slate-700">種目</p>
-          <div className="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="種目">
+          <div className="flex gap-2 overflow-x-auto pb-1 pr-6 scrollbar-hide" role="tablist" aria-label="種目">
             {STROKES.map((item) => (
               <button
                 key={item.value}
@@ -243,19 +289,20 @@ export default function BestTimesPage() {
       </section>
 
       <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <div className="hidden grid-cols-[90px_minmax(260px,1fr)_minmax(150px,200px)] gap-4 border-b border-slate-200 bg-slate-50 px-5 py-3 text-xs font-semibold text-slate-500 sm:grid">
+        <div className="hidden grid-cols-[90px_minmax(280px,1fr)_minmax(150px,200px)] gap-4 border-b border-slate-200 bg-slate-50 px-5 py-3 text-xs font-semibold text-slate-500 sm:grid">
           <span>距離</span>
           <span>ベストタイム</span>
-          <span>記録日（任意）</span>
+          <span>記録日（入力後・任意）</span>
         </div>
         <div className="divide-y divide-slate-100">
           {visibleEvents.map((event) => {
             const key = personalBestKey(event.stroke, event.distanceM, poolLength);
             const value = values[key] ?? EMPTY_INPUT_VALUE;
+            const hasTime = hasSwimTimeValue(value);
             return (
               <div
                 key={key}
-                className="grid gap-3 px-5 py-4 sm:grid-cols-[90px_minmax(260px,1fr)_minmax(150px,200px)] sm:items-start sm:gap-4"
+                className="grid gap-3 px-5 py-4 sm:grid-cols-[90px_minmax(280px,1fr)_minmax(150px,200px)] sm:items-start sm:gap-4"
               >
                 <div>
                   <span className="text-xs font-medium text-slate-400 sm:hidden">距離</span>
@@ -263,70 +310,103 @@ export default function BestTimesPage() {
                 </div>
                 <div>
                   <span className="mb-1 block text-xs font-medium text-slate-500 sm:sr-only">ベストタイム</span>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-1.5">
                     {([
-                      ['minutes', '分', '0'],
-                      ['seconds', '秒', '00'],
-                      ['centiseconds', '1/100秒', '00'],
-                    ] as const).map(([field, label, placeholder]) => (
-                      <label key={field} className="min-w-0">
-                        <span className="mb-1 block text-center text-[11px] font-medium text-slate-500">
-                          {label}
+                      ['minutes', '分'],
+                      ['seconds', '秒'],
+                      ['centiseconds', '小数（2桁）'],
+                    ] as const).flatMap(([field, label], index) => {
+                      const separator = index === 0 ? null : (
+                        <span
+                          key={`${field}-separator`}
+                          aria-hidden
+                          className="pb-2.5 text-base font-semibold text-slate-400"
+                        >
+                          {index === 1 ? ':' : '.'}
                         </span>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          pattern="[0-9]*"
-                          maxLength={2}
-                          value={value[field]}
-                          onChange={(inputEvent) =>
-                            updateValue(key, field, normalizeDigits(inputEvent.target.value))
-                          }
-                          placeholder={placeholder}
-                          aria-label={`${event.distanceM}mの${label}`}
-                          className={`w-full rounded-lg border px-2 py-2.5 text-center text-sm tabular-nums outline-none transition-colors ${
-                            errors[key]
-                              ? 'border-red-400 focus:ring-2 focus:ring-red-100'
-                              : 'border-slate-200 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100'
-                          }`}
-                        />
-                      </label>
-                    ))}
+                      );
+                      const input = (
+                        <label key={field} className="min-w-0">
+                          <span className="mb-1 block text-center text-[10px] font-medium text-slate-500 sm:text-[11px]">
+                            {label}
+                          </span>
+                          <input
+                            id={`best-time-${key}-${field}`}
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            maxLength={2}
+                            value={value[field]}
+                            onChange={(inputEvent) =>
+                              updateValue(key, field, normalizeDigits(inputEvent.target.value))
+                            }
+                            placeholder="--"
+                            aria-label={`${event.distanceM}mの${label}`}
+                            className={`w-full rounded-lg border px-1.5 py-2.5 text-center text-sm tabular-nums outline-none transition-colors ${
+                              errors[key]
+                                ? 'border-red-400 focus:ring-2 focus:ring-red-100'
+                                : 'border-slate-200 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100'
+                            }`}
+                          />
+                        </label>
+                      );
+                      return separator ? [separator, input] : [input];
+                    })}
                   </div>
-                  {errors[key] && <span className="mt-1 block text-xs text-red-600">{errors[key]}</span>}
+                  <div className="mt-1 flex min-h-5 items-start justify-between gap-2">
+                    {errors[key] ? (
+                      <span className="text-xs text-red-600">{errors[key]}</span>
+                    ) : (
+                      <span />
+                    )}
+                    {hasTime && (
+                      <button
+                        type="button"
+                        onClick={() => clearValue(key)}
+                        className="shrink-0 text-xs font-medium text-slate-500 underline decoration-slate-300 underline-offset-2 hover:text-red-600"
+                        title={`${event.distanceM}mのタイムをクリア`}
+                      >
+                        × クリア
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <label className="block">
-                  <span className="mb-1 block text-xs font-medium text-slate-500 sm:sr-only">記録日（任意）</span>
-                  <input
-                    type="date"
-                    value={value.recordedOn}
-                    onChange={(event) => updateValue(key, 'recordedOn', event.target.value)}
-                    aria-label={`${event.distanceM}mの記録日`}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-700 outline-none transition-colors focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
-                  />
-                </label>
+                {hasTime ? (
+                  <label className="block">
+                    <span className="mb-1 block text-xs font-medium text-slate-500 sm:sr-only">記録日（任意）</span>
+                    <input
+                      type="date"
+                      value={value.recordedOn}
+                      onChange={(dateEvent) => updateValue(key, 'recordedOn', dateEvent.target.value)}
+                      aria-label={`${event.distanceM}mの記録日`}
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-700 outline-none transition-colors focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                    />
+                  </label>
+                ) : (
+                  <p className="hidden pt-7 text-xs text-slate-400 sm:block">タイム入力後に表示</p>
+                )}
               </div>
             );
           })}
         </div>
       </section>
 
-      <div className="flex flex-col-reverse items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="sticky bottom-[86px] z-30 -mx-1 flex flex-col-reverse items-stretch gap-3 border border-slate-200 bg-white/95 px-4 py-3 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:rounded-lg lg:bottom-4">
         <p
           role="status"
           className={`min-h-5 text-sm ${
             message?.includes('保存しました') ? 'text-cyan-700' : 'text-amber-700'
           }`}
         >
-          {message}
+          {message ?? (isDirty ? '未保存の変更があります' : '保存済みです')}
         </p>
         <button
           type="button"
           onClick={handleSave}
-          disabled={saving}
+          disabled={saving || !isDirty}
           className="rounded-lg bg-cyan-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-cyan-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {saving ? '保存中...' : '入力したタイムを保存'}
+          {saving ? '保存中...' : 'すべての入力を保存'}
         </button>
       </div>
     </div>
