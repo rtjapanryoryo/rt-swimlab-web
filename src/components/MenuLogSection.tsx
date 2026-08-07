@@ -140,8 +140,15 @@ export function MenuLogSection() {
             {menus.map((m) => {
               const period = m.input?.period ?? '';
               const stroke = m.input?.stroke ?? '';
-              const distance = m.input?.distance;
-              const distType = m.input?.distanceType ?? '';
+              const mainSetDistance = Number(m.result?.mainM);
+              const isMainSetOnly =
+                m.source === 'custom' &&
+                Number(m.result?.generationContext?.mainSetTimeMinutes) > 0 &&
+                Number.isFinite(mainSetDistance) &&
+                mainSetDistance > 0;
+              // 既に保存済みのデータに旧quick距離が残っていても、メインセット専用結果を優先します。
+              const distance = isMainSetOnly ? String(mainSetDistance) : m.input?.distance;
+              const distType = isMainSetOnly ? '' : m.input?.distanceType ?? '';
               const periodLabel = PERIOD_SHORT[period] ?? '';
               const periodCls = PERIOD_COLOR[period] ?? 'bg-slate-100 text-slate-600';
               return (

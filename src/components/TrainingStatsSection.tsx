@@ -12,7 +12,27 @@ type MenuData = {
     stroke?: string;
     period?: string;
   };
+  result?: {
+    mainM?: number;
+    generationContext?: {
+      mainSetTimeMinutes?: number;
+    };
+  };
 };
+
+function getMenuDistance(menu: MenuData): number {
+  const mainSetDistance = Number(menu.result?.mainM);
+  const isMainSetOnly =
+    menu.source === 'custom' &&
+    Number(menu.result?.generationContext?.mainSetTimeMinutes) > 0 &&
+    Number.isFinite(mainSetDistance) &&
+    mainSetDistance > 0;
+
+  // 新しいcustom生成は全体練習距離を持たないため、メインセット合計を活動距離として扱います。
+  return isMainSetOnly
+    ? mainSetDistance
+    : parseInt(menu.input?.distance ?? '0', 10) || 0;
+}
 
 function toDateStr(date: Date): string {
   const y = date.getFullYear();
@@ -79,7 +99,7 @@ function calcMonthlyStats(menus: MenuData[]) {
   const thisMonth = menus.filter((m) => parseLocalDate(m.created_at) >= monthStart);
   const count = thisMonth.length;
   const days = new Set(thisMonth.map((m) => parseLocalDate(m.created_at))).size;
-  const distance = thisMonth.reduce((sum, m) => sum + (parseInt(m.input?.distance ?? '0', 10) || 0), 0);
+  const distance = thisMonth.reduce((sum, menu) => sum + getMenuDistance(menu), 0);
   return { count, days, distance };
 }
 

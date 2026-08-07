@@ -420,6 +420,8 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
   };
 
   const generateMenuWithAI = async () => {
+    // 同じ条件で再生成した場合も、新しい生成結果を1件として自動保存します。
+    lastSavedRef.current = null;
     setCustomIsGenerating(true);
     setLoadingMessageIndex(0);
     setApiError(null);
@@ -507,6 +509,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
   };
 
   const generateMenuLocal = async () => {
+    lastSavedRef.current = null;
     setApiError(null);
     setApiErrorKind(null);
     const effectiveInput = buildQuickInput();

@@ -41,9 +41,26 @@ export async function POST(request: NextRequest) {
 
     const user_id = user.id;
     const user_email = user.email ?? '';
-    const input = body.input ?? {};
+    const input = { ...(body.input ?? {}) };
     const result = body.result ?? {};
     const source = body.source === 'custom' ? 'custom' : 'quick';
+
+    const generationContext = result.generationContext as
+      | { mainSetTimeMinutes?: unknown }
+      | undefined;
+    const mainSetDistance = Number(result.mainM);
+    const isMainSetOnly =
+      source === 'custom' &&
+      Number(generationContext?.mainSetTimeMinutes) > 0 &&
+      Number.isFinite(mainSetDistance) &&
+      mainSetDistance > 0;
+
+    if (isMainSetOnly) {
+      // custom画面に残っている旧quick入力を保存しないよう、生成結果のメイン距離を正とします。
+      input.distance = String(mainSetDistance);
+      input.distanceType = '';
+      input.practiceTime = '';
+    }
 
     const { data, error } = await sb
       .from('menus')
