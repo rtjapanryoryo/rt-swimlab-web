@@ -19,9 +19,28 @@ export interface TrainingInput {
   generationMode?: 'standard' | 'sprint_50m';
   poolLength?: 'short_course' | 'long_course';
   raceEvent?: string;
+  raceEvent2?: string;
   bestTime?: string;
   explanationLevel?: 'beginner_friendly' | 'technical';
+  mainSetTime?: '20' | '30' | '45' | '60';
 }
+
+export type MenuBestTimeReference = {
+  raceEvent: string;
+  display: string | null;
+  source: 'personal_best' | 'none';
+};
+
+export type MenuGenerationContext = {
+  timingRuleVersion: string;
+  bestTimeSource: 'personal_best' | 'none';
+  bestTimeDisplay: string | null;
+  bestTimeEvent: string | null;
+  poolLength: 'short_course' | 'long_course';
+  bestTimeReferences?: MenuBestTimeReference[];
+  mainSetTimeMinutes?: number;
+  estimatedDurationMinutes?: number;
+};
 
 export interface TrainingResult {
   purpose: string;
@@ -39,6 +58,14 @@ export interface TrainingResult {
   coachingPoint: string;
   caution: string;
   expectedEffect: string;
+  warmUpM?: number;
+  drillM?: number;
+  kickM?: number;
+  pullM?: number;
+  preMainM?: number;
+  mainM?: number;
+  downM?: number;
+  generationContext?: MenuGenerationContext;
 }
 
 export type DistanceType = 'S' | 'M' | 'D';

@@ -13,7 +13,7 @@ import { useViewMode } from '@/app/viewMode';
 import { MenuSheet } from '@/components/MenuSheet';
 import { PracticeVolumeField } from '@/components/PracticeVolumeField';
 import { PurposeField } from '@/components/PurposeField';
-import { isDistanceValidForType, isQuickDistanceValid } from '@/lib/rt/distance-time-validation';
+import { isQuickDistanceValid } from '@/lib/rt/distance-time-validation';
 import { calcUsageStatus, IS_DEMO_PERIOD, MAINTENANCE_MODE } from '@/lib/plan-limits';
 import Link from 'next/link';
 
@@ -61,8 +61,10 @@ const EMPTY_INPUT: TrainingInput = {
   generationMode: 'standard',
   poolLength: 'short_course',
   raceEvent: 'Fr_50m',
+  raceEvent2: '',
   bestTime: '',
   explanationLevel: 'technical',
+  mainSetTime: '30',
 };
 
 function isTrainingInput(obj: unknown): obj is TrainingInput {
@@ -72,7 +74,8 @@ function isTrainingInput(obj: unknown): obj is TrainingInput {
     'level', 'condition', 'practiceTime',
   ];
   const optionalKeys: (keyof TrainingInput)[] = [
-    'generationMode', 'poolLength', 'raceEvent', 'bestTime', 'explanationLevel',
+    'generationMode', 'poolLength', 'raceEvent', 'raceEvent2', 'bestTime',
+    'explanationLevel', 'mainSetTime',
   ];
   const record = obj as Record<string, unknown>;
   return (
@@ -97,6 +100,8 @@ function loadSavedInput(key: string): TrainingInput {
       const next = { ...EMPTY_INPUT, ...parsed } as TrainingInput;
       // 説明レベル切替は廃止し、用語は専用ページで確認する運用に統一します。
       next.explanationLevel = 'technical';
+      // 旧UIの自由入力値は使わず、生成時にサーバーが登録済みベストタイムを取得します。
+      next.bestTime = '';
       const derivedStroke = strokeFromRaceEvent(next.raceEvent ?? '');
       if (derivedStroke) next.stroke = derivedStroke;
       return next;
@@ -111,6 +116,7 @@ function normalizeTrainingInput(input: Partial<TrainingInput>): TrainingInput {
   const next = { ...EMPTY_INPUT, ...input } as TrainingInput;
   // 旧データの値は受け取りますが、新しい生成では専門用語中心に統一します。
   next.explanationLevel = 'technical';
+  next.bestTime = '';
   const derivedStroke = strokeFromRaceEvent(next.raceEvent ?? '');
   if (derivedStroke) next.stroke = derivedStroke;
   return next;
@@ -220,10 +226,8 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
   // Quick = 距離タイプ×練習時間、Custom = 距離タイプのみ
   useEffect(() => {
     if (!input.distance) return;
-    const valid =
-      mode === 'quick'
-        ? isQuickDistanceValid(input.distance, input.distanceType, input.practiceTime)
-        : isDistanceValidForType(input.distance, input.distanceType);
+    if (mode !== 'quick') return;
+    const valid = isQuickDistanceValid(input.distance, input.distanceType, input.practiceTime);
     if (!valid) {
       setInput((prev) => ({ ...prev, distance: '' }));
     }
@@ -355,14 +359,12 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
       if (field === 'raceEvent') {
         const derivedStroke = strokeFromRaceEvent(value);
         if (derivedStroke) next.stroke = derivedStroke;
+        if (next.raceEvent2 === value) next.raceEvent2 = '';
       }
       const nextType = field === 'distanceType' ? value : prev.distanceType;
       const nextTime = field === 'practiceTime' ? value : prev.practiceTime;
-      if (prev.distance) {
-        const valid =
-          mode === 'quick'
-            ? isQuickDistanceValid(prev.distance, nextType, nextTime)
-            : isDistanceValidForType(prev.distance, nextType);
+      if (mode === 'quick' && prev.distance) {
+        const valid = isQuickDistanceValid(prev.distance, nextType, nextTime);
         if (!valid) next.distance = '';
       }
       return next;
@@ -382,7 +384,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
 
   /** カスタム用：ステップ1（種目・年齢・レベル・状況）の必須チェック */
   const isCustomStep1Valid = () =>
-    !!(input.stroke || 'Fr') &&
+    !!input.raceEvent &&
     !!input.age &&
     !!input.level &&
     !!input.condition;
@@ -390,7 +392,8 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
   /** カスタム用：8項目すべての必須チェック */
   const isCustomFormValid = () =>
     isCustomStep1Valid() &&
-    isQuickFormValid();
+    !!input.period &&
+    !!input.mainSetTime;
 
   /** クイック用：4項目＋デフォルトでテンプレートから1件抽出 */
   const buildQuickInput = (): TrainingInput => ({
@@ -425,6 +428,10 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
       const payload: Record<string, unknown> = {
         ...input,
         stroke: input.stroke || 'Fr',
+        // custom生成では旧来の全体練習ボリュームを使わず、メインセット時間から本数を算出します。
+        distance: '',
+        distanceType: '',
+        practiceTime: '',
         ...(planId ? { plan_id: planId } : {}),
       };
       const res = await fetch('/api/custom-menu', {
@@ -689,8 +696,16 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
     lines.push(`■ RT swim lab 練習メニュー`);
     lines.push(`日付: ${new Date().toLocaleDateString('ja-JP')}`);
     if (activeInput.period) lines.push(`期: ${activeInput.period}`);
-    if (activeInput.stroke) lines.push(`種目: ${activeInput.stroke}`);
-    if (activeInput.distance) lines.push(`距離: ${activeInput.distance}m`);
+    if (resultSource === 'custom') {
+      const mainEvent1 = RACE_EVENT_OPTIONS.find((option) => option.value === activeInput.raceEvent)?.label;
+      const mainEvent2 = RACE_EVENT_OPTIONS.find((option) => option.value === activeInput.raceEvent2)?.label;
+      if (mainEvent1) lines.push(`メイン種目1: ${mainEvent1}`);
+      if (mainEvent2) lines.push(`メイン種目2: ${mainEvent2}`);
+      if (activeInput.mainSetTime) lines.push(`メインセット時間: ${activeInput.mainSetTime}分`);
+    } else {
+      if (activeInput.stroke) lines.push(`種目: ${activeInput.stroke}`);
+      if (activeInput.distance) lines.push(`距離: ${activeInput.distance}m`);
+    }
     lines.push('');
     for (const key of ['warmUp', 'drill', 'kick', 'pull', 'preMain', 'dive', 'rest', 'main', 'down']) {
       const val = (result as unknown as Record<string, string>)[key];
@@ -774,11 +789,11 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
               onClick={() => { setMode('custom'); setCustomStep(1); setApiError(null); }}
               className={`flex-1 py-3 px-4 rounded-xl text-sm font-semibold transition-all ${mode === 'custom' ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/25' : 'text-slate-600 hover:bg-white hover:text-slate-900'}`}
             >
-              カスタム（11項目）
+              カスタム（9項目）
             </button>
           </div>
           <p className="text-sm text-slate-500 mb-5">
-            {mode === 'quick' ? '4項目でテンプレートから適正なメニューを1件抽出。すぐに表示されます。' : '11項目でAIが種目・年齢・状況に合わせてあなた専用のメニューを生成します。'}
+            {mode === 'quick' ? '4項目でテンプレートから適正なメニューを1件抽出。すぐに表示されます。' : 'メイン種目と時間をもとに、あなた専用のメインセットを1案生成します。'}
           </p>
           <div className="mb-5 flex justify-end">
             <Link href="/guide/menu-terms" className="text-sm font-semibold text-cyan-700 underline decoration-cyan-300 underline-offset-4 hover:text-cyan-900">
@@ -866,16 +881,26 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">2. 対象レース</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">2. メイン種目1</label>
                       <select value={input.raceEvent || 'Fr_50m'} onChange={(e) => handleInputChange('raceEvent', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
                         {RACE_EVENT_OPTIONS.map((option) => (
                           <option key={option.value} value={option.value}>{option.label}</option>
                         ))}
                       </select>
-                      <p className="text-[11px] text-slate-400 mt-1">既存の種目設定は対象レースから自動で補完されます。</p>
+                      <p className="text-[11px] text-slate-400 mt-1">メインセットの中心として取り組む種目を選びます。</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">3. 年齢</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">3. メイン種目2（任意）</label>
+                      <select value={input.raceEvent2 || ''} onChange={(e) => handleInputChange('raceEvent2', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
+                        <option value="">指定しない</option>
+                        {RACE_EVENT_OPTIONS.filter((option) => option.value !== input.raceEvent).map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                      <p className="text-[11px] text-slate-400 mt-1">選択した場合は、Main 1とMain 2に分けて構成します。</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">4. 年齢</label>
                       <select value={input.age} onChange={(e) => handleInputChange('age', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
                         <option value="">選択してください</option>
                         <option value="小学生（〜12歳）">小学生（〜12歳）</option>
@@ -887,7 +912,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">4. レベル</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">5. レベル</label>
                       <select value={input.level} onChange={(e) => handleInputChange('level', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
                         <option value="">選択してください</option>
                         <option value="トップ選手（代表・全国入賞）">トップ選手（代表・全国入賞）</option>
@@ -899,7 +924,7 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">5. 状況</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">6. 状況</label>
                       <select value={input.condition} onChange={(e) => handleInputChange('condition', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
                         <option value="">選択してください</option>
                         <option value="絶好調（ピーク・調子最高）">絶好調（ピーク・調子最高）</option>
@@ -911,21 +936,21 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">6. プール種別</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">7. プール種別</label>
                       <select value={input.poolLength || 'short_course'} onChange={(e) => handleInputChange('poolLength', e.target.value)} className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400">
                         <option value="short_course">短水路</option>
                         <option value="long_course">長水路</option>
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">7. ベストタイム（任意）</label>
-                      <input
-                        type="text"
-                        value={input.bestTime ?? ''}
-                        onChange={(e) => handleInputChange('bestTime', e.target.value)}
-                        placeholder="例: 28.50 / 1:05.30"
-                        className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400"
-                      />
+                      <p className="block text-sm font-medium text-slate-700 mb-1">ベストタイムの使用</p>
+                      <div className="rounded-2xl border-2 border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-600">
+                        <p>メイン種目とプール種別に一致する登録済み記録を自動で使用します。</p>
+                        <p className="mt-1 text-xs text-slate-500">記録がない場合は、安全側のRestを表示します。</p>
+                        <Link href="/mypage/best-times" className="mt-2 inline-flex font-semibold text-cyan-700 underline decoration-cyan-300 underline-offset-4 hover:text-cyan-900">
+                          ベストタイムを確認・登録
+                        </Link>
+                      </div>
                     </div>
                   </div>
                   <div className="mt-6">
@@ -938,23 +963,30 @@ export default function MenuGeneratorPanel(props?: MenuGeneratorPanelProps) {
 
               {customStep === 2 && (
                 <>
-                  <h2 className="text-lg font-semibold text-slate-900 mb-4">ステップ2: 練習計画（4項目）</h2>
-                  <p className="text-sm text-slate-600 mb-4">今日の狙いと練習条件を入力してください。距離と時間のバランスで、適切なメニューが設計されます。</p>
+                  <h2 className="text-lg font-semibold text-slate-900 mb-4">ステップ2: メインセット計画（2項目）</h2>
+                  <p className="text-sm text-slate-600 mb-4">今日の狙いとメインセットに使える時間から、本数と合計距離を調整します。</p>
                   <div className="space-y-5">
                     <PurposeField
                       value={input.period}
                       onChange={(v) => handleInputChange('period', v)}
                       itemNumber="8"
                     />
-                    <PracticeVolumeField
-                      distanceType={input.distanceType}
-                      distance={input.distance}
-                      practiceTime={input.practiceTime}
-                      onDistanceTypeChange={(v) => handleInputChange('distanceType', v)}
-                      onDistanceChange={(v) => handleInputChange('distance', v)}
-                      onPracticeTimeChange={(v) => handleInputChange('practiceTime', v)}
-                      itemNumberPrefix="9"
-                    />
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">9. メインセット時間</label>
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        {(['20', '30', '45', '60'] as const).map((minutes) => (
+                          <button
+                            key={minutes}
+                            type="button"
+                            onClick={() => handleInputChange('mainSetTime', minutes)}
+                            className={`h-12 rounded-xl border-2 text-sm font-semibold transition-colors ${input.mainSetTime === minutes ? 'border-cyan-500 bg-cyan-50 text-cyan-800' : 'border-slate-200 bg-white text-slate-700 hover:border-cyan-300'}`}
+                          >
+                            {minutes}分
+                          </button>
+                        ))}
+                      </div>
+                      <p className="mt-2 text-xs text-slate-500">ウォームアップとクールダウンを除いた、メインセットに使える時間です。</p>
+                    </div>
                   </div>
                   <div className="mt-6 flex flex-wrap gap-3 items-center">
                     <button onClick={() => setCustomStep(1)} className="px-6 py-3 border border-slate-200 bg-white text-slate-700 font-semibold rounded-xl shadow-sm hover:bg-slate-50">

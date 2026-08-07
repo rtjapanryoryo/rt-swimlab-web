@@ -26,9 +26,10 @@ function normalizeDash(v?: string | null) {
 function extractDisplayContent(text: string): string {
   let content = text.trim();
   content = content.replace(
-    /^(?:W-?up|Warm-?up|Drill|Kick|Pull|Pre-?Main|Main|Dive|Rest|Down|W-?down)\b\s*/i,
+    /^(?:W-?up|Warm-?up|Drill|Kick|Pull|Pre-?Main|Main(?:\s*[12])?|Dive|Rest|Down|W-?down)\b\s*/i,
     ''
   );
+  content = content.replace(/^[（(][^）)]{1,40}[）)]\s*/i, '');
   content = content.replace(/^(?:S1|Fr|Ba|Br|Fly|IM|Cho)\b\s*/i, '');
 
   // 後半の「25m Hard」などは練習内容なので、行頭の構造情報だけを除きます。
@@ -39,6 +40,7 @@ function extractDisplayContent(text: string): string {
 
   content = content
     .replace(/@\s*(?:\d+:\d{2}|\d+sec|\d+秒)/gi, '')
+    .replace(/(?:サークル|Circle|Rest)\s*(?:\d+:\d{2}|\d+秒)/gi, '')
     .replace(/[（(](?:[①②③④⑤⑥⑦]|A1|A2|EN[1-4]|AN[1-3]?|AN|MAX)[）)]/gi, '')
     .replace(/[ \t]+/g, ' ')
     .replace(/^[\s:：・+＋→\-–—]+|[\s:：・+＋→\-–—]+$/g, '')
@@ -233,11 +235,16 @@ function parsePartToRow(
   }
   if ((section === 'W-up' || section === 'Down') && count === '-') count = '1';
 
-  // @30sec / @1:00 / @1:30 / @45秒 を全パターン対応
-  const restMatch = text.match(/@(\d+:\d{2}|\d+sec|\d+秒)/i);
-  if (restMatch?.[1]) {
-    // 現在の @ 値は骨格ジェネレータが算出した本数間の restHint。
-    timing = `Rest ${restMatch[1].replace(/sec$/i, '秒')}`;
+  const explicitRestMatch = text.match(/Rest\s*(\d+:\d{2}|\d+秒)/i);
+  const explicitCircleMatch = text.match(/(?:サークル|Circle)\s*(\d+:\d{2}|\d+秒)/i);
+  // 過去に保存したメニューとの互換性のため、旧形式の @30sec もRestとして扱います。
+  const legacyRestMatch = text.match(/@(\d+:\d{2}|\d+sec|\d+秒)/i);
+  if (explicitRestMatch?.[1]) {
+    timing = `Rest ${explicitRestMatch[1]}`;
+  } else if (explicitCircleMatch?.[1]) {
+    timing = `サークル ${explicitCircleMatch[1]}`;
+  } else if (legacyRestMatch?.[1]) {
+    timing = `Rest ${legacyRestMatch[1].replace(/sec$/i, '秒')}`;
   } else {
     const timeMatch = text.match(/\b(\d+:\d{2})\b/);
     if (timeMatch?.[1]) timing = `サークル ${timeMatch[1]}`;
@@ -354,10 +361,10 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
     const sheetRows: MenuSheetRow[] = [];
     const s = (input.stroke && STROKE_ALLOWED.has(input.stroke) ? input.stroke : 'S1') as string;
     for (const key of order) {
-      if (key === 'drill' && !(result.drill ?? '').trim()) continue; // W-upに統合済みの場合スキップ
-      if (key === 'dive' && !(result.dive ?? '').trim()) continue;
-      if (key === 'rest' && !(result.rest ?? '').trim()) continue;
       const value = (result as unknown as Record<string, string>)[key] ?? '';
+      // メインセット専用生成では他セクションが空になるため、空の行は表示しません。
+      // 過去の全体メニューは値が入っているので、従来どおりすべて表示されます。
+      if (!value.trim()) continue;
       const labelFromContent = extractSectionLabelFromContent(value);
       const label = labelFromContent ?? sectionLabelsProp?.[key] ?? SECTION_KEY_TO_LABEL[key] ?? key;
       sheetRows.push(...parseToSheetRow(label, value, s, templateOnly));
@@ -483,32 +490,45 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
               <span className="font-semibold text-gray-700 w-24">期:</span>
               <span className="text-gray-900">{periodNames[input.period] || input.period}</span>
             </div>
-            <div className="flex">
-              <span className="font-semibold text-gray-700 w-24">種目:</span>
-              <span className="text-gray-900">{strokeNames[input.stroke] || strokeNames['Fr'] || input.stroke || 'Fr（自由形）'}</span>
-            </div>
+            {source === 'custom' ? (
+              <>
+                <div className="flex">
+                  <span className="font-semibold text-gray-700 w-24">メイン種目1:</span>
+                  <span className="text-gray-900">{raceEventNames[input.raceEvent ?? ''] ?? '-'}</span>
+                </div>
+                <div className="flex">
+                  <span className="font-semibold text-gray-700 w-24">メイン種目2:</span>
+                  <span className="text-gray-900">{raceEventNames[input.raceEvent2 ?? ''] ?? '指定なし'}</span>
+                </div>
+              </>
+            ) : (
+              <div className="flex">
+                <span className="font-semibold text-gray-700 w-24">種目:</span>
+                <span className="text-gray-900">{strokeNames[input.stroke] || strokeNames['Fr'] || input.stroke || 'Fr（自由形）'}</span>
+              </div>
+            )}
             <div className="flex">
               <span className="font-semibold text-gray-700 w-24">生成モード:</span>
               <span className="text-gray-900">{generationModeNames[input.generationMode ?? 'standard'] ?? '通常メニュー'}</span>
             </div>
-            <div className="flex">
-              <span className="font-semibold text-gray-700 w-24">対象レース:</span>
-              <span className="text-gray-900">{raceEventNames[input.raceEvent ?? ''] ?? '-'}</span>
-            </div>
-            <div className="flex">
-              <span className="font-semibold text-gray-700 w-24">距離:</span>
-              <span className="text-gray-900">{input.distance ? `${input.distance}m` : '-'}</span>
-            </div>
+            {source === 'quick' && (
+              <div className="flex">
+                <span className="font-semibold text-gray-700 w-24">距離:</span>
+                <span className="text-gray-900">{input.distance ? `${input.distance}m` : '-'}</span>
+              </div>
+            )}
             <div className="flex">
               <span className="font-semibold text-gray-700 w-24">年齢:</span>
               <span className="text-gray-900">{input.age}</span>
             </div>
           </div>
           <div className="space-y-2">
-            <div className="flex">
-              <span className="font-semibold text-gray-700 w-24">距離タイプ:</span>
-              <span className="text-gray-900">{distanceTypeNames[input.distanceType] || input.distanceType}</span>
-            </div>
+            {source === 'quick' && (
+              <div className="flex">
+                <span className="font-semibold text-gray-700 w-24">距離タイプ:</span>
+                <span className="text-gray-900">{distanceTypeNames[input.distanceType] || input.distanceType}</span>
+              </div>
+            )}
             <div className="flex">
               <span className="font-semibold text-gray-700 w-24">レベル:</span>
               <span className="text-gray-900">{input.level}</span>
@@ -522,8 +542,8 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
               <span className="text-gray-900">{input.condition}</span>
             </div>
             <div className="flex">
-              <span className="font-semibold text-gray-700 w-24">練習時間:</span>
-              <span className="text-gray-900">{input.practiceTime}分</span>
+              <span className="font-semibold text-gray-700 w-24">{source === 'custom' ? 'メイン時間:' : '練習時間:'}</span>
+              <span className="text-gray-900">{source === 'custom' ? input.mainSetTime : input.practiceTime}分</span>
             </div>
             <div className="flex">
               <span className="font-semibold text-gray-700 w-24">プール:</span>
@@ -531,8 +551,22 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
             </div>
             <div className="flex">
               <span className="font-semibold text-gray-700 w-24">ベスト:</span>
-              <span className="text-gray-900">{input.bestTime || '-'}</span>
+              <span className="text-gray-900">
+                {result.generationContext?.bestTimeReferences?.length
+                  ? result.generationContext.bestTimeReferences.map((reference) =>
+                      `${raceEventNames[reference.raceEvent] ?? reference.raceEvent}: ${reference.display ?? '未登録'}`
+                    ).join(' / ')
+                  : result.generationContext
+                    ? result.generationContext.bestTimeDisplay || '-'
+                    : input.bestTime || '-'}
+              </span>
             </div>
+            {source === 'custom' && result.generationContext?.estimatedDurationMinutes && (
+              <div className="flex">
+                <span className="font-semibold text-gray-700 w-24">所要時間:</span>
+                <span className="text-gray-900">約{result.generationContext.estimatedDurationMinutes}分</span>
+              </div>
+            )}
             <div className="flex">
               <span className="font-semibold text-gray-700 w-24">器具:</span>
               <span className="text-gray-900">フィン/パドルカスタム自由</span>

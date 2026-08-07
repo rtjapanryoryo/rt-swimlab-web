@@ -7,6 +7,11 @@
  */
 
 import type { TrainingInput } from './generator';
+import {
+  calculateSegmentTiming,
+  type SegmentTiming,
+  type TimingCalculationContext,
+} from './training-timing';
 
 // ============================================================
 // 型定義
@@ -19,7 +24,7 @@ export interface SegmentSpec {
   intensity: string;    // EN1, EN2, EN3, AN1, AN2, A1, A2
   intensityNum: string; // ①②③④⑤⑥
   patternPool: string[];
-  restHint: string;     // "30sec" / "1:00" 等（プログラム計算・再現性保証）
+  timing: SegmentTiming;
 }
 
 export interface BlockSpec {
@@ -130,26 +135,6 @@ function labelOfStep(step: number): string {
 function numOfStep(step: number): string {
   const clamped = Math.max(1, Math.min(7, step));
   return STEP_TO_NUM[clamped] ?? '③';
-}
-
-/**
- * 1セット距離×強度ステップから適切なレスト目安（秒）を計算し文字列で返す。
- * 完全にプログラム側で決定するため LLM に依存しない → 再現性保証。
- * levelKey: 初級は+10秒（体力回復・怪我防止）
- */
-function computeRestHint(mPerSet: number, intensityStep: number, levelKey?: LevelKey): string {
-  const byStep: Record<number, number> = { 1: 15, 2: 15, 3: 20, 4: 30, 5: 45, 6: 60, 7: 90 };
-  let rest = byStep[Math.max(1, Math.min(7, intensityStep))] ?? 30;
-  // 距離が長いほど絶対タイムが伸びるので休息も追加
-  if (mPerSet >= 400) rest += 30;
-  else if (mPerSet >= 200) rest += 20;
-  else if (mPerSet >= 100) rest += 10;
-  // 初級は追加レスト（体力回復・安全確保）
-  if (levelKey === 'beginner') rest += 10;
-  if (rest < 60) return `${rest}sec`;
-  const mins = Math.floor(rest / 60);
-  const secs = rest % 60;
-  return secs === 0 ? `${mins}:00` : `${mins}:${String(secs).padStart(2, '0')}`;
 }
 
 /**
@@ -837,9 +822,9 @@ function buildBlockSpec(
   condition = '',
   maxSetsOverride?: number,
   preferSmallSetsOverride?: boolean,
+  timingContext?: TimingCalculationContext,
 ): BlockSpec {
   const lm = getLevelModifiers(level);
-  const lk = lm.key;
   const effectivePreferSmall = preferSmallSetsOverride ?? lm.preferSmallSets;
   // 期3-5(発展形成〜耐乳酸)は Kick/Pull を必ず2構成 / 期1・7(回復・テーパー)は除外
   const needsTwoSeg = twoSegments ?? (['kick', 'pull'].includes(blockType) && [3,4,5,6].includes(parseInt(period)));
@@ -849,16 +834,24 @@ function buildBlockSpec(
   if (structs.length === 1 || ['down', 'preMain'].includes(blockType)) {
     const seg = structs[0];
     const actualM = seg.sets * seg.mPerSet;
+    const intensity = labelOfStep(intensityStep);
+    const timing = calculateSegmentTiming({
+      blockType,
+      mPerSet: seg.mPerSet,
+      intensity,
+      level,
+      context: timingContext,
+    });
     return {
       blockType,
       segments: [{
         sets: seg.sets,
         mPerSet: seg.mPerSet,
         totalM: actualM,
-        intensity: labelOfStep(intensityStep),
+        intensity,
         intensityNum: numOfStep(intensityStep),
         patternPool,
-        restHint: computeRestHint(seg.mPerSet, intensityStep, lk),
+        timing,
       }],
       totalM: actualM,
     };
@@ -868,21 +861,37 @@ function buildBlockSpec(
   const step2 = Math.min(7, intensityStep + 1);
   const seg1Actual = structs[0].sets * structs[0].mPerSet;
   const seg2Actual = structs[1].sets * structs[1].mPerSet;
+  const intensity1 = labelOfStep(intensityStep);
+  const intensity2 = labelOfStep(step2);
+  const timing1 = calculateSegmentTiming({
+    blockType,
+    mPerSet: structs[0].mPerSet,
+    intensity: intensity1,
+    level,
+    context: timingContext,
+  });
+  const timing2 = calculateSegmentTiming({
+    blockType,
+    mPerSet: structs[1].mPerSet,
+    intensity: intensity2,
+    level,
+    context: timingContext,
+  });
 
   return {
     blockType,
     segments: [
       {
         sets: structs[0].sets, mPerSet: structs[0].mPerSet, totalM: seg1Actual,
-        intensity: labelOfStep(intensityStep), intensityNum: numOfStep(intensityStep),
+        intensity: intensity1, intensityNum: numOfStep(intensityStep),
         patternPool: patternPool.slice(0, 2),
-        restHint: computeRestHint(structs[0].mPerSet, intensityStep, lk),
+        timing: timing1,
       },
       {
         sets: structs[1].sets, mPerSet: structs[1].mPerSet, totalM: seg2Actual,
-        intensity: labelOfStep(step2), intensityNum: numOfStep(step2),
+        intensity: intensity2, intensityNum: numOfStep(step2),
         patternPool: patternPool.slice(2, 4).length ? patternPool.slice(2, 4) : patternPool.slice(0, 2),
-        restHint: computeRestHint(structs[1].mPerSet, step2, lk),
+        timing: timing2,
       },
     ],
     totalM: seg1Actual + seg2Actual,
@@ -907,7 +916,10 @@ function parseAgeNum(age: string): number {
   return 20;
 }
 
-export function generateMenuSkeleton(input: TrainingInput): MenuSkeleton {
+export function generateMenuSkeleton(
+  input: TrainingInput,
+  timingContext?: TimingCalculationContext,
+): MenuSkeleton {
   const targetDist = parseInt(input.distance, 10);
   const ageNum = parseAgeNum(input.age);
   const dt = (['S', 'M', 'D'].includes(input.distanceType) ? input.distanceType : 'M') as 'S' | 'M' | 'D';
@@ -947,15 +959,15 @@ export function generateMenuSkeleton(input: TrainingInput): MenuSkeleton {
   const cond  = input.condition;
 
   // W-up は必ず2段階で構成（①Easy → ②Build）。DrillをW-up最終段階として統合するため twoSegments=true
-  const warmUp  = buildBlockSpec(alloc.warmUp,   'warmUp',  dt, 1,           input.period, input.stroke, level, true,  cond);
-  const drill   = buildBlockSpec(alloc.drill,    'drill',   dt, drillStep,   input.period, input.stroke, level, false, cond);
-  const kick    = buildBlockSpec(alloc.kick,     'kick',    dt, kickStep,    input.period, input.stroke, level, undefined, cond);
-  const pull    = buildBlockSpec(alloc.pull,     'pull',    dt, pullStep,    input.period, input.stroke, level, undefined, cond);
-  const preMain = buildBlockSpec(alloc.preMain,  'preMain', dt, preMainStep, input.period, input.stroke, level, false, cond);
+  const warmUp  = buildBlockSpec(alloc.warmUp,   'warmUp',  dt, 1,           input.period, input.stroke, level, true,  cond, undefined, undefined, timingContext);
+  const drill   = buildBlockSpec(alloc.drill,    'drill',   dt, drillStep,   input.period, input.stroke, level, false, cond, undefined, undefined, timingContext);
+  const kick    = buildBlockSpec(alloc.kick,     'kick',    dt, kickStep,    input.period, input.stroke, level, undefined, cond, undefined, undefined, timingContext);
+  const pull    = buildBlockSpec(alloc.pull,     'pull',    dt, pullStep,    input.period, input.stroke, level, undefined, cond, undefined, undefined, timingContext);
+  const preMain = buildBlockSpec(alloc.preMain,  'preMain', dt, preMainStep, input.period, input.stroke, level, false, cond, undefined, undefined, timingContext);
 
   // 非Mainブロックの実際の合計でMainを確定（算術保証の核心）
   const nonMainSum = warmUp.totalM + drill.totalM + kick.totalM + pull.totalM + preMain.totalM;
-  const down = buildBlockSpec(alloc.down, 'down', dt, 1, input.period, input.stroke, level, false, cond);
+  const down = buildBlockSpec(alloc.down, 'down', dt, 1, input.period, input.stroke, level, false, cond, undefined, undefined, timingContext);
   const exactMain = targetDist - nonMainSum - down.totalM;
 
   // exactMainが正で割り切れる必要がある。割り切れない場合はdownを微調整
@@ -968,7 +980,7 @@ export function generateMenuSkeleton(input: TrainingInput): MenuSkeleton {
       const newDownM = rawDownM + delta;
       const newMain = targetDist - nonMainSum - newDownM;
       if (newMain > 0 && newMain % baseUnit === 0 && newDownM > 0) {
-        adjustedDown = buildBlockSpec(newDownM, 'down', dt, 1, input.period, input.stroke, level, false, cond);
+        adjustedDown = buildBlockSpec(newDownM, 'down', dt, 1, input.period, input.stroke, level, false, cond, undefined, undefined, timingContext);
         adjustedExactMain = newMain;
         break;
       }
@@ -996,6 +1008,7 @@ export function generateMenuSkeleton(input: TrainingInput): MenuSkeleton {
     mainTwoSeg, cond,
     periodCon.maxSets,
     periodCon.preferShort || undefined,
+    timingContext,
   );
 
   /**
@@ -1056,6 +1069,12 @@ function getPullStroke(stroke: string): string {
   return stroke;
 }
 
+function formatSegmentTiming(segment: SegmentSpec): string {
+  return segment.timing.type === 'circle'
+    ? `サークル ${segment.timing.display}`
+    : `Rest ${segment.timing.display}`;
+}
+
 /** 骨格からLLM用の「数値固定・ラベル可変」テンプレート文字列を生成 */
 export function buildSkeletonTemplateStrings(skeleton: MenuSkeleton): {
   warmUpTemplate: string;
@@ -1084,7 +1103,7 @@ export function buildSkeletonTemplateStrings(skeleton: MenuSkeleton): {
   );
   // DrillをW-upの最終技術段階として統合
   drSegs.forEach((s, j) => {
-    warmUpParts.push(`${stroke} {DR_DRILL_${j + 1}} ${s.sets}×${s.mPerSet}m（${s.intensity}）`);
+    warmUpParts.push(`${stroke} {DR_DRILL_${j + 1}} ${s.sets}×${s.mPerSet}m ${formatSegmentTiming(s)}（${s.intensity}）`);
   });
   const warmUpTemplate = warmUpParts.join(' → ');
 
@@ -1094,28 +1113,28 @@ export function buildSkeletonTemplateStrings(skeleton: MenuSkeleton): {
   // Kick: パターン可変
   const kiSegs = skeleton.kick.segments;
   const kickTemplate = kiSegs.map((s, i) =>
-    `Kick ${stroke} ${s.sets}×${s.mPerSet}m（{KI_PATTERN_${i + 1}}）（${s.intensity}）`
+    `Kick ${stroke} ${s.sets}×${s.mPerSet}m（{KI_PATTERN_${i + 1}}）${formatSegmentTiming(s)}（${s.intensity}）`
   ).join(' → ');
 
   // Pull: Fly は Fr に変更して変化をつける（飽き・疲労対策）
   const plSegs = skeleton.pull.segments;
   const pullTemplate = plSegs.map((s, i) =>
-    `Pull ${pullStroke} ${s.sets}×${s.mPerSet}m（{PL_PATTERN_${i + 1}}）（${s.intensity}）`
+    `Pull ${pullStroke} ${s.sets}×${s.mPerSet}m（{PL_PATTERN_${i + 1}}）${formatSegmentTiming(s)}（${s.intensity}）`
   ).join(' → ');
 
   // Pre-Main
   const pmSegs = skeleton.preMain.segments;
   const preMainTemplate = pmSegs.map((s) =>
-    `Pre-Main ${stroke} ${s.sets}×${s.mPerSet}m {PM_CONTENT}（${s.intensity}）`
+    `Pre-Main ${stroke} ${s.sets}×${s.mPerSet}m {PM_CONTENT} ${formatSegmentTiming(s)}（${s.intensity}）`
   ).join(' → ');
 
-  // Main: カテゴリ・rest ともにプログラム確定
+  // Main: カテゴリ・サークル/Restともにプログラム確定
   const maSegs = skeleton.main.segments;
   const mainTemplate = maSegs.map((s, i) => {
     const isFirst = i === 0;
     return isFirst
-      ? `Main（${skeleton.mainCategory}）${s.sets}×${s.mPerSet}m @${s.restHint}（${s.intensity}）`
-      : `Main ${s.sets}×${s.mPerSet}m @${s.restHint}（${s.intensity}）`;
+      ? `Main（${skeleton.mainCategory}）${s.sets}×${s.mPerSet}m ${formatSegmentTiming(s)}（${s.intensity}）`
+      : `Main ${s.sets}×${s.mPerSet}m ${formatSegmentTiming(s)}（${s.intensity}）`;
   }).join(' → ');
 
   // Down: 固定
