@@ -33,6 +33,13 @@ export type MenuBestTimeReference = {
 
 export type MenuGenerationContext = {
   timingRuleVersion: string;
+  contextVersion?: string;
+  promptVersion?: string;
+  knowledgeVersion?: string;
+  outputContractVersion?: string;
+  evaluationVersion?: string;
+  generationRuleVersion?: string;
+  model?: string;
   bestTimeSource: 'personal_best' | 'none';
   bestTimeDisplay: string | null;
   bestTimeEvent: string | null;

@@ -5,7 +5,18 @@ import { config as loadEnv } from 'dotenv';
 import OpenAI from 'openai';
 import { getEffectiveUser, createClient, getServiceRole } from '@/lib/supabase/server';
 import { IS_DEMO_PERIOD, calcUsageStatus, MAINTENANCE_MODE } from '@/lib/plan-limits';
-import { generateMainSetPlan, type MainSetEvent } from '@/lib/rt/main-set-generator';
+import {
+  buildCustomMenuSystemPrompt,
+  buildCustomMenuUserPrompt,
+  CUSTOM_MENU_CONTEXT_VERSIONS,
+  CUSTOM_MENU_MODEL_DEFAULTS,
+  getRaceEventLabel,
+} from '@/lib/ai-context/custom-menu-context';
+import {
+  generateMainSetPlan,
+  MAIN_SET_RULE_VERSION,
+  type MainSetEvent,
+} from '@/lib/rt/main-set-generator';
 import type { TrainingInput, TrainingResult } from '@/lib/rt/generator';
 import {
   formatPersonalBest,
@@ -20,48 +31,11 @@ try {
   // .env.aiがなくても、Vercelまたはシェルの環境変数で続行します。
 }
 
-const RACE_EVENT_LABELS: Record<string, string> = {
-  Fr_50m: '自由形 50m',
-  Fr_100m: '自由形 100m',
-  Fr_200m: '自由形 200m',
-  Ba_50m: '背泳ぎ 50m',
-  Ba_100m: '背泳ぎ 100m',
-  Br_50m: '平泳ぎ 50m',
-  Br_100m: '平泳ぎ 100m',
-  Fly_50m: 'バタフライ 50m',
-  Fly_100m: 'バタフライ 100m',
-  IM_100m: '個人メドレー 100m',
-  IM_200m: '個人メドレー 200m',
-  IM_400m: '個人メドレー 400m',
-};
-
-const PERIOD_LABELS: Record<string, string> = {
-  '1': '① リカバリー期',
-  '2': '② 基礎形成期',
-  '3': '③ 発展形成期',
-  '4': '④ 強化期（スピード持久力）',
-  '5': '⑤ 強化期（耐乳酸）',
-  '6': '⑥ 調整期',
-  '7': '⑦ テーパー期',
-};
-
 const MAIN_SET_TIMES = new Set(['20', '30', '45', '60']);
 const INTERNAL_ERROR = {
   error: 'internal_error',
   message: '現在生成できません。時間をおいて再試行してください',
 } as const;
-
-const SYSTEM_PROMPT = `あなたはRT Japanの水泳コーチです。
-今回作成するのは、ウォームアップやダウンを含まない「メインセットのみ」です。
-
-【最優先ルール】
-- 距離、本数、強度、サークル、Restはサーバーが計算済みです。変更を提案したり、別の数値を書いたりしないでください。
-- メイン種目1を中心にし、メイン種目2がある場合は補助種目として扱ってください。
-- 年齢、レベル、コンディションを反映し、安全性とフォーム維持を優先してください。
-- 苦しくなってフォームが崩れる場合は、タイムより技術確認を優先する注意を含めてください。
-- 指導ポイントと注意点は、それぞれ3項目を改行区切りで出力してください。
-- 抽象的な一般論ではなく、今回の種目・目的・強度に合う具体的な文章にしてください。
-- JSON以外は出力しないでください。`;
 
 type GeneratedCopy = {
   purpose: string;
@@ -89,7 +63,7 @@ function normalizePoolLength(value: unknown): 'short_course' | 'long_course' {
 function normalizeRaceEvent(value: unknown, optional = false): string {
   const event = typeof value === 'string' ? value.trim() : '';
   if (optional && !event) return '';
-  return RACE_EVENT_LABELS[event] ? event : '';
+  return getRaceEventLabel(event) ? event : '';
 }
 
 function parseRaceEvent(raceEvent: string): Omit<MainSetEvent, 'personalBest'> | null {
@@ -290,56 +264,46 @@ export async function POST(request: NextRequest) {
     const plan = generateMainSetPlan({ input, primaryEvent, secondaryEvent });
 
     const apiKey = (process.env.OPENAI_API_KEY || '').trim().replace(/\r?\n/g, '');
-    const model = (process.env.OPENAI_MODEL || 'gpt-4o-mini').trim() || 'gpt-4o-mini';
+    const model = (process.env.OPENAI_MODEL || CUSTOM_MENU_MODEL_DEFAULTS.model).trim()
+      || CUSTOM_MENU_MODEL_DEFAULTS.model;
     if (!apiKey || apiKey === 'YOUR_API_KEY_HERE') {
       return NextResponse.json(INTERNAL_ERROR, { status: 500 });
     }
 
     const bestTimeSummary = [
-      `${RACE_EVENT_LABELS[raceEvent]}: ${primaryBest ? formatPersonalBest(primaryBest.timeCentiseconds) : '登録なし（Restで設計）'}`,
+      `${getRaceEventLabel(raceEvent)}: ${primaryBest ? formatPersonalBest(primaryBest.timeCentiseconds) : '登録なし（Restで設計）'}`,
       ...(secondary ? [
-        `${RACE_EVENT_LABELS[raceEvent2]}: ${secondaryBest ? formatPersonalBest(secondaryBest.timeCentiseconds) : '登録なし（Restで設計）'}`,
+        `${getRaceEventLabel(raceEvent2)}: ${secondaryBest ? formatPersonalBest(secondaryBest.timeCentiseconds) : '登録なし（Restで設計）'}`,
       ] : []),
     ].join('\n');
 
-    const userPrompt = `【入力条件】
-- 生成モード: ${generationMode === 'sprint_50m' ? '50m特化' : '通常'}
-- メイン種目1: ${RACE_EVENT_LABELS[raceEvent]}
-- メイン種目2: ${secondary ? RACE_EVENT_LABELS[raceEvent2] : 'なし'}
-- 目的: ${PERIOD_LABELS[input.period] ?? input.period}
-- 年齢: ${input.age}
-- レベル: ${input.level}
-- コンディション: ${input.condition}
-- プール: ${poolLength === 'long_course' ? '長水路' : '短水路'}
-- メインセット時間: ${mainSetTime}分
-
-【登録済みベストタイム】
-${bestTimeSummary}
-
-【変更禁止のメインセット骨格】
-${plan.template}
-合計距離: ${plan.totalM}m
-推定所要時間: 約${plan.estimatedDurationMinutes}分
-
-次のJSON形式で、このメインセットに合う説明だけを生成してください。
-{
-  "purpose": "メニューの目的を1文",
-  "intention": "今日このメインセットに取り組む狙いを2〜3文",
-  "coachingPoint": "具体的な指導ポイント1\\n具体的な指導ポイント2\\n具体的な指導ポイント3",
-  "caution": "具体的な注意点1\\n具体的な注意点2\\n具体的な注意点3",
-  "expectedEffect": "期待できる生理面・技術面の効果を2〜3文"
-}`;
+    const systemPrompt = buildCustomMenuSystemPrompt();
+    const userPrompt = buildCustomMenuUserPrompt({
+      generationMode,
+      raceEvent,
+      raceEvent2: secondary ? raceEvent2 : undefined,
+      period: input.period,
+      age: input.age,
+      level: input.level,
+      condition: input.condition,
+      poolLength,
+      mainSetTime,
+      bestTimeSummary,
+      plan,
+    });
 
     const openai = new OpenAI({ apiKey });
     const completion = await openai.chat.completions.create({
       model,
       messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      temperature: 0.35,
-      max_tokens: 1400,
-      response_format: { type: 'json_object' },
+      temperature: CUSTOM_MENU_MODEL_DEFAULTS.temperature,
+      max_tokens: CUSTOM_MENU_MODEL_DEFAULTS.maxTokens,
+      response_format: {
+        type: CUSTOM_MENU_MODEL_DEFAULTS.responseFormat as 'json_object',
+      },
     });
     const raw = completion.choices[0]?.message?.content?.trim() ?? '';
     const generated = parseGeneratedCopy(raw);
@@ -385,6 +349,13 @@ ${plan.template}
       expectedEffect: generated.expectedEffect,
       generationContext: {
         timingRuleVersion: TIMING_RULE_VERSION,
+        contextVersion: CUSTOM_MENU_CONTEXT_VERSIONS.contextVersion,
+        promptVersion: CUSTOM_MENU_CONTEXT_VERSIONS.promptVersion,
+        knowledgeVersion: CUSTOM_MENU_CONTEXT_VERSIONS.knowledgeVersion,
+        outputContractVersion: CUSTOM_MENU_CONTEXT_VERSIONS.outputContractVersion,
+        evaluationVersion: CUSTOM_MENU_CONTEXT_VERSIONS.evaluationVersion,
+        generationRuleVersion: MAIN_SET_RULE_VERSION,
+        model,
         bestTimeSource: primaryBest ? 'personal_best' : 'none',
         bestTimeDisplay: primaryBest ? formatPersonalBest(primaryBest.timeCentiseconds) : null,
         bestTimeEvent: raceEvent,

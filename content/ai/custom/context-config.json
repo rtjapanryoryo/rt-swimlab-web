@@ -1,0 +1,66 @@
+{
+  "manifest": {
+    "contextVersion": "custom-main-set-context-v1",
+    "promptVersion": "custom-main-set-prompt-v1",
+    "knowledgeVersion": "custom-main-set-knowledge-v1",
+    "outputContractVersion": "custom-main-set-output-v1",
+    "evaluationVersion": "custom-main-set-eval-v1",
+    "generationRuleVersion": "main-set-v1",
+    "timingRuleVersion": "personal-best-v1"
+  },
+  "labels": {
+    "raceEvents": {
+      "Fr_50m": "自由形 50m",
+      "Fr_100m": "自由形 100m",
+      "Fr_200m": "自由形 200m",
+      "Ba_50m": "背泳ぎ 50m",
+      "Ba_100m": "背泳ぎ 100m",
+      "Br_50m": "平泳ぎ 50m",
+      "Br_100m": "平泳ぎ 100m",
+      "Fly_50m": "バタフライ 50m",
+      "Fly_100m": "バタフライ 100m",
+      "IM_100m": "個人メドレー 100m",
+      "IM_200m": "個人メドレー 200m",
+      "IM_400m": "個人メドレー 400m"
+    },
+    "periods": {
+      "1": "① リカバリー期",
+      "2": "② 基礎形成期",
+      "3": "③ 発展形成期",
+      "4": "④ 強化期（スピード持久力）",
+      "5": "⑤ 強化期（耐乳酸）",
+      "6": "⑥ 調整期",
+      "7": "⑦ テーパー期"
+    }
+  },
+  "systemPrompt": {
+    "role": "あなたはRT Japanの水泳コーチです。",
+    "scope": "今回作成するのは、ウォームアップやダウンを含まない「メインセットのみ」です。",
+    "ruleHeading": "【最優先ルール】",
+    "rules": [
+      "距離、本数、強度、サークル、Restはサーバーが計算済みです。変更を提案したり、別の数値を書いたりしないでください。",
+      "メイン種目1を中心にし、メイン種目2がある場合は補助種目として扱ってください。",
+      "年齢、レベル、コンディションを反映し、安全性とフォーム維持を優先してください。",
+      "苦しくなってフォームが崩れる場合は、タイムより技術確認を優先する注意を含めてください。",
+      "指導ポイントと注意点は、それぞれ3項目を改行区切りで出力してください。",
+      "抽象的な一般論ではなく、今回の種目・目的・強度に合う具体的な文章にしてください。",
+      "JSON以外は出力しないでください。"
+    ]
+  },
+  "outputContract": {
+    "instruction": "次のJSON形式で、このメインセットに合う説明だけを生成してください。",
+    "example": {
+      "purpose": "メニューの目的を1文",
+      "intention": "今日このメインセットに取り組む狙いを2〜3文",
+      "coachingPoint": "具体的な指導ポイント1\n具体的な指導ポイント2\n具体的な指導ポイント3",
+      "caution": "具体的な注意点1\n具体的な注意点2\n具体的な注意点3",
+      "expectedEffect": "期待できる生理面・技術面の効果を2〜3文"
+    }
+  },
+  "modelDefaults": {
+    "model": "gpt-4o-mini",
+    "temperature": 0.35,
+    "maxTokens": 1400,
+    "responseFormat": "json_object"
+  }
+}

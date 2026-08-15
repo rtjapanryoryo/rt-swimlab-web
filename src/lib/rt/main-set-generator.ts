@@ -5,6 +5,8 @@ import {
   type SegmentTiming,
 } from './training-timing';
 
+export const MAIN_SET_RULE_VERSION = 'main-set-v1';
+
 export type MainSetEvent = {
   raceEvent: string;
   stroke: 'Fr' | 'Ba' | 'Br' | 'Fly' | 'IM';
