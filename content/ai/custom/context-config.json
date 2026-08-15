@@ -5,7 +5,7 @@
     "knowledgeVersion": "custom-main-set-knowledge-v1",
     "outputContractVersion": "custom-main-set-output-v1",
     "evaluationVersion": "custom-main-set-eval-v1",
-    "generationRuleVersion": "main-set-v1",
+    "generationRuleVersion": "main-set-v2",
     "timingRuleVersion": "personal-best-v1"
   },
   "labels": {

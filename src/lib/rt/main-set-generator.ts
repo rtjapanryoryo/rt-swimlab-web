@@ -5,7 +5,7 @@ import {
   type SegmentTiming,
 } from './training-timing';
 
-export const MAIN_SET_RULE_VERSION = 'main-set-v1';
+export const MAIN_SET_RULE_VERSION = 'main-set-v2';
 
 export type MainSetEvent = {
   raceEvent: string;
@@ -18,6 +18,8 @@ export type MainSetSegment = {
   label: 'Main 1' | 'Main 2';
   raceEvent: string;
   stroke: MainSetEvent['stroke'];
+  rounds: number;
+  setRestSeconds: number;
   repetitions: number;
   distanceM: number;
   totalM: number;
@@ -210,21 +212,31 @@ function buildSegment(args: {
     ? timing.seconds
     : swimSeconds + timing.seconds;
   const maxRepetitions = distanceM <= 50 ? 20 : distanceM <= 100 ? 16 : 10;
-  const rawRepetitions = Math.min(maxRepetitions, Math.floor(budgetSeconds / cycleSeconds));
-  // 200mなど1本が長いセットは、偶数本に丸めると入力時間を大きく余らせるため、3本・5本も許可します。
-  const repetitions = Math.max(2, rawRepetitions);
+  const initialRepetitions = Math.max(2, Math.floor(budgetSeconds / cycleSeconds));
+  // Mainを無理に2種類へ分割せず、長時間の場合は同じ目的の複数setとしてまとめます。
+  const rounds = Math.max(1, Math.ceil(initialRepetitions / maxRepetitions));
+  const setRestSeconds = rounds > 1 ? 60 : 0;
+  const repetitionBudgetSeconds = Math.max(
+    cycleSeconds * 2,
+    budgetSeconds - (rounds - 1) * setRestSeconds,
+  );
+  const rawRepetitions = Math.max(2, Math.floor(repetitionBudgetSeconds / cycleSeconds));
+  const repetitions = Math.max(2, Math.floor(rawRepetitions / rounds));
 
   return {
     label,
     raceEvent: event.raceEvent,
     stroke: event.stroke,
+    rounds,
+    setRestSeconds,
     repetitions,
     distanceM,
-    totalM: repetitions * distanceM,
+    totalM: rounds * repetitions * distanceM,
     intensity,
     intensityNumber: STEP_TO_NUMBER[intensityStep],
     timing,
-    estimatedDurationSeconds: repetitions * cycleSeconds,
+    estimatedDurationSeconds:
+      rounds * repetitions * cycleSeconds + (rounds - 1) * setRestSeconds,
   };
 }
 
@@ -241,8 +253,7 @@ export function generateMainSetPlan(args: {
   const durationMinutes = Number.parseInt(input.mainSetTime ?? '30', 10);
   const totalSeconds = durationMinutes * 60;
   const { step: mainStep, notes } = getAdjustedMainStep(input);
-  const useTwoBlocks = Boolean(args.secondaryEvent) || durationMinutes >= 30;
-  const transitionSeconds = useTwoBlocks ? 90 : 0;
+  const transitionSeconds = args.secondaryEvent ? 90 : 0;
   const usableSeconds = Math.max(600, totalSeconds - transitionSeconds);
 
   const segments: MainSetSegment[] = [];
@@ -263,23 +274,6 @@ export function generateMainSetPlan(args: {
       input,
       blockIndex: 1,
     }));
-  } else if (useTwoBlocks) {
-    segments.push(buildSegment({
-      event: primaryEvent,
-      label: 'Main 1',
-      budgetSeconds: Math.floor(usableSeconds * 0.45),
-      intensityStep: Math.max(1, mainStep - 1),
-      input,
-      blockIndex: 0,
-    }));
-    segments.push(buildSegment({
-      event: primaryEvent,
-      label: 'Main 2',
-      budgetSeconds: Math.floor(usableSeconds * 0.55),
-      intensityStep: mainStep,
-      input,
-      blockIndex: 1,
-    }));
   } else {
     segments.push(buildSegment({
       event: primaryEvent,
@@ -297,9 +291,13 @@ export function generateMainSetPlan(args: {
     transitionSeconds,
   );
   const category = deriveCategory(mainStep, input.generationMode);
-  const template = segments.map((segment) =>
-    `${segment.label}（${category}）${segment.stroke} ${segment.repetitions}×${segment.distanceM}m ${formatTiming(segment.timing)}（${segment.intensity}）`
-  ).join(' → ');
+  const template = segments.map((segment) => {
+    const repetitions = `${segment.repetitions}×${segment.distanceM}m`;
+    const setDisplay = segment.rounds > 1
+      ? `${segment.rounds}set ×（${repetitions}） セット間 Rest ${Math.round(segment.setRestSeconds / 60)}分`
+      : repetitions;
+    return `${segment.label}（${category}）${segment.stroke} ${setDisplay} ${formatTiming(segment.timing)}（${segment.intensity}）`;
+  }).join(' → ');
 
   if (segments.some((segment) => segment.timing.basis === 'level_fallback')) {
     notes.push('完全一致するベストタイムがない種目はRestで設計');

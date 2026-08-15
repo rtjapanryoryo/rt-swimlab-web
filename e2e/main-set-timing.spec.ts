@@ -98,27 +98,42 @@ test('ベスト未登録または高強度では安全側のRestを返す', () =
   });
 });
 
-test('30分の基礎形成メニューを時間内の1,300mに調整する', () => {
+test('メイン種目が1つなら30分を1つのMain内の複数setにまとめる', () => {
   const plan = generateMainSetPlan({ input: baseInput, primaryEvent });
+
+  expect(plan.segments).toHaveLength(1);
+  expect(plan.segments[0]).toMatchObject({
+    label: 'Main 1',
+    rounds: 2,
+    setRestSeconds: 60,
+    repetitions: 14,
+    distanceM: 50,
+    totalM: 1400,
+    intensity: 'EN1',
+    timing: { type: 'circle', display: '1:00' },
+  });
+  expect(plan.template).toContain('2set ×（14×50m） セット間 Rest 1分');
+  expect(plan.totalM).toBe(1400);
+  expect(plan.requestedDurationMinutes).toBe(30);
+  expect(plan.estimatedDurationMinutes).toBe(29);
+});
+
+test('メイン種目2を指定した場合だけMainを2つに分ける', () => {
+  const secondaryEvent: MainSetEvent = {
+    raceEvent: 'Fly_50',
+    stroke: 'Fly',
+    raceDistanceM: 50,
+    personalBest: null,
+  };
+  const plan = generateMainSetPlan({ input: baseInput, primaryEvent, secondaryEvent });
 
   expect(plan.segments).toHaveLength(2);
   expect(plan.segments[0]).toMatchObject({
     label: 'Main 1',
-    repetitions: 11,
-    distanceM: 50,
-    totalM: 550,
-    intensity: 'A1',
-    timing: { type: 'circle', display: '1:05' },
+    raceEvent: 'Fr_50',
   });
   expect(plan.segments[1]).toMatchObject({
     label: 'Main 2',
-    repetitions: 15,
-    distanceM: 50,
-    totalM: 750,
-    intensity: 'EN1',
-    timing: { type: 'circle', display: '1:00' },
+    raceEvent: 'Fly_50',
   });
-  expect(plan.totalM).toBe(1300);
-  expect(plan.requestedDurationMinutes).toBe(30);
-  expect(plan.estimatedDurationMinutes).toBe(28);
 });
