@@ -28,6 +28,40 @@ export const CUSTOM_MENU_MODEL_DEFAULTS = Object.freeze({
   ...contextConfig.modelDefaults,
 });
 
+export const CUSTOM_MENU_MANAGEMENT_LOCATIONS = Object.freeze([
+  {
+    path: 'content/ai/custom/context-config.json',
+    label: 'プロンプト・出力形式・モデル既定値',
+    status: 'active' as const,
+  },
+  {
+    path: 'src/lib/ai-context/custom-menu-context.ts',
+    label: '入力条件からAI向け文章を組み立てる処理',
+    status: 'active' as const,
+  },
+  {
+    path: 'src/lib/rt/main-set-generator.ts',
+    label: 'メインセットの距離・本数・強度・サークル算出',
+    status: 'active' as const,
+  },
+  {
+    path: 'src/lib/rt/training-timing.ts',
+    label: 'ベストタイムを使ったサークル・Rest算出',
+    status: 'active' as const,
+  },
+]);
+
+export const CUSTOM_MENU_INACTIVE_KNOWLEDGE_SOURCES = Object.freeze([
+  'content/common/coach-philosophy.md',
+  'content/common/custom-period-rules.md',
+  'content/common/menu-dictionary.md',
+  'content/common/menu-examples.md',
+  'content/common/menu-patterns.md',
+  'content/common/rt-japan-practice-samples.md',
+  'content/common/session-patterns-db.md',
+  'content/common/swimming-science-references.md',
+]);
+
 export function getRaceEventLabel(raceEvent: string): string | null {
   const labels = contextConfig.labels.raceEvents as Record<string, string>;
   return labels[raceEvent] ?? null;
@@ -89,5 +123,8 @@ export function getCustomMenuContextSummary() {
     modelDefaults: CUSTOM_MENU_MODEL_DEFAULTS,
     systemPrompt: buildCustomMenuSystemPrompt(),
     outputFields: Object.keys(contextConfig.outputContract.example),
+    outputExample: contextConfig.outputContract.example,
+    managementLocations: CUSTOM_MENU_MANAGEMENT_LOCATIONS,
+    inactiveKnowledgeSources: CUSTOM_MENU_INACTIVE_KNOWLEDGE_SOURCES,
   };
 }

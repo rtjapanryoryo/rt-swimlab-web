@@ -64,4 +64,13 @@ test('manifestと実装中の数値ルールバージョンを一致させる', 
     'caution',
     'expectedEffect',
   ]);
+  expect(summary.managementLocations).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        path: 'content/ai/custom/context-config.json',
+        status: 'active',
+      }),
+    ]),
+  );
+  expect(summary.inactiveKnowledgeSources).toContain('content/common/coach-philosophy.md');
 });
