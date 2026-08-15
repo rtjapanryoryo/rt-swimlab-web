@@ -93,6 +93,53 @@ export default function AiContextPage() {
         </div>
       </section>
 
+      <section aria-labelledby="evaluation-heading" className="space-y-3">
+        <div>
+          <h2 id="evaluation-heading" className="text-lg font-bold text-slate-900">固定評価ケース</h2>
+          <p className="mt-1 text-sm text-slate-500">{context.evaluation.purpose}</p>
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-white p-5">
+          <h3 className="text-sm font-bold text-slate-800">全ケース共通の合格基準</h3>
+          <ul className="mt-3 grid gap-2 text-sm leading-6 text-slate-600 lg:grid-cols-2">
+            {context.evaluation.commonCriteria.map((criterion) => (
+              <li key={criterion} className="flex gap-2">
+                <span aria-hidden="true" className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-500" />
+                <span>{criterion}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          {context.evaluation.cases.map((evaluationCase) => (
+            <article key={evaluationCase.id} className="rounded-lg border border-slate-200 bg-white p-5">
+              <div className="flex items-start justify-between gap-3">
+                <h3 className="font-bold text-slate-900">{evaluationCase.title}</h3>
+                <code className="shrink-0 text-[11px] text-slate-400">{evaluationCase.id}</code>
+              </div>
+              <div className="mt-4">
+                <p className="text-xs font-bold text-slate-500">入力条件</p>
+                <ul className="mt-2 flex flex-wrap gap-2">
+                  {evaluationCase.inputSummary.map((item) => (
+                    <li key={item} className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-700">{item}</li>
+                  ))}
+                </ul>
+              </div>
+              <div className="mt-4">
+                <p className="text-xs font-bold text-slate-500">このケースで確認すること</p>
+                <ul className="mt-2 space-y-2 text-sm leading-6 text-slate-600">
+                  {evaluationCase.expected.map((item) => (
+                    <li key={item} className="flex gap-2">
+                      <span aria-hidden="true" className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <section aria-labelledby="source-heading" className="space-y-3">
         <div>
           <h2 id="source-heading" className="text-lg font-bold text-slate-900">管理場所</h2>

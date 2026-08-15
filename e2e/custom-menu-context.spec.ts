@@ -73,4 +73,19 @@ test('manifestと実装中の数値ルールバージョンを一致させる', 
     ]),
   );
   expect(summary.inactiveKnowledgeSources).toContain('content/common/coach-philosophy.md');
+  expect(summary.evaluation.version).toBe(summary.versions.evaluationVersion);
+  expect(summary.evaluation.cases).toHaveLength(5);
+  expect(new Set(summary.evaluation.cases.map((evaluationCase) => evaluationCase.id)).size).toBe(5);
+  expect(summary.evaluation.commonCriteria).toEqual(
+    expect.arrayContaining([
+      expect.stringContaining('サーバーが確定した距離'),
+      expect.stringContaining('Main 2'),
+      expect.stringContaining('改行区切り'),
+    ]),
+  );
+  for (const evaluationCase of summary.evaluation.cases) {
+    expect(evaluationCase.title).not.toBe('');
+    expect(evaluationCase.inputSummary.length).toBeGreaterThan(0);
+    expect(evaluationCase.expected.length).toBeGreaterThan(0);
+  }
 });

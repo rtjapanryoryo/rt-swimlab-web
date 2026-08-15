@@ -1,4 +1,5 @@
 import contextConfig from '../../../content/ai/custom/context-config.json';
+import evaluationConfig from '../../../content/ai/custom/evaluation-cases.json';
 
 type PromptPlan = {
   template: string;
@@ -18,6 +19,13 @@ export type CustomMenuPromptInput = {
   mainSetTime: string;
   bestTimeSummary: string;
   plan: PromptPlan;
+};
+
+export type CustomMenuEvaluationCase = {
+  id: string;
+  title: string;
+  inputSummary: string[];
+  expected: string[];
 };
 
 export const CUSTOM_MENU_CONTEXT_VERSIONS = Object.freeze({
@@ -47,6 +55,11 @@ export const CUSTOM_MENU_MANAGEMENT_LOCATIONS = Object.freeze([
   {
     path: 'src/lib/rt/training-timing.ts',
     label: 'ベストタイムを使ったサークル・Rest算出',
+    status: 'active' as const,
+  },
+  {
+    path: 'content/ai/custom/evaluation-cases.json',
+    label: '変更前後を比較する固定評価ケース',
     status: 'active' as const,
   },
 ]);
@@ -124,6 +137,12 @@ export function getCustomMenuContextSummary() {
     systemPrompt: buildCustomMenuSystemPrompt(),
     outputFields: Object.keys(contextConfig.outputContract.example),
     outputExample: contextConfig.outputContract.example,
+    evaluation: {
+      version: evaluationConfig.version,
+      purpose: evaluationConfig.purpose,
+      commonCriteria: evaluationConfig.commonCriteria,
+      cases: evaluationConfig.cases as CustomMenuEvaluationCase[],
+    },
     managementLocations: CUSTOM_MENU_MANAGEMENT_LOCATIONS,
     inactiveKnowledgeSources: CUSTOM_MENU_INACTIVE_KNOWLEDGE_SOURCES,
   };
