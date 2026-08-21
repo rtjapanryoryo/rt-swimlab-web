@@ -71,10 +71,8 @@ export async function updateSession(request: NextRequest) {
 
     const isAdmin = role === 'admin';
 
-    // admin が /mypage にアクセス → /admin へ
-    if (isAdmin && (path === '/' || path.startsWith('/mypage'))) {
-      return NextResponse.redirect(new URL('/admin', request.url));
-    }
+    // 管理者の通常入口は /admin ですが、会員画面の動作確認では /mypage への直接アクセスを許可します。
+    // 一般ユーザーから管理画面へのアクセス制限は、この下の判定で引き続き維持します。
 
     // 一般ユーザーが /admin にアクセス → /mypage へ
     if (!isAdmin && !isBypass && path.startsWith('/admin')) {
