@@ -1,5 +1,10 @@
 # custom生成コンテキスト変更履歴
 
+## custom-main-set-prompt-v3
+
+- AI説明文で距離・本数・セット数・サークル・Restの数値を繰り返さないルールを追加
+- AIが数量を言い直した場合も、表示前に除去して確定済みの表との矛盾を防止
+
 ## custom-main-set-prompt-v2
 
 - 複数setの総本数と各set本数をAIへ明示

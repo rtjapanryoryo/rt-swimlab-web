@@ -13,6 +13,10 @@ import {
   getRaceEventLabel,
 } from '@/lib/ai-context/custom-menu-context';
 import {
+  sanitizeCustomMenuGeneratedCopy,
+  type CustomMenuGeneratedCopy,
+} from '@/lib/ai-context/custom-menu-copy';
+import {
   generateMainSetPlan,
   MAIN_SET_RULE_VERSION,
   type MainSetEvent,
@@ -36,14 +40,6 @@ const INTERNAL_ERROR = {
   error: 'internal_error',
   message: '現在生成できません。時間をおいて再試行してください',
 } as const;
-
-type GeneratedCopy = {
-  purpose: string;
-  intention: string;
-  coachingPoint: string;
-  caution: string;
-  expectedEffect: string;
-};
 
 function getOpenAIStatus(): { configured: boolean; reason?: 'missing' | 'placeholder' } {
   const key = (process.env.OPENAI_API_KEY || '').trim();
@@ -83,17 +79,19 @@ function normalizeGeneratedText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
-function parseGeneratedCopy(raw: string): GeneratedCopy | null {
+function parseGeneratedCopy(raw: string): CustomMenuGeneratedCopy | null {
   try {
     const parsed = JSON.parse(raw) as Record<string, unknown>;
-    const result: GeneratedCopy = {
+    const result: CustomMenuGeneratedCopy = {
       purpose: normalizeGeneratedText(parsed.purpose),
       intention: normalizeGeneratedText(parsed.intention),
       coachingPoint: normalizeGeneratedText(parsed.coachingPoint),
       caution: normalizeGeneratedText(parsed.caution),
       expectedEffect: normalizeGeneratedText(parsed.expectedEffect),
     };
-    return Object.values(result).every(Boolean) ? result : null;
+    return Object.values(result).every(Boolean)
+      ? sanitizeCustomMenuGeneratedCopy(result)
+      : null;
   } catch {
     return null;
   }
