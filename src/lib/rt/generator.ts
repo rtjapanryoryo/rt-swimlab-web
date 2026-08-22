@@ -31,6 +31,26 @@ export type MenuBestTimeReference = {
   source: 'personal_best' | 'none';
 };
 
+export type MenuMainSetSegment = {
+  label: 'Main 1' | 'Main 2';
+  raceEvent: string;
+  stroke: 'Fr' | 'Ba' | 'Br' | 'Fly' | 'IM';
+  rounds: number;
+  setRestSeconds: number;
+  repetitions: number;
+  totalRepetitions: number;
+  distanceM: number;
+  totalM: number;
+  intensity: string;
+  intensityNumber: string;
+  timing: {
+    type: 'circle' | 'rest';
+    seconds: number;
+    display: string;
+    basis: 'exact_personal_best' | 'level_fallback';
+  };
+};
+
 export type MenuGenerationContext = {
   timingRuleVersion: string;
   contextVersion?: string;
@@ -47,6 +67,7 @@ export type MenuGenerationContext = {
   bestTimeReferences?: MenuBestTimeReference[];
   mainSetTimeMinutes?: number;
   estimatedDurationMinutes?: number;
+  mainSetSegments?: MenuMainSetSegment[];
 };
 
 export interface TrainingResult {

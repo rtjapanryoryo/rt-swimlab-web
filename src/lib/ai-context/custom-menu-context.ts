@@ -5,6 +5,13 @@ type PromptPlan = {
   template: string;
   totalM: number;
   estimatedDurationMinutes: number;
+  segments: Array<{
+    label: string;
+    rounds: number;
+    repetitions: number;
+    distanceM: number;
+    totalM: number;
+  }>;
 };
 
 export type CustomMenuPromptInput = {
@@ -106,6 +113,10 @@ export function buildCustomMenuUserPrompt(input: CustomMenuPromptInput): string 
     ? getRaceEventLabel(input.raceEvent2) ?? input.raceEvent2
     : 'なし';
   const outputExample = JSON.stringify(contextConfig.outputContract.example, null, 2);
+  const segmentSummary = input.plan.segments.map((segment) => {
+    const totalRepetitions = segment.rounds * segment.repetitions;
+    return `- ${segment.label}: 総本数${totalRepetitions}本（${segment.repetitions}本×${segment.rounds}set）、1本${segment.distanceM}m、合計${segment.totalM}m`;
+  }).join('\n');
 
   return `【入力条件】
 - 生成モード: ${input.generationMode === 'sprint_50m' ? '50m特化' : '通常'}
@@ -123,6 +134,7 @@ ${input.bestTimeSummary}
 
 【変更禁止のメインセット骨格】
 ${input.plan.template}
+${segmentSummary}
 合計距離: ${input.plan.totalM}m
 推定所要時間: 約${input.plan.estimatedDurationMinutes}分
 

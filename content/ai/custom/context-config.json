@@ -1,7 +1,7 @@
 {
   "manifest": {
     "contextVersion": "custom-main-set-context-v1",
-    "promptVersion": "custom-main-set-prompt-v1",
+    "promptVersion": "custom-main-set-prompt-v2",
     "knowledgeVersion": "custom-main-set-knowledge-v1",
     "outputContractVersion": "custom-main-set-output-v1",
     "evaluationVersion": "custom-main-set-eval-v1",
@@ -39,6 +39,7 @@
     "ruleHeading": "【最優先ルール】",
     "rules": [
       "距離、本数、強度、サークル、Restはサーバーが計算済みです。変更を提案したり、別の数値を書いたりしないでください。",
+      "複数setでは、総本数と各setの本数を区別してください。1set分の本数を全体本数として説明しないでください。",
       "メイン種目1を中心にし、メイン種目2がある場合は補助種目として扱ってください。",
       "年齢、レベル、コンディションを反映し、安全性とフォーム維持を優先してください。",
       "苦しくなってフォームが崩れる場合は、タイムより技術確認を優先する注意を含めてください。",

@@ -363,6 +363,21 @@ export async function POST(request: NextRequest) {
         bestTimeReferences,
         mainSetTimeMinutes: Number(mainSetTime),
         estimatedDurationMinutes: plan.estimatedDurationMinutes,
+        // 表示側が文章を再解析してセット数を失わないよう、確定済みの数値を構造化して渡します。
+        mainSetSegments: plan.segments.map((segment) => ({
+          label: segment.label,
+          raceEvent: segment.raceEvent,
+          stroke: segment.stroke,
+          rounds: segment.rounds,
+          setRestSeconds: segment.setRestSeconds,
+          repetitions: segment.repetitions,
+          totalRepetitions: segment.rounds * segment.repetitions,
+          distanceM: segment.distanceM,
+          totalM: segment.totalM,
+          intensity: segment.intensity,
+          intensityNumber: segment.intensityNumber,
+          timing: segment.timing,
+        })),
       },
     };
 

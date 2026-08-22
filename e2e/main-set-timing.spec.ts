@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test';
 import { generateMainSetPlan, type MainSetEvent } from '../src/lib/rt/main-set-generator';
 import { calculateSegmentTiming } from '../src/lib/rt/training-timing';
 import type { TrainingInput } from '../src/lib/rt/generator';
+import { mainSetSegmentsToSheetRows } from '../src/components/MenuSheet';
 
 const longCourseFr50Best = {
   stroke: 'Fr',
@@ -135,5 +136,23 @@ test('メイン種目2を指定した場合だけMainを2つに分ける', () =>
   expect(plan.segments[1]).toMatchObject({
     label: 'Main 2',
     raceEvent: 'Fly_50',
+  });
+});
+
+test('複数setの表示は総本数と合計距離を保持する', () => {
+  const plan = generateMainSetPlan({ input: baseInput, primaryEvent });
+  const rows = mainSetSegmentsToSheetRows(plan.segments.map((segment) => ({
+    ...segment,
+    totalRepetitions: segment.rounds * segment.repetitions,
+  })));
+
+  expect(rows).toHaveLength(1);
+  expect(rows[0]).toMatchObject({
+    section: 'Main 1',
+    distance: '50',
+    count: '28（14×2set）',
+    content: 'セット間 Rest 1分',
+    total: '1,400m',
+    timing: 'サークル 1:00',
   });
 });

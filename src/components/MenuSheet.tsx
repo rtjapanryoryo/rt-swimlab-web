@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import Link from 'next/link';
-import type { TrainingInput, TrainingResult } from '@/lib/rt/generator';
+import type { MenuMainSetSegment, TrainingInput, TrainingResult } from '@/lib/rt/generator';
 import { sumMenuDistance } from '@/lib/rt/menu-distance';
 
 type MenuSheetRow = {
@@ -342,6 +342,34 @@ export function parseToSheetRow(section: string, raw: string, stroke?: string, t
   return [single];
 }
 
+/** custom生成で確定したセット数を文章から再推測せず、そのまま表示行へ変換します。 */
+export function mainSetSegmentsToSheetRows(segments: MenuMainSetSegment[]): MenuSheetRow[] {
+  return segments.map((segment) => {
+    const totalRepetitions = segment.totalRepetitions
+      || segment.rounds * segment.repetitions;
+    const count = segment.rounds > 1
+      ? `${totalRepetitions}（${segment.repetitions}×${segment.rounds}set）`
+      : String(totalRepetitions);
+    const content = segment.rounds > 1 && segment.setRestSeconds > 0
+      ? `セット間 Rest ${segment.setRestSeconds >= 60 && segment.setRestSeconds % 60 === 0
+        ? `${segment.setRestSeconds / 60}分`
+        : `${segment.setRestSeconds}秒`}`
+      : '-';
+
+    return {
+      section: segment.label,
+      distance: String(segment.distanceM),
+      count,
+      sets: String(segment.rounds),
+      intensity: segment.intensityNumber,
+      style: segment.stroke,
+      content,
+      total: `${segment.totalM.toLocaleString()}m`,
+      timing: `${segment.timing.type === 'circle' ? 'サークル' : 'Rest'} ${segment.timing.display}`,
+    };
+  });
+}
+
 type MenuSheetProps = {
   input: TrainingInput;
   result: TrainingResult;
@@ -358,6 +386,11 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
   const order = sectionOrderProp?.length ? sectionOrderProp : DEFAULT_SECTION_ORDER;
   const templateOnly = source === 'quick';
   const rows: MenuSheetRow[] = useMemo(() => {
+    const mainSetSegments = result.generationContext?.mainSetSegments;
+    if (source === 'custom' && mainSetSegments?.length) {
+      return mainSetSegmentsToSheetRows(mainSetSegments);
+    }
+
     const sheetRows: MenuSheetRow[] = [];
     const s = (input.stroke && STROKE_ALLOWED.has(input.stroke) ? input.stroke : 'S1') as string;
     for (const key of order) {
@@ -370,7 +403,7 @@ export function MenuSheet({ input, result, isCardView = false, source = 'custom'
       sheetRows.push(...parseToSheetRow(label, value, s, templateOnly));
     }
     return sheetRows;
-  }, [result, input.stroke, order, sectionLabelsProp, templateOnly]);
+  }, [result, input.stroke, order, sectionLabelsProp, source, templateOnly]);
 
   // 行合計から総距離を算出（表と一致させるため）
   const { sumFromRows, blockSubtotals } = useMemo(() => {

@@ -15,6 +15,7 @@ test('system promptを移行前と同じ内容で組み立てる', () => {
 
 【最優先ルール】
 - 距離、本数、強度、サークル、Restはサーバーが計算済みです。変更を提案したり、別の数値を書いたりしないでください。
+- 複数setでは、総本数と各setの本数を区別してください。1set分の本数を全体本数として説明しないでください。
 - メイン種目1を中心にし、メイン種目2がある場合は補助種目として扱ってください。
 - 年齢、レベル、コンディションを反映し、安全性とフォーム維持を優先してください。
 - 苦しくなってフォームが崩れる場合は、タイムより技術確認を優先する注意を含めてください。
@@ -38,6 +39,10 @@ test('user promptに入力、骨格、出力契約を欠けなく含める', () 
       template: 'Main 1：Fr 11×50m サークル 1:05（A1） → Main 2：Fr 15×50m サークル 1:00（EN1）',
       totalM: 1300,
       estimatedDurationMinutes: 28,
+      segments: [
+        { label: 'Main 1', rounds: 2, repetitions: 11, distanceM: 50, totalM: 1100 },
+        { label: 'Main 2', rounds: 1, repetitions: 4, distanceM: 50, totalM: 200 },
+      ],
     },
   });
 
@@ -46,6 +51,7 @@ test('user promptに入力、骨格、出力契約を欠けなく含める', () 
   expect(prompt).toContain('- 目的: ② 基礎形成期');
   expect(prompt).toContain('自由形 50m: 30.00');
   expect(prompt).toContain('合計距離: 1300m');
+  expect(prompt).toContain('Main 1: 総本数22本（11本×2set）、1本50m、合計1100m');
   expect(prompt).toContain('推定所要時間: 約28分');
   expect(prompt).toContain('"coachingPoint": "具体的な指導ポイント1\\n具体的な指導ポイント2\\n具体的な指導ポイント3"');
   expect(prompt).not.toContain('undefined');
