@@ -1,8 +1,8 @@
 {
   "manifest": {
     "contextVersion": "custom-main-set-context-v1",
-    "promptVersion": "custom-main-set-prompt-v3",
-    "knowledgeVersion": "custom-main-set-knowledge-v1",
+    "promptVersion": "custom-main-set-prompt-v4",
+    "knowledgeVersion": "custom-main-set-knowledge-v2",
     "outputContractVersion": "custom-main-set-output-v1",
     "evaluationVersion": "custom-main-set-eval-v1",
     "generationRuleVersion": "main-set-v2",

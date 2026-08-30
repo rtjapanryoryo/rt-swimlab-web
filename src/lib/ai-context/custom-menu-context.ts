@@ -1,4 +1,5 @@
 import contextConfig from '../../../content/ai/custom/context-config.json';
+import coachingGuidanceConfig from '../../../content/ai/custom/coaching-guidance.json';
 import evaluationConfig from '../../../content/ai/custom/evaluation-cases.json';
 
 type PromptPlan = {
@@ -35,6 +36,20 @@ export type CustomMenuEvaluationCase = {
   expected: string[];
 };
 
+type GuidanceEntry = {
+  label: string;
+  coachingPoints: string[];
+  cautions: string[];
+};
+
+export type SelectedCustomMenuGuidance = {
+  category: string;
+  key: string;
+  label: string;
+  coachingPoints: string[];
+  cautions: string[];
+};
+
 export const CUSTOM_MENU_CONTEXT_VERSIONS = Object.freeze({
   ...contextConfig.manifest,
 });
@@ -47,6 +62,11 @@ export const CUSTOM_MENU_MANAGEMENT_LOCATIONS = Object.freeze([
   {
     path: 'content/ai/custom/context-config.json',
     label: 'プロンプト・出力形式・モデル既定値',
+    status: 'active' as const,
+  },
+  {
+    path: 'content/ai/custom/coaching-guidance.json',
+    label: '種目・距離・期・生成モード別の指導ナレッジ',
     status: 'active' as const,
   },
   {
@@ -92,6 +112,54 @@ export function getPeriodLabel(period: string): string {
   return labels[period] ?? period;
 }
 
+function toGuidanceEntryMap(value: unknown): Record<string, GuidanceEntry> {
+  return value as Record<string, GuidanceEntry>;
+}
+
+/**
+ * 大きな知識ファイルを毎回すべて送らず、今回の条件に関係する指導観点だけを選びます。
+ * 数量はサーバー側で確定するため、このナレッジは説明文の具体化にだけ使用します。
+ */
+export function getCustomMenuCoachingGuidance(input: Pick<
+  CustomMenuPromptInput,
+  'generationMode' | 'raceEvent' | 'period'
+>): SelectedCustomMenuGuidance[] {
+  const eventMatch = input.raceEvent.match(/^([A-Za-z]+)_(\d+)m$/);
+  const strokeKey = eventMatch?.[1];
+  const distanceKey = eventMatch?.[2];
+  const groups: Array<{
+    category: string;
+    key: string | undefined;
+    entries: Record<string, GuidanceEntry>;
+  }> = [
+    {
+      category: '種目',
+      key: strokeKey,
+      entries: toGuidanceEntryMap(coachingGuidanceConfig.strokeGuidance),
+    },
+    {
+      category: '距離',
+      key: distanceKey,
+      entries: toGuidanceEntryMap(coachingGuidanceConfig.distanceGuidance),
+    },
+    {
+      category: '期',
+      key: input.period,
+      entries: toGuidanceEntryMap(coachingGuidanceConfig.periodGuidance),
+    },
+    {
+      category: '生成モード',
+      key: input.generationMode,
+      entries: toGuidanceEntryMap(coachingGuidanceConfig.generationModeGuidance),
+    },
+  ];
+
+  return groups.flatMap(({ category, key, entries }) => {
+    if (!key || !entries[key]) return [];
+    return [{ category, key, ...entries[key] }];
+  });
+}
+
 export function buildCustomMenuSystemPrompt(): string {
   const prompt = contextConfig.systemPrompt;
   return [
@@ -117,6 +185,12 @@ export function buildCustomMenuUserPrompt(input: CustomMenuPromptInput): string 
     const totalRepetitions = segment.rounds * segment.repetitions;
     return `- ${segment.label}: 総本数${totalRepetitions}本（${segment.repetitions}本×${segment.rounds}set）、1本${segment.distanceM}m、合計${segment.totalM}m`;
   }).join('\n');
+  const selectedGuidance = getCustomMenuCoachingGuidance(input);
+  const guidanceSummary = selectedGuidance.map((guidance) => [
+    `### ${guidance.category}: ${guidance.label}`,
+    ...guidance.coachingPoints.map((point) => `- 指導観点: ${point}`),
+    ...guidance.cautions.map((caution) => `- 注意観点: ${caution}`),
+  ].join('\n')).join('\n');
 
   return `【入力条件】
 - 生成モード: ${input.generationMode === 'sprint_50m' ? '50m特化' : '通常'}
@@ -138,6 +212,10 @@ ${segmentSummary}
 合計距離: ${input.plan.totalM}m
 推定所要時間: 約${input.plan.estimatedDurationMinutes}分
 
+【今回参照する指導コンテキスト】
+以下の観点を丸写しせず、今回の入力条件とメインセットに合わせて具体化してください。
+${guidanceSummary}
+
 ${contextConfig.outputContract.instruction}
 ${outputExample}`;
 }
@@ -149,6 +227,16 @@ export function getCustomMenuContextSummary() {
     systemPrompt: buildCustomMenuSystemPrompt(),
     outputFields: Object.keys(contextConfig.outputContract.example),
     outputExample: contextConfig.outputContract.example,
+    coachingGuidance: {
+      version: coachingGuidanceConfig.version,
+      description: coachingGuidanceConfig.description,
+      groups: [
+        { title: '種目', entries: Object.entries(coachingGuidanceConfig.strokeGuidance) },
+        { title: '距離', entries: Object.entries(coachingGuidanceConfig.distanceGuidance) },
+        { title: '期', entries: Object.entries(coachingGuidanceConfig.periodGuidance) },
+        { title: '生成モード', entries: Object.entries(coachingGuidanceConfig.generationModeGuidance) },
+      ],
+    },
     evaluation: {
       version: evaluationConfig.version,
       purpose: evaluationConfig.purpose,

@@ -93,6 +93,50 @@ export default function AiContextPage() {
         </div>
       </section>
 
+      <section aria-labelledby="guidance-heading" className="space-y-4">
+        <div>
+          <h2 id="guidance-heading" className="text-lg font-bold text-slate-900">指導ナレッジ</h2>
+          <p className="mt-1 text-sm leading-6 text-slate-500">{context.coachingGuidance.description}</p>
+          <p className="mt-1 font-mono text-xs text-slate-400">{context.coachingGuidance.version}</p>
+        </div>
+        {context.coachingGuidance.groups.map((group) => (
+          <div key={group.title} className="space-y-2">
+            <h3 className="text-sm font-bold text-slate-800">{group.title}</h3>
+            <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50 text-xs text-slate-500">
+                  <tr>
+                    <th className="w-36 px-4 py-3 font-semibold">条件</th>
+                    <th className="px-4 py-3 font-semibold">指導観点</th>
+                    <th className="px-4 py-3 font-semibold">注意観点</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {group.entries.map(([key, entry]) => (
+                    <tr key={key}>
+                      <th className="px-4 py-3 align-top font-semibold text-slate-800">
+                        {entry.label}
+                        <code className="ml-2 text-[11px] font-normal text-slate-400">{key}</code>
+                      </th>
+                      <td className="px-4 py-3 align-top text-slate-600">
+                        <ul className="space-y-1.5">
+                          {entry.coachingPoints.map((point) => <li key={point}>{point}</li>)}
+                        </ul>
+                      </td>
+                      <td className="px-4 py-3 align-top text-slate-600">
+                        <ul className="space-y-1.5">
+                          {entry.cautions.map((caution) => <li key={caution}>{caution}</li>)}
+                        </ul>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))}
+      </section>
+
       <section aria-labelledby="evaluation-heading" className="space-y-3">
         <div>
           <h2 id="evaluation-heading" className="text-lg font-bold text-slate-900">固定評価ケース</h2>

@@ -4,6 +4,7 @@ import {
   buildCustomMenuSystemPrompt,
   buildCustomMenuUserPrompt,
   CUSTOM_MENU_CONTEXT_VERSIONS,
+  getCustomMenuCoachingGuidance,
   getCustomMenuContextSummary,
 } from '../src/lib/ai-context/custom-menu-context';
 import { MAIN_SET_RULE_VERSION } from '../src/lib/rt/main-set-generator';
@@ -77,8 +78,32 @@ test('user promptに入力、骨格、出力契約を欠けなく含める', () 
   expect(prompt).toContain('合計距離: 1300m');
   expect(prompt).toContain('Main 1: 総本数22本（11本×2set）、1本50m、合計1100m');
   expect(prompt).toContain('推定所要時間: 約28分');
+  expect(prompt).toContain('【今回参照する指導コンテキスト】');
+  expect(prompt).toContain('### 種目: 自由形');
+  expect(prompt).toContain('### 距離: 50m');
+  expect(prompt).toContain('### 期: 基礎形成期');
+  expect(prompt).toContain('浮き上がりから、レーステンポへ滑らかにつなげる');
+  expect(prompt).not.toContain('プル・呼吸・キック・グライド');
   expect(prompt).toContain('"coachingPoint": "具体的な指導ポイント1\\n具体的な指導ポイント2\\n具体的な指導ポイント3"');
   expect(prompt).not.toContain('undefined');
+});
+
+test('入力条件に関係する指導ナレッジだけを選ぶ', () => {
+  const guidance = getCustomMenuCoachingGuidance({
+    generationMode: 'sprint_50m',
+    raceEvent: 'Fr_50m',
+    period: '4',
+  });
+
+  expect(guidance.map((item) => `${item.category}:${item.key}`)).toEqual([
+    '種目:Fr',
+    '距離:50',
+    '期:4',
+    '生成モード:sprint_50m',
+  ]);
+  expect(guidance.flatMap((item) => item.coachingPoints).join('\n')).toContain('ローリング');
+  expect(guidance.flatMap((item) => item.coachingPoints).join('\n')).toContain('スタート');
+  expect(guidance.flatMap((item) => item.coachingPoints).join('\n')).not.toContain('平泳ぎ');
 });
 
 test('manifestと実装中の数値ルールバージョンを一致させる', () => {
@@ -87,6 +112,8 @@ test('manifestと実装中の数値ルールバージョンを一致させる', 
 
   const summary = getCustomMenuContextSummary();
   expect(summary.versions.contextVersion).toBe('custom-main-set-context-v1');
+  expect(summary.versions.promptVersion).toBe('custom-main-set-prompt-v4');
+  expect(summary.versions.knowledgeVersion).toBe('custom-main-set-knowledge-v2');
   expect(summary.outputFields).toEqual([
     'purpose',
     'intention',
@@ -100,8 +127,19 @@ test('manifestと実装中の数値ルールバージョンを一致させる', 
         path: 'content/ai/custom/context-config.json',
         status: 'active',
       }),
+      expect.objectContaining({
+        path: 'content/ai/custom/coaching-guidance.json',
+        status: 'active',
+      }),
     ]),
   );
+  expect(summary.coachingGuidance.version).toBe(summary.versions.knowledgeVersion);
+  expect(summary.coachingGuidance.groups.map((group) => group.title)).toEqual([
+    '種目',
+    '距離',
+    '期',
+    '生成モード',
+  ]);
   expect(summary.inactiveKnowledgeSources).toContain('content/common/coach-philosophy.md');
   expect(summary.evaluation.version).toBe(summary.versions.evaluationVersion);
   expect(summary.evaluation.cases).toHaveLength(5);
