@@ -2,11 +2,13 @@ import type { NextConfig } from "next";
 import path from "path";
 import { config } from "dotenv";
 
-// .env.ai から読み込む（Vercel本番ではダッシュボードで設定）
-config({
-  path: path.resolve(process.cwd(), ".env.ai"),
-  override: true, // 既存値を上書きして確実に反映
-});
+// Vercelでは管理画面の環境変数を使い、ローカル用の.env.aiで上書きしません。
+if (!process.env.VERCEL) {
+  config({
+    path: path.resolve(process.cwd(), ".env.ai"),
+    override: false,
+  });
+}
 
 const securityHeaders = [
   { key: 'X-Content-Type-Options',    value: 'nosniff' },
