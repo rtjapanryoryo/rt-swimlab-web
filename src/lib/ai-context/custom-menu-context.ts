@@ -12,6 +12,12 @@ type PromptPlan = {
     repetitions: number;
     distanceM: number;
     totalM: number;
+    intensity: string;
+    intensityNumber: string;
+    timing: {
+      type: 'circle' | 'rest';
+      display: string;
+    };
   }>;
 };
 
@@ -183,7 +189,8 @@ export function buildCustomMenuUserPrompt(input: CustomMenuPromptInput): string 
   const outputExample = JSON.stringify(contextConfig.outputContract.example, null, 2);
   const segmentSummary = input.plan.segments.map((segment) => {
     const totalRepetitions = segment.rounds * segment.repetitions;
-    return `- ${segment.label}: 総本数${totalRepetitions}本（${segment.repetitions}本×${segment.rounds}set）、1本${segment.distanceM}m、合計${segment.totalM}m`;
+    const timingLabel = segment.timing.type === 'circle' ? 'サークル' : 'Rest';
+    return `- ${segment.label}: 総本数${totalRepetitions}本（${segment.repetitions}本×${segment.rounds}set）、1本${segment.distanceM}m、合計${segment.totalM}m、強度${segment.intensityNumber} ${segment.intensity}、${timingLabel} ${segment.timing.display}`;
   }).join('\n');
   const selectedGuidance = getCustomMenuCoachingGuidance(input);
   const guidanceSummary = selectedGuidance.map((guidance) => [

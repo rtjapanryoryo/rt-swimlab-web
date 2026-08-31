@@ -1,8 +1,8 @@
 {
   "manifest": {
     "contextVersion": "custom-main-set-context-v1",
-    "promptVersion": "custom-main-set-prompt-v4",
-    "knowledgeVersion": "custom-main-set-knowledge-v2",
+    "promptVersion": "custom-main-set-prompt-v5",
+    "knowledgeVersion": "custom-main-set-knowledge-v3",
     "outputContractVersion": "custom-main-set-output-v1",
     "evaluationVersion": "custom-main-set-eval-v1",
     "generationRuleVersion": "main-set-v2",
@@ -45,6 +45,7 @@
       "年齢、レベル、コンディションを反映し、安全性とフォーム維持を優先してください。",
       "苦しくなってフォームが崩れる場合は、タイムより技術確認を優先する注意を含めてください。",
       "指導ポイントと注意点は、それぞれ3項目を改行区切りで出力してください。",
+      "説明文は確定済みの強度と一致させてください。A1/A2やEasyをレースペース、最大速度、高強度として説明しないでください。",
       "抽象的な一般論ではなく、今回の種目・目的・強度に合う具体的な文章にしてください。",
       "JSON以外は出力しないでください。"
     ]

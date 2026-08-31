@@ -26,6 +26,7 @@ test('system promptを移行前と同じ内容で組み立てる', () => {
 - 年齢、レベル、コンディションを反映し、安全性とフォーム維持を優先してください。
 - 苦しくなってフォームが崩れる場合は、タイムより技術確認を優先する注意を含めてください。
 - 指導ポイントと注意点は、それぞれ3項目を改行区切りで出力してください。
+- 説明文は確定済みの強度と一致させてください。A1/A2やEasyをレースペース、最大速度、高強度として説明しないでください。
 - 抽象的な一般論ではなく、今回の種目・目的・強度に合う具体的な文章にしてください。
 - JSON以外は出力しないでください。`);
 });
@@ -65,8 +66,26 @@ test('user promptに入力、骨格、出力契約を欠けなく含める', () 
       totalM: 1300,
       estimatedDurationMinutes: 28,
       segments: [
-        { label: 'Main 1', rounds: 2, repetitions: 11, distanceM: 50, totalM: 1100 },
-        { label: 'Main 2', rounds: 1, repetitions: 4, distanceM: 50, totalM: 200 },
+        {
+          label: 'Main 1',
+          rounds: 2,
+          repetitions: 11,
+          distanceM: 50,
+          totalM: 1100,
+          intensity: 'EN1',
+          intensityNumber: '②',
+          timing: { type: 'circle', display: '1:00' },
+        },
+        {
+          label: 'Main 2',
+          rounds: 1,
+          repetitions: 4,
+          distanceM: 50,
+          totalM: 200,
+          intensity: 'AN1',
+          intensityNumber: '⑤',
+          timing: { type: 'rest', display: '45秒' },
+        },
       ],
     },
   });
@@ -76,13 +95,14 @@ test('user promptに入力、骨格、出力契約を欠けなく含める', () 
   expect(prompt).toContain('- 目的: ② 基礎形成期');
   expect(prompt).toContain('自由形 50m: 30.00');
   expect(prompt).toContain('合計距離: 1300m');
-  expect(prompt).toContain('Main 1: 総本数22本（11本×2set）、1本50m、合計1100m');
+  expect(prompt).toContain('Main 1: 総本数22本（11本×2set）、1本50m、合計1100m、強度② EN1、サークル 1:00');
   expect(prompt).toContain('推定所要時間: 約28分');
   expect(prompt).toContain('【今回参照する指導コンテキスト】');
   expect(prompt).toContain('### 種目: 自由形');
   expect(prompt).toContain('### 距離: 50m');
   expect(prompt).toContain('### 期: 基礎形成期');
-  expect(prompt).toContain('浮き上がりから、レーステンポへ滑らかにつなげる');
+  expect(prompt).toContain('最初のストロークへ滑らかにつなげる');
+  expect(prompt).toContain('指定された強度に合うテンポ');
   expect(prompt).not.toContain('プル・呼吸・キック・グライド');
   expect(prompt).toContain('"coachingPoint": "具体的な指導ポイント1\\n具体的な指導ポイント2\\n具体的な指導ポイント3"');
   expect(prompt).not.toContain('undefined');
@@ -112,8 +132,8 @@ test('manifestと実装中の数値ルールバージョンを一致させる', 
 
   const summary = getCustomMenuContextSummary();
   expect(summary.versions.contextVersion).toBe('custom-main-set-context-v1');
-  expect(summary.versions.promptVersion).toBe('custom-main-set-prompt-v4');
-  expect(summary.versions.knowledgeVersion).toBe('custom-main-set-knowledge-v2');
+  expect(summary.versions.promptVersion).toBe('custom-main-set-prompt-v5');
+  expect(summary.versions.knowledgeVersion).toBe('custom-main-set-knowledge-v3');
   expect(summary.outputFields).toEqual([
     'purpose',
     'intention',

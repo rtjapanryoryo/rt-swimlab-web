@@ -1,5 +1,11 @@
 # custom生成コンテキスト変更履歴
 
+## custom-main-set-prompt-v5 / custom-main-set-knowledge-v3
+
+- 確定済みの強度とサークルまたはRestをAI向け入力へ明示
+- A1/A2やEasyをレースペース・最大速度・高強度として説明しないルールを追加
+- 50mの距離別ナレッジを、通常メニューでも使える強度中立の表現へ調整
+
 ## custom-main-set-prompt-v3
 
 - AI説明文で距離・本数・セット数・サークル・Restの数値を繰り返さないルールを追加
