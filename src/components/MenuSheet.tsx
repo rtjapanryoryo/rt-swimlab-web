@@ -50,12 +50,15 @@ function extractDisplayContent(text: string): string {
 }
 
 /** 既存の文章を変更せず、明確な区切りがある箇所だけを表示用の項目に分ける。 */
-function splitGuidanceItems(value?: string | null): string[] {
+export function splitGuidanceItems(value?: string | null): string[] {
   const source = (value ?? '').replace(/\r/g, '').trim();
   if (!source) return [];
 
-  const middleDotCount = (source.match(/・/g) ?? []).length;
-  const normalized = (middleDotCount >= 2 ? source.replace(/\s*・\s*/g, '\n') : source)
+  const middleDotParts = source.split(/\s*・\s*/g).map((item) => item.trim());
+  // 過去形式の長い文章区切りだけを維持し、「呼吸・姿勢・キャッチ」のような用語列挙は分割しません。
+  const usesMiddleDotAsItemSeparator = middleDotParts.length >= 3
+    && middleDotParts.every((item) => item.length >= 8);
+  const normalized = (usesMiddleDotAsItemSeparator ? middleDotParts.join('\n') : source)
     .replace(/\s+(?=[①②③④⑤⑥⑦⑧⑨⑩])/g, '\n')
     .replace(/\s+(?=\d+[.)]\s*)/g, '\n');
 

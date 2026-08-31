@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 import { generateMainSetPlan, type MainSetEvent } from '../src/lib/rt/main-set-generator';
 import { calculateSegmentTiming } from '../src/lib/rt/training-timing';
 import type { TrainingInput } from '../src/lib/rt/generator';
-import { mainSetSegmentsToSheetRows } from '../src/components/MenuSheet';
+import { mainSetSegmentsToSheetRows, splitGuidanceItems } from '../src/components/MenuSheet';
 
 const longCourseFr50Best = {
   stroke: 'Fr',
@@ -155,4 +155,22 @@ test('複数setの表示は総本数と合計距離を保持する', () => {
     total: '1,400m',
     timing: 'サークル 1:00',
   });
+});
+
+test('指導文内の短い用語列挙を別項目へ分割しない', () => {
+  expect(splitGuidanceItems([
+    '呼吸時に頭を持ち上げない',
+    '指定強度を超えず、呼吸・姿勢・キャッチを最後まで再現する',
+    'フォームが崩れ始める兆候を見逃さない',
+  ].join('\n'))).toEqual([
+    '呼吸時に頭を持ち上げない',
+    '指定強度を超えず、呼吸・姿勢・キャッチを最後まで再現する',
+    'フォームが崩れ始める兆候を見逃さない',
+  ]);
+});
+
+test('過去形式の長い中黒区切りは3項目として表示する', () => {
+  expect(splitGuidanceItems(
+    '頭の位置を安定させて前方へ伸びる・肘を高く保って水を捉え続ける・体幹からローリングをつなげる',
+  )).toHaveLength(3);
 });
