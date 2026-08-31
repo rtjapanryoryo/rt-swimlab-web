@@ -1,5 +1,5 @@
 {
-  "version": "custom-main-set-knowledge-v3",
+  "version": "custom-main-set-knowledge-v4",
   "description": "custom生成の指導ポイントと注意点を、種目・距離・期・生成モードに合わせて具体化するための短いナレッジです。数量はサーバー側で決めるため、ここには距離・本数・サークルの規定値を持たせません。",
   "strokeGuidance": {
     "Fr": {

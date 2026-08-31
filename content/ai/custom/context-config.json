@@ -1,8 +1,8 @@
 {
   "manifest": {
     "contextVersion": "custom-main-set-context-v1",
-    "promptVersion": "custom-main-set-prompt-v5",
-    "knowledgeVersion": "custom-main-set-knowledge-v3",
+    "promptVersion": "custom-main-set-prompt-v6",
+    "knowledgeVersion": "custom-main-set-knowledge-v4",
     "outputContractVersion": "custom-main-set-output-v1",
     "evaluationVersion": "custom-main-set-eval-v1",
     "generationRuleVersion": "main-set-v2",
@@ -42,6 +42,7 @@
       "複数setでは、総本数と各setの本数を区別してください。1set分の本数を全体本数として説明しないでください。",
       "説明文では距離、本数、セット数、サークル、Restの数値を繰り返さないでください。確定値は表に表示します。",
       "メイン種目1を中心にし、メイン種目2がある場合は補助種目として扱ってください。",
+      "メイン種目2がある場合は、メイン種目1との役割の違いを明確にし、指導ポイントまたは注意点にメイン種目2固有の観点を最低1項目含めてください。",
       "年齢、レベル、コンディションを反映し、安全性とフォーム維持を優先してください。",
       "苦しくなってフォームが崩れる場合は、タイムより技術確認を優先する注意を含めてください。",
       "指導ポイントと注意点は、それぞれ3項目を改行区切りで出力してください。",

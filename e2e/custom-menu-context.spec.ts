@@ -23,6 +23,7 @@ test('system promptを移行前と同じ内容で組み立てる', () => {
 - 複数setでは、総本数と各setの本数を区別してください。1set分の本数を全体本数として説明しないでください。
 - 説明文では距離、本数、セット数、サークル、Restの数値を繰り返さないでください。確定値は表に表示します。
 - メイン種目1を中心にし、メイン種目2がある場合は補助種目として扱ってください。
+- メイン種目2がある場合は、メイン種目1との役割の違いを明確にし、指導ポイントまたは注意点にメイン種目2固有の観点を最低1項目含めてください。
 - 年齢、レベル、コンディションを反映し、安全性とフォーム維持を優先してください。
 - 苦しくなってフォームが崩れる場合は、タイムより技術確認を優先する注意を含めてください。
 - 指導ポイントと注意点は、それぞれ3項目を改行区切りで出力してください。
@@ -126,14 +127,33 @@ test('入力条件に関係する指導ナレッジだけを選ぶ', () => {
   expect(guidance.flatMap((item) => item.coachingPoints).join('\n')).not.toContain('平泳ぎ');
 });
 
+test('メイン種目2がある場合だけ補助種目の指導ナレッジを選ぶ', () => {
+  const guidance = getCustomMenuCoachingGuidance({
+    generationMode: 'standard',
+    raceEvent: 'Fr_100m',
+    raceEvent2: 'Fly_50m',
+    period: '3',
+  });
+
+  expect(guidance.map((item) => `${item.category}:${item.key}`)).toEqual([
+    '種目:Fr',
+    '距離:100',
+    '補助種目:Fly',
+    '補助距離:50',
+    '期:3',
+    '生成モード:standard',
+  ]);
+  expect(guidance.flatMap((item) => item.coachingPoints).join('\n')).toContain('うねり');
+});
+
 test('manifestと実装中の数値ルールバージョンを一致させる', () => {
   expect(CUSTOM_MENU_CONTEXT_VERSIONS.generationRuleVersion).toBe(MAIN_SET_RULE_VERSION);
   expect(CUSTOM_MENU_CONTEXT_VERSIONS.timingRuleVersion).toBe(TIMING_RULE_VERSION);
 
   const summary = getCustomMenuContextSummary();
   expect(summary.versions.contextVersion).toBe('custom-main-set-context-v1');
-  expect(summary.versions.promptVersion).toBe('custom-main-set-prompt-v5');
-  expect(summary.versions.knowledgeVersion).toBe('custom-main-set-knowledge-v3');
+  expect(summary.versions.promptVersion).toBe('custom-main-set-prompt-v6');
+  expect(summary.versions.knowledgeVersion).toBe('custom-main-set-knowledge-v4');
   expect(summary.outputFields).toEqual([
     'purpose',
     'intention',

@@ -128,11 +128,14 @@ function toGuidanceEntryMap(value: unknown): Record<string, GuidanceEntry> {
  */
 export function getCustomMenuCoachingGuidance(input: Pick<
   CustomMenuPromptInput,
-  'generationMode' | 'raceEvent' | 'period'
+  'generationMode' | 'raceEvent' | 'raceEvent2' | 'period'
 >): SelectedCustomMenuGuidance[] {
   const eventMatch = input.raceEvent.match(/^([A-Za-z]+)_(\d+)m$/);
   const strokeKey = eventMatch?.[1];
   const distanceKey = eventMatch?.[2];
+  const secondaryEventMatch = input.raceEvent2?.match(/^([A-Za-z]+)_(\d+)m$/);
+  const secondaryStrokeKey = secondaryEventMatch?.[1];
+  const secondaryDistanceKey = secondaryEventMatch?.[2];
   const groups: Array<{
     category: string;
     key: string | undefined;
@@ -146,6 +149,16 @@ export function getCustomMenuCoachingGuidance(input: Pick<
     {
       category: '距離',
       key: distanceKey,
+      entries: toGuidanceEntryMap(coachingGuidanceConfig.distanceGuidance),
+    },
+    {
+      category: '補助種目',
+      key: secondaryStrokeKey && secondaryStrokeKey !== strokeKey ? secondaryStrokeKey : undefined,
+      entries: toGuidanceEntryMap(coachingGuidanceConfig.strokeGuidance),
+    },
+    {
+      category: '補助距離',
+      key: secondaryDistanceKey && secondaryDistanceKey !== distanceKey ? secondaryDistanceKey : undefined,
       entries: toGuidanceEntryMap(coachingGuidanceConfig.distanceGuidance),
     },
     {

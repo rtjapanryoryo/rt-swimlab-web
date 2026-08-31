@@ -1,5 +1,10 @@
 # custom生成コンテキスト変更履歴
 
+## custom-main-set-prompt-v6 / custom-main-set-knowledge-v4
+
+- メイン種目2がある場合だけ、補助種目・補助距離の指導ナレッジを追加
+- Main 1との役割差と、メイン種目2固有の指導または注意を最低1項目含めるルールを追加
+
 ## custom-main-set-prompt-v5 / custom-main-set-knowledge-v3
 
 - 確定済みの強度とサークルまたはRestをAI向け入力へ明示
