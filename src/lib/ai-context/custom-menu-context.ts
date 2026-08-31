@@ -211,6 +211,11 @@ export function buildCustomMenuUserPrompt(input: CustomMenuPromptInput): string 
     ...guidance.coachingPoints.map((point) => `- 指導観点: ${point}`),
     ...guidance.cautions.map((caution) => `- 注意観点: ${caution}`),
   ].join('\n')).join('\n');
+  const secondaryOutputRequirement = input.raceEvent2
+    ? `\n【Main 2がある場合の出力内訳】
+- 指導ポイント3項目は、Main 1固有・Main 2固有・両方に共通する観点を各1項目ずつ書いてください。
+- 注意点3項目にもMain 2固有の注意を最低1項目含め、種目名またはその種目固有の動作が分かる表現にしてください。`
+    : '';
 
   return `【入力条件】
 - 生成モード: ${input.generationMode === 'sprint_50m' ? '50m特化' : '通常'}
@@ -235,6 +240,7 @@ ${segmentSummary}
 【今回参照する指導コンテキスト】
 以下の観点を丸写しせず、今回の入力条件とメインセットに合わせて具体化してください。
 ${guidanceSummary}
+${secondaryOutputRequirement}
 
 ${contextConfig.outputContract.instruction}
 ${outputExample}`;

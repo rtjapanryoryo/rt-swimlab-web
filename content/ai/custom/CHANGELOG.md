@@ -1,5 +1,10 @@
 # custom生成コンテキスト変更履歴
 
+## custom-main-set-prompt-v7 / custom-main-set-knowledge-v4
+
+- Main 2がある場合の指導ポイント3項目を、Main 1固有・Main 2固有・共通の各1項目に割り当て
+- 注意点にもMain 2固有の内容を必須化し、補助種目の観点が出力から欠落しにくい指示へ強化
+
 ## custom-main-set-prompt-v6 / custom-main-set-knowledge-v4
 
 - メイン種目2がある場合だけ、補助種目・補助距離の指導ナレッジを追加

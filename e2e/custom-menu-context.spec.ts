@@ -23,7 +23,7 @@ test('system promptを移行前と同じ内容で組み立てる', () => {
 - 複数setでは、総本数と各setの本数を区別してください。1set分の本数を全体本数として説明しないでください。
 - 説明文では距離、本数、セット数、サークル、Restの数値を繰り返さないでください。確定値は表に表示します。
 - メイン種目1を中心にし、メイン種目2がある場合は補助種目として扱ってください。
-- メイン種目2がある場合は、メイン種目1との役割の違いを明確にし、指導ポイントまたは注意点にメイン種目2固有の観点を最低1項目含めてください。
+- メイン種目2がある場合は、メイン種目1との役割の違いを明確にし、指導ポイントと注意点の両方にメイン種目2固有の観点を含めてください。
 - 年齢、レベル、コンディションを反映し、安全性とフォーム維持を優先してください。
 - 苦しくなってフォームが崩れる場合は、タイムより技術確認を優先する注意を含めてください。
 - 指導ポイントと注意点は、それぞれ3項目を改行区切りで出力してください。
@@ -146,13 +146,38 @@ test('メイン種目2がある場合だけ補助種目の指導ナレッジを�
   expect(guidance.flatMap((item) => item.coachingPoints).join('\n')).toContain('うねり');
 });
 
+test('メイン種目2がある場合は出力項目の役割分担を明示する', () => {
+  const prompt = buildCustomMenuUserPrompt({
+    generationMode: 'standard',
+    raceEvent: 'Fr_100m',
+    raceEvent2: 'Fly_50m',
+    period: '3',
+    age: 'マスターズ（40歳以上）',
+    level: '一般スイマー（定期練習 / マスターズ継続）',
+    condition: '良好（通常コンディション）',
+    poolLength: 'short_course',
+    mainSetTime: '45',
+    bestTimeSummary: '自由形 100m: 登録なし\nバタフライ 50m: 登録なし',
+    plan: {
+      template: 'Main 1：Fr 12×100m Rest 25秒（Easy） → Main 2：Fly 15×50m Rest 15秒（Easy）',
+      totalM: 1950,
+      estimatedDurationMinutes: 45,
+      segments: [],
+    },
+  });
+
+  expect(prompt).toContain('【Main 2がある場合の出力内訳】');
+  expect(prompt).toContain('Main 1固有・Main 2固有・両方に共通する観点を各1項目');
+  expect(prompt).toContain('注意点3項目にもMain 2固有の注意を最低1項目');
+});
+
 test('manifestと実装中の数値ルールバージョンを一致させる', () => {
   expect(CUSTOM_MENU_CONTEXT_VERSIONS.generationRuleVersion).toBe(MAIN_SET_RULE_VERSION);
   expect(CUSTOM_MENU_CONTEXT_VERSIONS.timingRuleVersion).toBe(TIMING_RULE_VERSION);
 
   const summary = getCustomMenuContextSummary();
   expect(summary.versions.contextVersion).toBe('custom-main-set-context-v1');
-  expect(summary.versions.promptVersion).toBe('custom-main-set-prompt-v6');
+  expect(summary.versions.promptVersion).toBe('custom-main-set-prompt-v7');
   expect(summary.versions.knowledgeVersion).toBe('custom-main-set-knowledge-v4');
   expect(summary.outputFields).toEqual([
     'purpose',
