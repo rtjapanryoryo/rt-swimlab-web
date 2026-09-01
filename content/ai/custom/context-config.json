@@ -5,8 +5,8 @@
     "knowledgeVersion": "custom-main-set-knowledge-v4",
     "outputContractVersion": "custom-main-set-output-v1",
     "evaluationVersion": "custom-main-set-eval-v1",
-    "generationRuleVersion": "main-set-v2",
-    "timingRuleVersion": "personal-best-v1"
+    "generationRuleVersion": "main-set-v3",
+    "timingRuleVersion": "personal-best-v2"
   },
   "labels": {
     "raceEvents": {

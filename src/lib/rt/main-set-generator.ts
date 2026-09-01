@@ -5,7 +5,7 @@ import {
   type SegmentTiming,
 } from './training-timing';
 
-export const MAIN_SET_RULE_VERSION = 'main-set-v2';
+export const MAIN_SET_RULE_VERSION = 'main-set-v3';
 
 export type MainSetEvent = {
   raceEvent: string;
@@ -197,6 +197,10 @@ function buildSegment(args: {
   const intensityStep = clampStep(args.intensityStep);
   const distanceM = repeatDistance(event, input, blockIndex);
   const intensity = STEP_TO_LABEL[intensityStep];
+  // 強度がA1まで下がった後も安全調整が実際のRestへ反映されるよう、回復時間を別に加算します。
+  const ageRecoverySeconds = parseAge(input.age) >= 40 ? 10 : 0;
+  const secondaryFlyRecoverySeconds = label === 'Main 2' && event.stroke === 'Fly' ? 10 : 0;
+  const recoveryAdjustmentSeconds = ageRecoverySeconds + secondaryFlyRecoverySeconds;
   const timing = calculateSegmentTiming({
     blockType: 'main',
     mPerSet: distanceM,
@@ -205,6 +209,7 @@ function buildSegment(args: {
     context: {
       personalBest: event.personalBest,
       generationMode: input.generationMode,
+      recoveryAdjustmentSeconds,
     },
   });
   const swimSeconds = estimateSwimSeconds(event, distanceM, intensityStep, input.level);
@@ -257,6 +262,12 @@ export function generateMainSetPlan(args: {
   const usableSeconds = Math.max(600, totalSeconds - transitionSeconds);
 
   const segments: MainSetSegment[] = [];
+  if (parseAge(input.age) >= 40) {
+    notes.push('40歳以上はフォーム維持のため各本の回復を10秒追加');
+  }
+  if (args.secondaryEvent?.stroke === 'Fly') {
+    notes.push('補助種目のバタフライは技術維持のため各本の回復を10秒追加');
+  }
   if (args.secondaryEvent) {
     segments.push(buildSegment({
       event: primaryEvent,

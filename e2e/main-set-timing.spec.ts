@@ -139,6 +139,47 @@ test('メイン種目2を指定した場合だけMainを2つに分ける', () =>
   });
 });
 
+test('40歳以上の補助バタフライは回復を確保して本数を抑える', () => {
+  const secondaryEvent: MainSetEvent = {
+    raceEvent: 'Fly_50m',
+    stroke: 'Fly',
+    raceDistanceM: 50,
+    personalBest: null,
+  };
+  const input: TrainingInput = {
+    ...baseInput,
+    period: '3',
+    age: 'マスターズ（40歳以上）',
+    poolLength: 'short_course',
+    raceEvent: 'Fr_100m',
+    raceEvent2: 'Fly_50m',
+    mainSetTime: '45',
+  };
+  const fr100: MainSetEvent = {
+    raceEvent: 'Fr_100m',
+    stroke: 'Fr',
+    raceDistanceM: 100,
+    personalBest: null,
+  };
+
+  const plan = generateMainSetPlan({ input, primaryEvent: fr100, secondaryEvent });
+
+  expect(plan.segments[0]).toMatchObject({
+    label: 'Main 1',
+    repetitions: 11,
+    totalM: 1100,
+    timing: { type: 'rest', seconds: 35, display: '35秒' },
+  });
+  expect(plan.segments[1]).toMatchObject({
+    label: 'Main 2',
+    repetitions: 11,
+    totalM: 550,
+    timing: { type: 'rest', seconds: 35, display: '35秒' },
+  });
+  expect(plan.adjustmentNotes).toContain('40歳以上はフォーム維持のため各本の回復を10秒追加');
+  expect(plan.adjustmentNotes).toContain('補助種目のバタフライは技術維持のため各本の回復を10秒追加');
+});
+
 test('複数setの表示は総本数と合計距離を保持する', () => {
   const plan = generateMainSetPlan({ input: baseInput, primaryEvent });
   const rows = mainSetSegmentsToSheetRows(plan.segments.map((segment) => ({

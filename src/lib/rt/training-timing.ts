@@ -19,9 +19,10 @@ export type SegmentTiming = {
 export type TimingCalculationContext = {
   personalBest?: PersonalBestTimingReference | null;
   generationMode?: 'standard' | 'sprint_50m';
+  recoveryAdjustmentSeconds?: number;
 };
 
-export const TIMING_RULE_VERSION = 'personal-best-v1';
+export const TIMING_RULE_VERSION = 'personal-best-v2';
 
 const INTENSITY_STEP: Record<string, number> = {
   A1: 1,
@@ -75,13 +76,19 @@ export function formatPersonalBest(timeCentiseconds: number): string {
     : `${seconds}.${fraction}`;
 }
 
-function fallbackRestSeconds(mPerSet: number, intensityStep: number, beginner: boolean): number {
+function fallbackRestSeconds(
+  mPerSet: number,
+  intensityStep: number,
+  beginner: boolean,
+  recoveryAdjustmentSeconds: number,
+): number {
   const byStep: Record<number, number> = { 1: 15, 2: 15, 3: 20, 4: 30, 5: 45, 6: 60, 7: 90 };
   let rest = byStep[intensityStep] ?? 30;
   if (mPerSet >= 400) rest += 30;
   else if (mPerSet >= 200) rest += 20;
   else if (mPerSet >= 100) rest += 10;
   if (beginner) rest += 10;
+  rest += recoveryAdjustmentSeconds;
   return roundUpToFiveSeconds(rest);
 }
 
@@ -99,7 +106,13 @@ export function calculateSegmentTiming(args: {
   const { blockType, mPerSet, intensity, level, context } = args;
   const step = INTENSITY_STEP[intensity] ?? 3;
   const beginner = level.includes('初心者') || level.includes('フィットネス');
-  const fallbackSeconds = fallbackRestSeconds(mPerSet, step, beginner);
+  const recoveryAdjustmentSeconds = Math.max(0, context?.recoveryAdjustmentSeconds ?? 0);
+  const fallbackSeconds = fallbackRestSeconds(
+    mPerSet,
+    step,
+    beginner,
+    recoveryAdjustmentSeconds,
+  );
   const personalBest = context?.personalBest;
   const restOnly =
     !personalBest ||
@@ -130,6 +143,7 @@ export function calculateSegmentTiming(args: {
   if (mPerSet >= 200) recoverySeconds += 10;
   if (mPerSet >= 400) recoverySeconds += 10;
   if (beginner) recoverySeconds += 10;
+  recoverySeconds += recoveryAdjustmentSeconds;
   const circleSeconds = roundUpToFiveSeconds(targetPaceSeconds + recoverySeconds);
 
   return {
